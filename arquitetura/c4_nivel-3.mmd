@@ -1,8 +1,0 @@
-%% C4 nível 3 — Componentes da API (placeholder substituível)
-flowchart TB
-    subgraph API["API — Ktor"]
-        parser["Parser de event log<br/>XES / CSV"]
-        detector["Detector de drift<br/>ADWIN"]
-        predictor["Preditor de manutenção"]
-    end
-    parser --> detector --> predictor

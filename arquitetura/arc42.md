@@ -2,8 +2,8 @@
 
 > **Nota:** este é o esqueleto arc42 (12 seções). Os textos abaixo são
 > _placeholders substituíveis_ — escreva o conteúdo real direto no Obsidian e
-> dê push; o site atualiza sozinho. Os diagramas são Mermaid (C4 / UML) e
-> renderizam inline.
+> dê push; o site atualiza sozinho. Os diagramas ficam **embutidos no meio das
+> seções** como blocos ` ```mermaid ` (C4 / UML) e renderizam inline.
 
 ---
 
@@ -25,8 +25,11 @@ decisões (stack fixa, normas, prazos, etc.)._
 
 ## 3. Contexto e Escopo
 
-_Substituir: fronteira do sistema, atores externos e interfaces. O diagrama C4
-de contexto (nível 1) resume as relações externas._
+_Substituir: fronteira do sistema, atores externos e interfaces._
+
+### 3.1 Contexto de negócio
+
+**C4 — Nível 1 · System Context** — sistema, usuários e sistemas externos.
 
 ```mermaid
 flowchart TB
@@ -45,13 +48,45 @@ metas de qualidade — resumo antes do detalhe._
 
 ## 5. Visão de Blocos de Construção
 
-_Substituir: decomposição estática do sistema. Ver os diagramas C4 nível 2
-(containers) e nível 3 (componentes) na barra lateral._
+_Substituir: decomposição estática do sistema. A Building Block View do arc42 é
+hierárquica — mesma lógica de zoom do C4: o Nível 1 decompõe o sistema, o Nível 2
+abre um bloco em seus componentes._
+
+### 5.1 Nível 1 — Visão geral do sistema
+
+**C4 — Nível 2 · Container** — frontend, backend/API, banco e serviços.
+
+```mermaid
+flowchart TB
+    web["Web App<br/>React"]
+    api["API<br/>Ktor"]
+    mining["Mineração de processos<br/>ADWIN · PM4Py"]
+    db[("Supabase<br/>Postgres")]
+
+    web -->|HTTPS / REST| api
+    api -->|SQL| db
+    api -->|detecção de drift| mining
+```
+
+### 5.2 Nível 2 — API
+
+**C4 — Nível 3 · Component** — componentes internos do container da API.
+
+```mermaid
+flowchart TB
+    subgraph API["API — Ktor"]
+        parser["Parser de event log<br/>XES / CSV"]
+        detector["Detector de drift<br/>ADWIN"]
+        predictor["Preditor de manutenção"]
+    end
+    parser --> detector --> predictor
+```
 
 ## 6. Visão de Runtime
 
 _Substituir: cenários dinâmicos importantes (ex.: upload de log → detecção de
-drift → alerta). O diagrama UML de sequência abaixo é um placeholder._
+drift → alerta). Aqui cabe C4 Dynamic, UML de sequência, atividade ou BPMN — o
+placeholder abaixo é uma sequência UML._
 
 ```mermaid
 sequenceDiagram
@@ -69,8 +104,22 @@ sequenceDiagram
 
 ## 7. Visão de Implantação
 
-_Substituir: mapeamento para infraestrutura (Vercel, Fly.io, Supabase, etc.) e
-os canais entre os nós._
+_Substituir: mapeamento para infraestrutura e os canais entre os nós._
+
+**C4 — Deployment** — onde os containers executam.
+
+```mermaid
+flowchart TB
+    browser([Browser])
+    subgraph cloud["Cloud"]
+        fe["Frontend<br/>Vercel"]
+        api["API<br/>Fly.io"]
+        db[("Supabase<br/>Postgres")]
+    end
+    browser -->|HTTPS| fe
+    fe -->|REST| api
+    api -->|SQL| db
+```
 
 ## 8. Conceitos Transversais
 

@@ -9,15 +9,21 @@ Repositório: **https://github.com/aland3r/deviante-docs**
 A documentação de arquitetura segue o template **[arc42](https://arc42.org)** —
 as 12 seções canônicas, de *Introdução e Metas* a *Riscos e Dívida Técnica*.
 
-Os diagramas usam duas notações complementares:
+arc42 é a **estrutura**; **C4** é a camada de **visualização** da arquitetura;
+**UML / BPMN** cobrem comportamentos e processos específicos. Não existe uma
+seção "C4" separada — cada diagrama vive **dentro da seção arc42 que ele
+explica** (arc42 recomenda evitar redundância entre as visões):
 
-- **C4** (Context → Container → Component) para as **visões estruturais** —
-  como o sistema se decompõe. Ver `arquitetura/c4_nivel-1/2/3.mmd`.
-- **UML** para as **visões comportamentais e de detalhe** — sequência, estado,
-  atividade, classe — onde o C4 não alcança.
+| C4 | Onde entra no arc42 |
+|----|---------------------|
+| L1 · System Context | 3. Contexto e Escopo |
+| L2 · Container | 5. Blocos de Construção — Nível 1 |
+| L3 · Component | 5. Blocos de Construção — Nível 2 |
+| Dynamic / UML Sequence | 6. Runtime |
+| Deployment | 7. Implantação |
 
-Ambos são escritos como **diagramas Mermaid** (` ```mermaid ` no Markdown, ou
-`.mmd`), então versionam como texto e renderizam direto no site.
+Todos os diagramas são **Mermaid** embutidos como ` ```mermaid ` no `arc42.md`,
+então versionam como texto e renderizam direto no site.
 
 ## Repositórios e artefatos
 
@@ -39,11 +45,8 @@ deviante/docs/
 │   ├── CTAs.md
 │   ├── ATTRIBUTES.md
 │   └── orca/               # 1–5: Object/Relationship/CTA/Attributes Discovery, Object Requirements
-├── arquitetura/            # arc42 + diagramas
-│   ├── arc42.md            # documento arc42 (12 seções)
-│   ├── c4_nivel-1.mmd      # C4 nível 1 — Contexto
-│   ├── c4_nivel-2.mmd      # C4 nível 2 — Containers
-│   └── c4_nivel-3.mmd      # C4 nível 3 — Componentes
+├── arquitetura/            # arc42 (diagramas C4/UML embutidos)
+│   └── arc42.md            # documento arc42 (12 seções + Mermaid inline)
 └── referencias bibliográficas/   # literatura + repositorios (S1–S6) — local only
 ```
 
