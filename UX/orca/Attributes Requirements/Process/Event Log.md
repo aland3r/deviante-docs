@@ -1,0 +1,1 @@
+Record of events from the production process, usually structured as a dataset (e.g., CSV, database table, XES), which must be loaded or imported for process-mining algorithms to reconstruct traces and analyze real behavior.

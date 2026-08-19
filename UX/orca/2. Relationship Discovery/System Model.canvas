@@ -1,0 +1,19 @@
+{
+	"nodes":[
+		{"id":"042e6867fb6cd60c","type":"text","text":"[[EVENTO]]","x":-420,"y":-240,"width":181,"height":90},
+		{"id":"93e14af7062a4a80","type":"text","text":"[[INSPEÇÃO]]","x":-700,"y":-550,"width":181,"height":90},
+		{"id":"cb549c2f1e87050a","type":"text","text":"[[ORCA/1. Object Discovery/FALHA]]","x":-420,"y":160,"width":181,"height":90},
+		{"id":"ddc075833917a0e9","type":"text","text":"[[PROCESSO|PROCESSO]]","x":260,"y":-240,"width":181,"height":90},
+		{"id":"7315d7bc0003dc2a","type":"text","text":"[[MÁQUINA]]","x":-61,"y":-550,"width":181,"height":90},
+		{"id":"c44792a1c5cc15dd","type":"text","text":"[[CASO]]","x":-61,"y":-80,"width":181,"height":90}
+	],
+	"edges":[
+		{"id":"83d579f9bec15b4b","fromNode":"c44792a1c5cc15dd","fromSide":"left","toNode":"042e6867fb6cd60c","toSide":"right","label":"tem *"},
+		{"id":"f6a5d8d8f3b27173","fromNode":"042e6867fb6cd60c","fromSide":"bottom","toNode":"c44792a1c5cc15dd","toSide":"bottom","label":"pertence a 1..*"},
+		{"id":"c5dae9c4fb32b1da","fromNode":"ddc075833917a0e9","fromSide":"bottom","toNode":"c44792a1c5cc15dd","toSide":"right","label":"tem 1..*"},
+		{"id":"fd779dc1c2ff1b4b","fromNode":"ddc075833917a0e9","fromSide":"top","toNode":"7315d7bc0003dc2a","toSide":"right","label":"tem ??"},
+		{"id":"0a2344034da1992c","fromNode":"7315d7bc0003dc2a","fromSide":"left","toNode":"042e6867fb6cd60c","toSide":"top"},
+		{"id":"8937bc534fcaeb96","fromNode":"042e6867fb6cd60c","fromSide":"left","toNode":"93e14af7062a4a80","toSide":"bottom","label":"tem 0-1"},
+		{"id":"c43676ccd59b3b23","fromNode":"042e6867fb6cd60c","fromSide":"bottom","toNode":"cb549c2f1e87050a","toSide":"top"}
+	]
+}

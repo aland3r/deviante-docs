@@ -1,0 +1,18 @@
+{
+	"nodes":[
+		{"id":"96aa61c888db5aa8","type":"text","text":"desvio de conceito/processo","x":-125,"y":-30,"width":250,"height":60},
+		{"id":"5ec5244c025aa616","type":"text","text":"processo","x":-125,"y":140,"width":250,"height":60},
+		{"id":"75231e590e5a4cb6","type":"text","text":"log","x":-125,"y":300,"width":250,"height":60},
+		{"id":"6844fcf844904d0e","type":"text","text":"evento","x":-125,"y":220,"width":250,"height":60},
+		{"id":"f20dad29417fe26a","type":"text","text":"[[EVENTO]]","x":160,"y":220,"width":250,"height":60},
+		{"id":"d8a8f728f807e917","type":"text","text":"anomalia","x":-125,"y":60,"width":250,"height":60},
+		{"id":"4decf7cf5e72f31c","type":"text","text":"avaliação","x":160,"y":140,"width":250,"height":60},
+		{"id":"826497809bc07c8e","type":"text","text":"gráfico","x":160,"y":60,"width":250,"height":60},
+		{"id":"0aae19bf6a864e07","type":"text","text":"[[equipamento]]","x":160,"y":-30,"width":250,"height":60},
+		{"id":"d33b03c2ebdcf487","type":"text","text":"sistema de manufatura","x":160,"y":300,"width":250,"height":60},
+		{"id":"a0e489b22651f7a7","type":"text","text":"componente","x":-125,"y":380,"width":250,"height":60},
+		{"id":"d61c0bccfd3b61bc","type":"text","text":"falha","x":160,"y":380,"width":250,"height":60},
+		{"id":"0b3d6109ef3bc356","type":"text","text":"falha","x":440,"y":-30,"width":250,"height":60}
+	],
+	"edges":[]
+}
