@@ -1,0 +1,8 @@
+%% C4 nível 1 — Contexto (placeholder substituível)
+flowchart TB
+    operador([Operador / Analista de manutenção])
+    deviante["Deviante<br/>Suporte à decisão em manutenção industrial"]
+    origem[("Sistema de origem<br/>event log · XES / CSV")]
+
+    operador -->|monitora processos e recebe alertas| deviante
+    deviante -->|lê event logs| origem
