@@ -24,6 +24,14 @@ funcionalidades que o Deviante precisa entregar e por quê._
 | 2 | _(ex.: Latência)_ | _…_ |
 | 3 | _(ex.: Usabilidade)_ | _…_ |
 
+### 1.3 Stakeholders
+
+| Papel | Contato | Expectativa (substituir) |
+|-------|---------|--------------------------|
+| _(ex.: Operador)_ | _…_ | _…_ |
+| _(ex.: Analista de manutenção)_ | _…_ | _…_ |
+| _(ex.: Gestor de manutenção)_ | _…_ | _…_ |
+
 ## 2. Restrições da Arquitetura
 
 _Substituir: restrições técnicas, organizacionais e convenções que limitam as
