@@ -9,8 +9,14 @@
 
 ## 1. Introdução e Metas
 
-_Substituir: visão geral do sistema, principais requisitos funcionais e as 3–5
-metas de qualidade mais importantes. Quem são os stakeholders._
+_Substituir: visão geral do sistema e o que ele resolve._
+
+### 1.1 Visão Geral de Requisitos
+
+_Substituir: resumo dos requisitos funcionais essenciais — as principais
+funcionalidades que o Deviante precisa entregar e por quê._
+
+### 1.2 Metas de Qualidade
 
 | Prioridade | Meta de qualidade | Cenário (substituir) |
 |-----------|-------------------|----------------------|
