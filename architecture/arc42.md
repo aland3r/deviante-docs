@@ -82,19 +82,45 @@ flowchart TB
     api -->|detecção de drift| mining
 ```
 
-### 5.2 Nível 2 — API
+### 5.2 Nível 2 — Componentes da API
 
-**C4 — Nível 3 · Component** — componentes internos do container da API.
+Os **componentes de domínio** espelham os objetos do OOUX — ver [[UX/OBJECTS]].
+Aqui aparece só a decomposição em software; o modelo de domínio não é
+redescrito (arc42 recomenda referenciar em vez de duplicar). Somam-se a eles os
+**componentes técnicos**, que não têm objeto OOUX correspondente.
+
+**C4 — Nível 3 · Component**
 
 ```mermaid
 flowchart TB
     subgraph API["API — Ktor"]
-        parser["Parser de event log<br/>XES / CSV"]
-        detector["Detector de drift<br/>ADWIN"]
-        predictor["Preditor de manutenção"]
+        subgraph dominio["Domínio — espelha o OOUX"]
+            process["Process"]
+            operation["Operation"]
+            asset["Asset"]
+            analysis["Analysis"]
+            action["Proactive Action"]
+        end
+        subgraph tecnico["Técnico — sem objeto OOUX"]
+            parser["Parser de event log"]
+            detector["Detector de drift · ADWIN"]
+            auth["Auth"]
+        end
     end
-    parser --> detector --> predictor
+    parser --> analysis
+    detector --> analysis
+    analysis --> action
+    process --> analysis
 ```
+
+| Componente | Objeto OOUX | Papel |
+|-----------|-------------|-------|
+| Process | Process | _(substituir)_ |
+| Operation | Operation | _(substituir)_ |
+| Asset | Asset | _(substituir)_ |
+| Analysis | Analysis | _(substituir)_ |
+| Proactive Action | Proactive Action | _(substituir)_ |
+| Parser / Detector / Auth | — (técnico) | _(substituir)_ |
 
 ## 6. Visão de Runtime
 
