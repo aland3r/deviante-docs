@@ -1,4 +1,7 @@
-# Arquitetura do Deviante — arc42
+# Arquitetura do IPDD — arc42
+
+_IPDD — em homenagem a **Denise M. V. Sato**, autora do framework Interactive
+Process Drift Detection (Sato et al., 2025), base científica deste produto._
 
 > **Nota:** este é o esqueleto arc42 (12 seções). Os textos abaixo são
 > _placeholders substituíveis_ — escreva o conteúdo real direto no Obsidian e
@@ -14,7 +17,7 @@ _Substituir: visão geral do sistema e o que ele resolve._
 ### 1.1 Visão Geral de Requisitos
 
 _Substituir: resumo dos requisitos funcionais essenciais — as principais
-funcionalidades que o Deviante precisa entregar e por quê._
+funcionalidades que o IPDD precisa entregar e por quê._
 
 ### 1.2 Metas de Qualidade
 
@@ -48,11 +51,11 @@ _Substituir: fronteira do sistema, atores externos e interfaces._
 ```mermaid
 flowchart TB
     operador([Operador / Analista de manutenção])
-    deviante["Deviante<br/>Suporte à decisão em manutenção industrial"]
+    ipdd["IPDD<br/>Suporte à decisão em manutenção industrial"]
     origem[("Sistema de origem<br/>event log · XES / CSV")]
 
-    operador -->|monitora processos e recebe alertas| deviante
-    deviante -->|lê event logs| origem
+    operador -->|monitora processos e recebe alertas| ipdd
+    ipdd -->|lê event logs| origem
 ```
 
 ## 4. Estratégia da Solução

@@ -1,6 +1,10 @@
-# Documentação: Deviante
+# Documentação: IPDD
 
-Vault Obsidian e documentação do projeto **Deviante** (suporte à decisão em manutenção industrial).
+Vault Obsidian e documentação do projeto **IPDD** (suporte à decisão em manutenção industrial).
+
+> **Nome — homenagem:** o produto se chama **IPDD** em homenagem a
+> **Denise M. V. Sato**, autora do framework *Interactive Process Drift
+> Detection* (Sato et al., 2025), que é a base científica deste trabalho.
 
 Repositório: **https://github.com/aland3r/deviante-docs**
 
@@ -45,7 +49,7 @@ deviante/docs/
 │   ├── CTAs.md
 │   ├── ATTRIBUTES.md
 │   └── orca/               # 1–5: Object/Relationship/CTA/Attributes Discovery, Object Requirements
-├── arquitetura/            # arc42 (diagramas C4/UML embutidos)
+├── architecture/           # arc42 (diagramas C4/UML embutidos)
 │   └── arc42.md            # documento arc42 (12 seções + Mermaid inline)
 └── referencias bibliográficas/   # literatura + repositorios (S1–S6) — local only
 ```
@@ -129,9 +133,9 @@ Colunas: `Case` (id do trace) · `Atividade` (nome da atividade, ex. `Maquina tr
 
 **Script:** `adwin_real_dataset.py` — lê o CSV direto (sem PM4Py), monitora a atividade **`Maquina trabalhando`**, grava PNGs em `resultados_drift_real/`.
 
-#### 3. Como isso mapeia pro Deviante
+#### 3. Como isso mapeia pro IPDD
 
-| Necessidade do Deviante | Dataset a usar primeiro |
+| Necessidade do IPDD | Dataset a usar primeiro |
 |---------------|----------------------|
 | UC4 upload + parse (XES) | `DR_01.xes` ou `ST_01.xes` (pequeno, comportamento conhecido) |
 | UC12 drift (validação sintética) | `DR_*` / `DR_MS_*` com ground truth de `adwin_dataset.py` |
