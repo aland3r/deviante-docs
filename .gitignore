@@ -18,8 +18,5 @@ ambientevev/
 # Datasets grandes
 *.rar
 
-# Só .md vai pro GitHub — PDFs ficam só locais
-*.pdf
-
 # Referências bibliográficas (PDFs de terceiros)
 referencias bibliográficas/
