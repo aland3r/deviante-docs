@@ -1,6 +1,5 @@
 classDiagram
     direction LR
-    title Nivel 4 - Codigo (UML): Modelo de Dominio do Deviante
 
     class User {
       +UUID id
@@ -12,19 +11,18 @@ classDiagram
       +UUID id
       +String name
       +ProcessStatus status
-      +uploadEventLog(file)
+      +uploadEventLog()
       +runAnalysis()
     }
     class EventLog {
       +UUID id
-      +Format format  // XES | CSV
+      +Format format
       +DateTime importedAt
-      +parse() Trace[]
+      +parse()
     }
     class Trace {
       +UUID id
       +String caseId
-      +Operation[] operations
     }
     class Operation {
       +UUID id
@@ -37,7 +35,6 @@ classDiagram
       +UUID id
       +AnalysisParams params
       +AnalysisStatus status
-      +DriftPoint[] drifts
       +run()
     }
     class DriftPoint {
@@ -47,7 +44,7 @@ classDiagram
     }
     class ProactiveAction {
       +UUID id
-      +ActionKind kind  // recomendar | agendar | registrar
+      +ActionKind kind
       +DateTime dueDate
       +ActionStatus status
     }
