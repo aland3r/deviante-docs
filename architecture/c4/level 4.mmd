@@ -1,0 +1,73 @@
+classDiagram
+    direction LR
+    title Nivel 4 - Codigo (UML): Modelo de Dominio do Deviante
+
+    class User {
+      +UUID id
+      +String email
+      +Role role
+      +authenticate()
+    }
+    class Process {
+      +UUID id
+      +String name
+      +ProcessStatus status
+      +uploadEventLog(file)
+      +runAnalysis()
+    }
+    class EventLog {
+      +UUID id
+      +Format format  // XES | CSV
+      +DateTime importedAt
+      +parse() Trace[]
+    }
+    class Trace {
+      +UUID id
+      +String caseId
+      +Operation[] operations
+    }
+    class Operation {
+      +UUID id
+      +String name
+      +Duration sojournTime
+      +DateTime startTime
+      +DateTime finishTime
+    }
+    class Analysis {
+      +UUID id
+      +AnalysisParams params
+      +AnalysisStatus status
+      +DriftPoint[] drifts
+      +run()
+    }
+    class DriftPoint {
+      +int changeIndex
+      +double magnitude
+      +DateTime detectedAt
+    }
+    class ProactiveAction {
+      +UUID id
+      +ActionKind kind  // recomendar | agendar | registrar
+      +DateTime dueDate
+      +ActionStatus status
+    }
+    class Monitoring {
+      +UUID id
+      +HealthState health
+      +detect()
+    }
+    class Machine {
+      +UUID id
+      +String tag
+      +MachineState state
+    }
+
+    User "1" --> "*" Process : mantem
+    Process "1" --> "1" EventLog : contextualiza
+    EventLog "1" --> "*" Trace : contem
+    Trace "1" --> "*" Operation : compoe
+    Process "1" --> "*" Analysis : origina
+    Analysis "1" --> "*" DriftPoint : detecta
+    Analysis "1" --> "*" ProactiveAction : recomenda
+    Monitoring "1" --> "1" Machine : observa
+    Monitoring "*" --> "*" Process : liga

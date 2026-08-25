@@ -1,0 +1,28 @@
+C4Container
+    title Nivel 2 - Conteineres: Deviante (IPDD)
+
+    Person(gestor, "Gestor de Manutencao", "Usuario autenticado (invite-only, Google).")
+
+    System_Boundary(dv, "Deviante") {
+        Container(web, "Web App", "React + Vite / Vercel", "SPA publica (docs) + app autenticado. Host: deviante.alander.io")
+        Container(api, "API", "Kotlin + Ktor / Fly.io", "Regras de negocio, CRUD e orquestracao. Host: deviante-api.fly.dev (proxy /api/*)")
+        Container(mining, "Servico de Mineracao", "Python + FastAPI", "Deteccao de drift ADWIN sobre series temporais (PM4Py).")
+    }
+
+    System_Boundary(sb, "Supabase") {
+        Container(auth, "Auth", "Supabase Auth", "Identidade / JWT (Google OAuth), invite-only.")
+        ContainerDb(db, "Banco", "Postgres", "Processos, operacoes, traces, analises, monitoramento.")
+    }
+
+    System_Ext(origem, "Event log", "XES / CSV do chao de fabrica")
+
+    Rel(gestor, web, "Usa", "HTTPS")
+    Rel(web, auth, "Login / sessao", "supabase-js")
+    Rel(web, api, "Dados de negocio", "REST /api/* (JSON)")
+    Rel(api, db, "Le e grava", "JDBC / HikariCP")
+    Rel(api, auth, "Valida JWT", "JWKS")
+    Rel(api, mining, "Detecta drift", "REST /monitoring/detect")
+    Rel(gestor, web, "Envia event log", "upload XES/CSV")
+    Rel(web, origem, "Importa", "arquivo")
+
+    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")

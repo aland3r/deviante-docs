@@ -1,0 +1,22 @@
+C4Context
+    title Nivel 1 - Contexto do Sistema: Deviante (IPDD)
+
+    %% --- Pessoas ---
+    Person(gestor, "Gestor de Manutencao", "Monitora processos, roda analises de desvio e decide a manutencao proativa.")
+    Person(mentor, "Mentor / Analista", "Acompanha resultados e valida as analises (acesso convidado).")
+
+    %% --- Sistema (foco) ---
+    System(deviante, "Deviante (IPDD)", "Suporte a decisao em manutencao preditiva. Detecta drift de desempenho no event log e antecipa a manutencao.")
+
+    %% --- Sistemas externos ---
+    System_Ext(supabase, "Supabase", "Plataforma gerenciada: autenticacao (Google / JWT) e Postgres. Projeto compartilhado com o portfolio.")
+    System_Ext(origem, "Sistema de origem", "Fonte do event log do chao de fabrica (XES / CSV) importado para analise.")
+
+    %% --- Relacoes ---
+    Rel(gestor, deviante, "Monitora e decide manutencao", "HTTPS")
+    Rel(mentor, deviante, "Consulta analises", "HTTPS")
+    Rel(deviante, supabase, "Autentica e persiste dados", "supabase-js / JDBC")
+    Rel(gestor, origem, "Exporta event log", "XES / CSV")
+    Rel(deviante, origem, "Le event log importado", "upload")
+
+    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
