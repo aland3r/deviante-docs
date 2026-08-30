@@ -1,12 +1,6 @@
-# Documentação: IPDD
+# Documentação: Deviante
 
-Vault Obsidian e documentação do projeto **IPDD** (suporte à decisão em manutenção industrial).
-
-> **Nome — homenagem:** o produto se chama **IPDD** em homenagem a
-> **Denise M. V. Sato**, autora do framework *Interactive Process Drift
-> Detection* (Sato et al., 2025), que é a base científica deste trabalho.
-
-Repositório: **https://github.com/aland3r/deviante-docs**
+Vault Obsidian e documentação do projeto **Deviante** (suporte à decisão em manutenção industrial).
 
 ## Abordagem de documentação
 
