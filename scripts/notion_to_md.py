@@ -12,11 +12,6 @@ import sys
 
 HEADER = """# Arquitetura do Deviante — arc42
 
-> Fonte de verdade: página **Arquitetura: arc42** no Notion (IPDD: SEVEN DIMENSIONS).
-> Este arquivo é gerado a partir dela por `scripts/notion_to_md.py`; não edite aqui.
-> O site [deviante.alander.io/documentacao](https://deviante.alander.io/documentacao)
-> renderiza este arquivo direto da branch `main`.
-
 """
 
 

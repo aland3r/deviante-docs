@@ -1,42 +1,83 @@
 # Documentação: Deviante
 
-Vault Obsidian e documentação do projeto **Deviante** (suporte à decisão em manutenção industrial).
+O **Deviante** é um sistema de suporte à decisão na manutenção industrial. Ele lê o
+event log do chão de fábrica, detecta quando o tempo de uma atividade da máquina muda
+de comportamento (drift de desempenho, com o IPDD/ADWIN) e transforma esse sinal em
+recomendação de manutenção antes da falha.
 
-## Abordagem de documentação
+Este repositório guarda a documentação de arquitetura (arc42 + C4), o discovery de UX
+(ORCA) e os scripts que publicam a documentação no site.
 
-A documentação de arquitetura segue o template **[arc42](https://arc42.org)** —
-as 12 seções canônicas, de *Introdução e Metas* a *Riscos e Dívida Técnica*.
+## Links principais
 
-arc42 é a **estrutura**; **C4** é a camada de **visualização** da arquitetura;
-**UML / BPMN** cobrem comportamentos e processos específicos. Não existe uma
-seção "C4" separada — cada diagrama vive **dentro da seção arc42 que ele
-explica** (arc42 recomenda evitar redundância entre as visões):
+| O quê | Onde |
+|-------|------|
+| Documentação publicada (site) | [deviante.alander.io/documentacao](https://deviante.alander.io/documentacao) |
+| Fonte da documentação (Notion) | [Arquitetura: arc42](https://www.notion.so/3f05fc724940819f8655fcd12d1312de), dentro de *IPDD: SEVEN DIMENSIONS* |
+| Documento gerado | [`architecture/arc42.md`](architecture/arc42.md) |
+| Diagramas C4 avulsos | [`architecture/c4/`](architecture/c4/) |
+| Template arc42 (referência oficial) | [docs.arc42.org](https://docs.arc42.org/home/) · [dicas](https://docs.arc42.org/tips/) · [exemplos](https://docs.arc42.org/examples/) |
+| Architecture Communication Canvas | [canvas.arc42.org](https://canvas.arc42.org/architecture-communication-canvas) |
+| Modelo C4 | [c4model.com](https://c4model.com/) |
+| Qualidade de software (metas da §1.2) | [ISO/IEC 25010](https://iso25000.com/index.php/en/iso-25000-standards/iso-25010) |
+
+## Como a documentação é feita
+
+1. O grupo escreve no **Notion**: a página *Arquitetura: arc42* tem 12 subpáginas, uma
+   por seção do template. O Notion é a fonte de verdade (ADR 07).
+2. `scripts/notion_to_md.py` converte as páginas em `architecture/arc42.md`. Imagens e
+   avisos internos do Notion não vão para o site.
+3. O site lê `architecture/arc42.md` direto da branch `main`; um push publica.
+4. O PDF entregue nas disciplinas é gerado a partir do mesmo `.md`.
+
+Os diagramas são **Mermaid** embutidos no `.md`. Cada um fica dentro da seção arc42 que
+explica (arc42 recomenda evitar redundância entre as visões):
 
 | C4 | Onde entra no arc42 |
 |----|---------------------|
 | L1 · System Context | 3. Contexto e Escopo |
-| L2 · Container | 5. Blocos de Construção — Nível 1 |
-| L3 · Component | 5. Blocos de Construção — Nível 2 |
+| L2 · Container | 5. Blocos de Construção, nível 1 |
+| L3 · Component | 5. Blocos de Construção, nível 2 |
 | Dynamic / UML Sequence | 6. Runtime |
 | Deployment | 7. Implantação |
 
-Todos os diagramas são **Mermaid** embutidos como ` ```mermaid ` no `arc42.md`,
-então versionam como texto e renderizam direto no site.
+## Repositórios
 
-## Repositórios e artefatos
+| Artefato | GitHub |
+|----------|--------|
+| Documentação (este) | [deviante-docs](https://github.com/aland3r/deviante-docs) |
+| API Core (Kotlin/Ktor) + mining (FastAPI) | [deviante-api](https://github.com/aland3r/deviante-api) |
+| Web (React + Vite) | [deviante-web](https://github.com/aland3r/deviante-web) |
 
-| Artefato | GitHub / link | Pasta local |
-|----------|---------------|-------------|
-| API (+ mining) | [deviante-api](https://github.com/aland3r/deviante-api) — `[[S1]]` | `../api/` |
-| Web | [deviante-web](https://github.com/aland3r/deviante-web) — `[[S2]]` | `../web/` |
+## Entregas
 
-**Entrega PIBITI:** relatório final em `PIBITI26_RelatorioFinal_Alander.pdf` (local, não versionado — ver seção *Versionamento* abaixo).
+| Entrega | Prazo |
+|---------|-------|
+| Cloud: Entrega 2 (documentação completa) | 15/10/2026 |
+| Reuso: projeto completo + prova de autoria | 16/10/2026 |
+| PIBITI: apresentação (SEMIC) | 16/10/2026 |
+| Cloud: Entrega 3 (arquitetura completa) | 12/11/2026 |
+
+Fonte: banco *Entregas* do Notion.
+
+## Equipe e contatos
+
+**Grupo:** Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut
+Jose, Murilo Regnier Stange (Engenharia de Software, PUCPR, 6º período).
+
+| Pessoa | Papel | Contato |
+|--------|-------|---------|
+| Eduardo de Freitas Loures | Orientador PIBITI | eduardo.loures@pucpr.br |
+| Manoel Valerio da Silveira Neto | Professor de Arquitetura e Soluções Cloud | manoel.valerio@pucpr.br |
+| Tiago Adelino Navarro | Professor de Desenvolvimento Orientado a Reuso | tiago.adelino@pucpr.edu.br |
+| Denise M. V. Sato | Autora do framework IPDD | denise.vecino@pucpr.br |
+| Luiz F. Picolo | Autor da implementação IPDD/ADWIN | luiz.picolo@pucpr.edu.br |
 
 ## Estrutura
 
 ```
 deviante/docs/
-├── PIBITI26_RelatorioFinal_Alander.pdf   # relatório final (local only)
+├── PIBITI26_RelatorioFinal_Alander.pdf   # relatório final do PIBITI
 ├── UX/                     # discovery ORCA + specs de objeto
 │   ├── OBJECTS.md
 │   ├── RELATIONSHIPS.md
@@ -44,14 +85,17 @@ deviante/docs/
 │   ├── ATTRIBUTES.md
 │   └── orca/               # 1–5: Object/Relationship/CTA/Attributes Discovery, Object Requirements
 ├── architecture/           # arc42 (diagramas C4/UML embutidos)
-│   └── arc42.md            # documento arc42 (12 seções + Mermaid inline)
+│   ├── arc42.md            # documento arc42 (12 seções + Mermaid inline), gerado do Notion
+│   └── c4/                 # diagramas C4 avulsos (.mmd) e render do nível 1
+├── scripts/
+│   └── notion_to_md.py     # converte as páginas do Notion em arc42.md
 └── referencias bibliográficas/   # literatura + repositorios (S1–S6) — local only
 ```
 
 ## Versionamento
 
-Só `.md` vai pro GitHub. PDFs (relatório final e a literatura em
-`referencias bibliográficas/`) ficam só na sua máquina — ver `.gitignore`.
+A literatura em `referencias bibliográficas/` fica só na máquina local (ver
+`.gitignore`). O relatório final do PIBITI está versionado na raiz.
 
 ## Obsidian
 
