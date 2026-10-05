@@ -1,16 +1,26 @@
 C4Context
     title C4 Nivel 1 - Contexto do Sistema: Deviante
 
-    Person(operador, "Operador", "Informa as atividades da cadeia produtiva e registra os dados do chao de fabrica.")
-    Person(gestor, "Gestor de Manutencao", "Monitora os dados, gera analises a partir do processo registrado e aciona a manutencao.")
-    Person(tecnico, "Tecnico de Manutencao", "Realiza a manutencao, registra o que foi feito e reabilita a maquina.")
+    System(e1, " ", " ")
+    Person(operador, "Operador", "Informa as atividades da cadeia produtiva e registra os dados.")
+    System(e2, " ", " ")
+    Person(gestor, "Gestor de Manutencao", "Monitora os dados, gera analises e aciona a manutencao.")
     System(deviante, "Deviante", "Suporte a decisao na manutencao industrial: detecta drift de desempenho (IPDD/ADWIN).")
+    System(e3, " ", " ")
+    System(e4, " ", " ")
+    Person(tecnico, "Tecnico de Manutencao", "Realiza a manutencao, registra o que foi feito e reabilita a maquina.")
+    System(e5, " ", " ")
 
     Rel(operador, deviante, "Registra atividades e dados")
     Rel(gestor, deviante, "Analisa e aciona manutencao")
     Rel(tecnico, deviante, "Registra manutencao e reabilita maquina")
 
-    UpdateRelStyle(gestor, deviante, $offsetX="10", $offsetY="-20")
-    UpdateRelStyle(tecnico, deviante, $offsetX="60", $offsetY="10")
+    UpdateRelStyle(gestor, deviante, $offsetX="-55", $offsetY="-30")
+
+    UpdateElementStyle(e1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(e2, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(e3, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(e4, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(e5, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
 
     UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
