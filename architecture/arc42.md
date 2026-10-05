@@ -4,7 +4,7 @@ _Deviante é suporte à decisão em manutenção industrial. O núcleo analític
 framework **IPDD** (Interactive Process Drift Detection), de **Denise M. V. Sato**
 (Sato et al., 2025), com a implementação IPDD/ADWIN de **Luiz F. Picolo**._
 
-**Grupo:** Alander, Bernardo, Emanuelle, Murilo.
+**Grupo:** Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange.
 
 > Documento escrito como código: este `.md` é a fonte única. O site
 > [deviante.alander.io/documentacao](https://deviante.alander.io/documentacao)
@@ -121,8 +121,10 @@ documentação de Reuso.
 |-------|-------------|
 | Gestor de manutenção | Ver o processo, saber quando ele desviou e agendar a manutenção a tempo. |
 | Analista / mentor | Validar as análises e ajustar a sensibilidade do IPDD/ADWIN. |
-| Pesquisadores (D. Sato, L. F. Picolo) | Ver o método aplicado com fidelidade ao trabalho original. |
-| Professores de Cloud e Reuso | Avaliar estilos arquiteturais, implantação em nuvem e reuso. |
+| Denise Sato e Luiz Picolo, autores do detector de desvios (IPDD/ADWIN) | Ver o método aplicado com fidelidade ao trabalho original. |
+| Eduardo de Freitas Loures, orientador PIBITI | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
+| Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | Avaliar estilos arquiteturais e implantação em nuvem. |
+| Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | Avaliar padrões de projeto e reuso. |
 | Grupo de desenvolvimento | Uma arquitetura que caiba no prazo e no free tier. |
 
 ## 2. Restrições da Arquitetura
@@ -189,7 +191,7 @@ C4Context
 | Cálculo sob demanda e barato | **Serverless**: IPDD/ADWIN como Azure Function sem estado |
 | Desacoplar ingestão, análise e domínio | **EDA**: `EventLogParsed` e `DriftDetected` no Service Bus |
 | Modificabilidade | **Clean Architecture** (`domain`, `application`, `infrastructure`, `api`) e **Vertical Slice** (uma pasta por feature em `application`) |
-| Reuso | Padrões Singleton, Template Method e Strategy (ver §8.3) |
+| Reuso | Padrões Singleton, Adapter e Observer, um de cada família (ver §8.3) |
 
 ### 4.1 Software Architecture Canvas
 
@@ -267,7 +269,7 @@ flowchart TB
 ### 5.2 Nível 2 — Componentes do Core API
 
 Cada serviço segue a mesma organização; o Core é o exemplo detalhado. Os
-componentes de domínio espelham os objetos do OOUX (ver [[UX/OBJECTS]]).
+componentes de domínio espelham os objetos do ORCA (§8.1).
 
 **C4 — Nível 3 · Component**
 
@@ -311,7 +313,7 @@ flowchart TB
 
 ### 5.3 Nível 3 — Classes de domínio
 
-**C4 — Nível 4 · UML de Classes** (Core API)
+**C4 — Nível 4 · UML de Classes** (Core API). Atributos, métodos e associações de todas as classes, de todos os serviços, ficam na database Classes da [página no Notion](https://app.notion.com/p/3ec5fc7249408016b3d1fcf7e9da3725).
 
 ```mermaid
 classDiagram
@@ -406,13 +408,6 @@ classDiagram
       +complete()
       +cancel()
     }
-    class PriorityStrategy {
-      <<interface>>
-      +priorityFor(recommendation) Priority
-    }
-    class ByFailureProbability
-    class ByRemainingUsefulLife
-    class ByCriticality
 
     Manager "1" --> "*" Process : possui
     Process "*" --> "*" Activity : usa
@@ -424,10 +419,6 @@ classDiagram
     MonitoringParameter "1" --> "*" Reading : registra
     Equipment "1" --> "*" MaintenanceRecommendation : recebe
     MaintenanceRecommendation "1" --> "0..1" MaintenanceSchedule : vira
-    MaintenanceRecommendation ..> PriorityStrategy : usa
-    PriorityStrategy <|.. ByFailureProbability
-    PriorityStrategy <|.. ByRemainingUsefulLife
-    PriorityStrategy <|.. ByCriticality
 ```
 
 Classes dos outros serviços: MS1 — `EventLog`, `Trace`, `Event`, `ProcessGraph`,
@@ -586,7 +577,7 @@ vira um caso de uso.
 O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o
 grafo (MS1) são dados de suporte de Process e Activity.
 
-Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`).
+Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Detalhe por tabela (banco, campos, chaves e a classe que persiste cada uma) na database Entidades da [página no Notion](https://app.notion.com/p/3ec5fc7249408016bae5f7b940dd50d7).
 
 **Diagrama de Entidades e Relacionamentos — Core (Supabase Postgres)**
 
@@ -718,13 +709,55 @@ vindas do BFF ou do Service Bus.
 
 ### 8.3 Padrões de reuso
 
-| Padrão | Exemplos | Onde |
-|--------|----------|------|
-| Singleton (2) | `DatabaseFactory`, `AppConfig` (Kotlin `object`) | Core |
-| Template Method (3) | `EventLogParser` → `CsvParser`, `XesParser`, `JsonParser` | MS1 |
-| Strategy (3) | `PriorityStrategy` → `ByFailureProbability`, `ByRemainingUsefulLife`, `ByCriticality` | Core |
+Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, análise de drift, investigação). Manutenção preditiva (RUL, probabilidade de falha) fica fora da v1.
 
-O Strategy é também o ponto de variabilidade por cliente da linha de produto.
+| Padrão | Família | Exemplos | Onde |
+|--------|---------|----------|------|
+| Singleton | Criacional | `AnalysisEngine` (instância única do wrapper do detector, reaproveitada entre chamadas), `AppConfig` (registro único de configuração e parâmetros padrão da análise) | Function, Core |
+| Adapter | Estrutural | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN de L. F. Picolo), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py) | Function, MS1 |
+| Observer | Comportamental | `DriftSubject` notifica `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` quando o ADWIN detecta um drift ou a análise conclui | Microfrontend |
+
+```mermaid
+classDiagram
+    direction LR
+    class AnalysisEngine {
+      <<singleton>>
+      -instance$ AnalysisEngine
+      +getInstance()$ AnalysisEngine
+      +run(series, delta) List~DriftPoint~
+    }
+    class DriftDetector {
+      <<interface>>
+      +detect(series, delta) List~DriftPoint~
+    }
+    class IpddAdwinAdapter {
+      +detect(series, delta) List~DriftPoint~
+    }
+    class ipdd_adwin {
+      <<código de L. F. Picolo>>
+    }
+    class DriftSubject {
+      -observers List~DriftObserver~
+      +subscribe(o)
+      +notify(event)
+    }
+    class DriftObserver {
+      <<interface>>
+      +update(event)
+    }
+    class InvestigationPanel
+    class MonitoringContext
+    class AnalysisHud
+    AnalysisEngine --> DriftDetector : usa
+    DriftDetector <|.. IpddAdwinAdapter
+    IpddAdwinAdapter --> ipdd_adwin : adapta
+    DriftSubject --> DriftObserver : notifica
+    DriftObserver <|.. InvestigationPanel
+    DriftObserver <|.. MonitoringContext
+    DriftObserver <|.. AnalysisHud
+```
+
+O Adapter é o padrão que preserva a pesquisa: o código do Picolo é envolvido, não copiado nem alterado ("wrap, não fork"). O Singleton evita recarregar o detector a cada chamada, e o Observer desacopla a detecção das telas que reagem a ela.
 
 ### 8.4 Tratamento de erros e resiliência
 
@@ -750,7 +783,7 @@ timeout por serviço e devolve agregado parcial. Eventos são idempotentes
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Tráfego entre nuvens (Fly, Azure, AWS) |
 | 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Consistência eventual |
 | 06 | Prognóstico de manutenção (RUL) fica para depois, como classe Kotlin no Core | Foco no drift para esta entrega | Campos de RUL ficam vazios por enquanto |
-| 07 | Arquitetura documentada como código (Markdown + Mermaid) | Uma fonte para site e PDF | PDF é gerado, não editado |
+| 07 | O arc42 é escrito no Notion; `architecture/arc42.md` é gerado a partir dele, com diagramas em Mermaid | O grupo edita num lugar só, e o site e o PDF continuam vindo de um arquivo versionado | Mudanças feitas direto no `.md` são sobrescritas na próxima sincronização |
 
 ## 10. Requisitos de Qualidade
 

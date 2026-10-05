@@ -90,13 +90,6 @@ classDiagram
       +complete()
       +cancel()
     }
-    class PriorityStrategy {
-      <<interface>>
-      +priorityFor(recommendation) Priority
-    }
-    class ByFailureProbability
-    class ByRemainingUsefulLife
-    class ByCriticality
 
     Manager "1" --> "*" Process : possui
     Process "*" --> "*" Activity : usa
@@ -108,7 +101,3 @@ classDiagram
     MonitoringParameter "1" --> "*" Reading : registra
     Equipment "1" --> "*" MaintenanceRecommendation : recebe
     MaintenanceRecommendation "1" --> "0..1" MaintenanceSchedule : vira
-    MaintenanceRecommendation ..> PriorityStrategy : usa
-    PriorityStrategy <|.. ByFailureProbability
-    PriorityStrategy <|.. ByRemainingUsefulLife
-    PriorityStrategy <|.. ByCriticality
