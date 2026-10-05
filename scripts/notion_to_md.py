@@ -50,6 +50,11 @@ def convert(src):
     src = re.sub(r"^<content>\s*|\s*</content>$", "", src)
     src = re.sub(r"<callout[^>]*>.*?</callout>\s*", "", src, flags=re.S)
     src = re.sub(r"<empty-block\s*/>", "", src)
+    # imagens do Notion (render do diagrama para quem lê no Notion) não vão
+    # para o site, que renderiza o Mermaid; toggles são desembrulhados
+    src = re.sub(r"^!\[[^\]]*\]\(notion-file-block://[^)]*\)\s*$", "", src, flags=re.M)
+    src = re.sub(r"^</?details[^>]*>\s*$|^<summary>.*</summary>\s*$", "", src, flags=re.M)
+    src = re.sub(r"^\t+(```)", r"\1", src, flags=re.M)
     out, lines, i = [], src.split("\n"), 0
     while i < len(lines):
         line = lines[i]
