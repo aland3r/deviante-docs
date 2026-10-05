@@ -1,22 +1,25 @@
 C4Context
-    title Nivel 1 - Contexto do Sistema: Deviante (IPDD)
+    title Nivel 1 - Contexto do Sistema: Deviante
 
-    %% --- Pessoas ---
-    Person(gestor, "Gestor de Manutencao", "Monitora processos, roda analises de desvio e decide a manutencao proativa.")
+    Person(gestor, "Gestor de Manutencao", "Monitora processos, roda analises de drift e decide a manutencao proativa.")
     Person(mentor, "Mentor / Analista", "Acompanha resultados e valida as analises (acesso convidado).")
 
-    %% --- Sistema (foco) ---
-    System(deviante, "Deviante (IPDD)", "Suporte a decisao em manutencao preditiva. Detecta drift de desempenho no event log e antecipa a manutencao.")
+    System(deviante, "Deviante", "Suporte a decisao em manutencao industrial. Detecta drift de desempenho no event log (IPDD/ADWIN) e antecipa a manutencao.")
 
-    %% --- Sistemas externos ---
-    System_Ext(supabase, "Supabase", "Plataforma gerenciada: autenticacao (Google / JWT) e Postgres. Projeto compartilhado com o portfolio.")
-    System_Ext(origem, "Sistema de origem", "Fonte do event log do chao de fabrica (XES / CSV) importado para analise.")
+    System_Ext(origem, "Sistema de origem", "MES / ERP do chao de fabrica que exporta o event log (XES / CSV).")
+    System_Ext(google, "Google", "Provedor de identidade (OAuth 2.0).")
+    System_Ext(supabase, "Supabase", "Auth gerenciado e Postgres do servico de dominio.")
+    System_Ext(azure, "Microsoft Azure", "Azure Function (IPDD/ADWIN), Azure SQL e Service Bus.")
+    System_Ext(aws, "AWS", "API Gateway: entrada unica da API.")
+    System_Ext(atlas, "MongoDB Atlas", "Banco do microservico de ingestao.")
 
-    %% --- Relacoes ---
-    Rel(gestor, deviante, "Monitora e decide manutencao", "HTTPS")
+    Rel(gestor, deviante, "Envia event logs, monitora e decide manutencao", "HTTPS")
     Rel(mentor, deviante, "Consulta analises", "HTTPS")
-    Rel(deviante, supabase, "Autentica e persiste dados", "supabase-js / JDBC")
     Rel(gestor, origem, "Exporta event log", "XES / CSV")
-    Rel(deviante, origem, "Le event log importado", "upload")
+    Rel(deviante, google, "Autentica usuarios", "OAuth 2.0")
+    Rel(deviante, supabase, "Auth e dados de dominio", "JWT / JDBC")
+    Rel(deviante, azure, "Calcula drift, guarda analises, publica eventos", "HTTPS / AMQP")
+    Rel(deviante, aws, "Roteia requisicoes", "HTTPS")
+    Rel(deviante, atlas, "Guarda logs e grafos", "MongoDB driver")
 
-    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
