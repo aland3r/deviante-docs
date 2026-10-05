@@ -71,7 +71,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RNF-03 | Interface em React + Vite | Microfrontend |
 | RNF-04 | Figma como fonte única de tokens e componentes de UI | Microfrontend |
 | RNF-05 | Microsserviços Python em FastAPI, consumidos via REST | MS1, MS2 |
-| RNF-06 | Microsserviços Python como Azure Functions (serverless) | Parcial: o IPDD/ADWIN é Function; MS1 e MS2 rodam no [Fly.io](http://Fly.io) (ADR 04) |
+| RNF-06 | Microsserviços Python como Azure Functions (serverless) | Parcial: o IPDD/ADWIN é Function; MS1 e MS2 rodam no Fly.io (ADR 04) |
 | RNF-07 | Ingestão multiformato (CSV, XES, JSON) só por configuração | MS1 (parser por formato) |
 | RNF-08 | Isolamento de dados entre clientes com RLS | Banco do Core (RLS no Supabase) |
 | RNF-09 | Git e CI/CD com build, testes e deploy a cada alteração | GitHub Actions em cada repositório |
@@ -268,6 +268,8 @@ A tabela liga cada meta de qualidade à abordagem que a atende.
 
 ## 5. Visão de Blocos de Construção
 
+Esta seção mostra a decomposição estática do Deviante, do sistema inteiro até as classes de domínio do Core. Cada nível abre uma caixa do nível de cima e traz o diagrama, a motivação da divisão e a tabela dos blocos que ela contém.
+
 ### 5.1 Nível 1 — Containers
 
 **C4 — Nível 2 · Container**
@@ -316,8 +318,12 @@ flowchart TB
     style dv fill:none,stroke:#666,stroke-dasharray:5 5
 ```
 
+**Motivação.** Cada serviço é dono de um grupo de objetos ORCA e do seu próprio banco, para que ingestão, análise e domínio evoluam e sejam implantados separadamente (meta de manutenibilidade, §4). O BFF concentra a agregação para que o Microfrontend faça uma única chamada por tela, e o cálculo IPDD/ADWIN fica isolado numa função sem estado, que pode ser trocada sem mexer nos serviços.
+
+**Blocos contidos**
+
 | Container | Responsabilidade | Tecnologia | Banco |
-|-----------|------------------|------------|-------|
+|---|---|---|---|
 | Microfrontend | SPA do produto e do site público | React + Vite, Vercel | — |
 | API Gateway | Entrada única, roteamento, JWT, rate limit | AWS API Gateway (HTTP API) | — |
 | BFF | Proxy dos CRUDs; `GET /aggregated-data` junta Core, MS1, MS2 e Function num único JSON | Node.js + NestJS, Fly.io | — |
@@ -329,8 +335,7 @@ flowchart TB
 
 ### 5.2 Nível 2 — Componentes do Core API
 
-Cada serviço segue a mesma organização; o Core é o exemplo detalhado. Os
-componentes de domínio espelham os objetos do ORCA (§8.1).
+Cada serviço segue a mesma organização; o Core é o exemplo detalhado. Os componentes de domínio espelham os objetos do ORCA (§8.1).
 
 **C4 — Nível 3 · Component**
 
@@ -365,7 +370,7 @@ flowchart TB
 ```
 
 | Slice (`application/`) | Features |
-|------------------------|----------|
+|---|---|
 | `processes` | CreateProcess, UpdateProcess, DeleteProcess, ListProcesses |
 | `activities` | ManageActivityCatalog, MapOperation, UnmapOperation |
 | `equipment` | CreateEquipment, UpdateEquipment, DeleteEquipment, ManageParameters |
@@ -482,11 +487,21 @@ classDiagram
     MaintenanceRecommendation "1" --> "0..1" MaintenanceSchedule : vira
 ```
 
-Classes dos outros serviços: MS1 — `EventLog`, `Trace`, `Event`, `ProcessGraph`,
-`EventLogParser` (+ `CsvParser`, `XesParser`, `JsonParser`); MS2 —
-`DriftAnalysis`, `DriftPoint`; Function — `IpddAdwinDetector`.
+Classes dos outros serviços: MS1 — `EventLog`, `Trace`, `Event`, `ProcessGraph`, `EventLogParser` (+ `CsvParser`, `XesParser`, `JsonParser`); MS2 — `DriftAnalysis`, `DriftPoint`; Function — `IpddAdwinDetector`.
 
-### 5.4 UML de Componentes
+### 5.4 Interfaces importantes
+
+As interfaces abaixo são os contratos entre os containers. As REST passam pelo BFF; as de evento passam pelo Service Bus.
+
+| Interface | Fornecida por | Tipo | Usada por |
+|---|---|---|---|
+| `IAggregatedData` | BFF | REST, `GET /aggregated-data` | Microfrontend |
+| `IDomainCrud` | Core API | REST | BFF |
+| `IEventLogs` | MS1 · Ingestão | REST, upload multipart | BFF |
+| `IAnalyses` | MS2 · Análises | REST | BFF |
+| `IDriftCalculation` | Azure Function | HTTP, `POST /ipdd-adwin` | BFF, MS2 |
+| `IEventLogParsedHandler` | MS2 · Análises | Evento `EventLogParsed` | MS1 (publica) |
+| `IDriftDetectedHandler` | Core API | Evento `DriftDetected` | MS2 (publica) |
 
 **C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas)
 
@@ -518,9 +533,15 @@ flowchart LR
     MS2 -.->|publica para| coreEvt
 ```
 
+---
+
 ## 6. Visão de Runtime
 
+Esta seção mostra como os blocos da seção 5 colaboram em tempo de execução. Foram escolhidos os cenários que carregam o objetivo do sistema (do event log até a manutenção), a interação com a interface externa de identidade e o comportamento quando algo falha.
+
 ### 6.1 Upload do event log e análise de drift
+
+O gestor envia o event log exportado do MES/ERP. A ingestão responde na hora e o resto da cadeia segue por eventos, até o Core criar a recomendação de manutenção. Se o arquivo for inválido, o MS1 marca o event log como falho e nenhum evento é publicado.
 
 **C4 — Nível 4 · UML de Sequência**
 
@@ -541,6 +562,9 @@ sequenceDiagram
     B->>M1: POST /event-logs
     M1-->>B: 202 parse em andamento
     M1->>M1: parse + DFG (pm4py)
+    alt arquivo inválido
+        M1->>M1: marca o event log como falho
+    else parse ok
     M1->>Q: EventLogParsed
     Q->>M2: EventLogParsed
     M2->>F: POST /ipdd-adwin (série, delta)
@@ -548,9 +572,12 @@ sequenceDiagram
     M2->>Q: DriftDetected
     Q->>C: DriftDetected
     C->>C: cria MaintenanceRecommendation
+    end
 ```
 
 ### 6.2 Abrir o processo (`GET /aggregated-data`)
+
+Ao abrir um processo, o Microfrontend faz uma única chamada. O BFF consulta os serviços em paralelo e devolve um JSON único, mesmo que um deles falhe.
 
 ```mermaid
 sequenceDiagram
@@ -573,7 +600,70 @@ sequenceDiagram
     Note over B: se um serviço falhar, o campo vem nulo<br/>e o restante é devolvido
 ```
 
+### 6.3 Login com Google
+
+O login é a única interação com o provedor de identidade. Depois dele, toda chamada leva o JWT, que é validado no API Gateway e de novo no Core.
+
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant W as Microfrontend
+    participant S as Supabase Auth
+    participant G as Google
+    participant GW as API Gateway
+    participant B as BFF
+    participant C as Core API
+    U->>W: entrar com Google
+    W->>S: signInWithOAuth
+    S->>G: OAuth 2.0 / OpenID Connect
+    G-->>S: identidade
+    S-->>W: sessão com JWT
+    W->>GW: requisição com Authorization: Bearer JWT
+    GW->>GW: valida o JWT
+    alt token inválido ou vencido
+        GW-->>W: 401
+    else token válido
+        GW->>B: repassa a requisição e o token
+        B->>C: chamada com o token
+        C->>C: valida o JWT (JWKS)
+        C-->>B: resposta
+        B-->>W: resposta
+    end
+```
+
+### 6.4 Da recomendação à manutenção realizada
+
+A recomendação criada em 6.1 só vira manutenção quando o gestor aceita. O técnico registra a execução, o que fecha o ciclo e reabilita a máquina.
+
+```mermaid
+sequenceDiagram
+    actor G as Gestor
+    actor T as Técnico
+    participant W as Microfrontend
+    participant B as BFF
+    participant C as Core API
+    G->>W: abre a recomendação
+    alt aceita
+        W->>B: aceitar recomendação
+        B->>C: accept() e toSchedule()
+        C-->>B: MaintenanceSchedule agendada
+    else rejeita
+        W->>B: rejeitar recomendação
+        B->>C: reject()
+    end
+    T->>W: registra a manutenção feita
+    W->>B: concluir agenda
+    B->>C: complete()
+    C->>C: equipamento volta a operar
+```
+
+---
+
 ## 7. Visão de Implantação
+
+Esta seção mostra a infraestrutura onde o Deviante roda e onde cada bloco da seção 5 é implantado. Tudo roda em planos gratuitos ou de estudante de nuvem pública, sem servidor próprio.
+
+### 7.1 Infraestrutura — nível 1
 
 ```mermaid
 flowchart TB
@@ -610,24 +700,33 @@ flowchart TB
     ms1 & ms2 & core <--> bus
 ```
 
-| Nó | Implantação |
-|----|-------------|
-| Microfrontend | Vercel, deploy a cada push na `main` |
-| BFF, Core, MS1, MS2 | Imagem no Docker Hub, deploy no Fly.io via GitHub Actions |
-| Azure Function | Plano Consumption, deploy via GitHub Actions |
-| Bancos | Supabase, MongoDB Atlas M0, Azure SQL Free |
+**Motivação.** As restrições de Cloud (§2) fixam o API Gateway na AWS e a Azure Function e o Azure SQL na Azure, que também hospeda o barramento de eventos. Os serviços em contêiner ficam no Fly.io, onde o deploy já funcionava no plano gratuito (§9, decisão 04), rodando as mesmas imagens publicadas no Docker Hub. Os bancos gerenciados (Supabase, MongoDB Atlas) evitam operar banco próprio.
+
+**Características de qualidade.** O Fly.io e a Azure Function escalam a zero quando não há uso, o que mantém o custo em zero, mas a primeira chamada depois de um período parado demora mais (cold start). O BFF tolera essa latência com timeout por serviço e resposta parcial (§6.2, §8.4).
+
+**Mapeamento dos blocos na infraestrutura**
+
+| Bloco (§5) | Nó de infraestrutura | Implantação |
+|---|---|---|
+| Microfrontend | Vercel | Deploy a cada push na `main` |
+| API Gateway | AWS API Gateway (HTTP API) | Configuração de rotas e autorizador JWT |
+| BFF, Core API, MS1, MS2 | Fly.io, uma app por serviço | Imagem no Docker Hub, deploy via GitHub Actions |
+| Azure Function IPDD/ADWIN | Azure Functions, plano Consumption | Deploy via GitHub Actions |
+| Service Bus | Azure Service Bus | Filas e tópicos dos eventos `EventLogParsed` e `DriftDetected` |
+| Bancos | Supabase Postgres, MongoDB Atlas M0, Azure SQL Free | Serviços gerenciados; segredos de conexão nos secrets do GitHub Actions |
+
+---
 
 ## 8. Conceitos Transversais
 
+Esta seção reúne as regras e soluções que valem para vários blocos ao mesmo tempo, para não repeti-las em cada um: o modelo de domínio, a segurança, os padrões de reuso, o tratamento de erros, os testes de arquitetura e a configuração.
+
 ### 8.1 Modelo de domínio e dados
 
-**Objetos de negócio (OOUX / ORCA).** Os seis objetos do ORCA são o
-vocabulário comum entre interface, código e dados. Cada objeto vira uma classe
-de domínio (§5.3), uma tela no Microfrontend e uma tabela ou coleção; cada CTA
-vira um caso de uso.
+**Objetos de negócio (OOUX / ORCA).** Os seis objetos do ORCA são o vocabulário comum entre interface, código e dados. Cada objeto vira uma classe de domínio (§5.3), uma tela no Microfrontend e uma tabela ou coleção; cada CTA vira um caso de uso.
 
 | Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
-|-------------|---------------|--------------|------|------------|
+|---|---|---|---|---|
 | Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-02, RF-03, RF-14 |
 | Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-06, RF-07 |
 | Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-02, RF-03, RF-08, RF-09, RF-10 |
@@ -635,8 +734,7 @@ vira um caso de uso.
 | Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-13, RF-14 |
 | Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-11, RF-12 |
 
-O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o
-grafo (MS1) são dados de suporte de Process e Activity.
+O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o grafo (MS1) são dados de suporte de Process e Activity.
 
 Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Detalhe por tabela (banco, campos, chaves e a classe que persiste cada uma) na database Entidades da [página no Notion](https://app.notion.com/p/3ec5fc7249408016bae5f7b940dd50d7).
 
@@ -759,21 +857,18 @@ erDiagram
     }
 ```
 
-**MS1 (MongoDB Atlas)** — coleções `event_logs`, `traces` (eventos embutidos),
-`operations` e `process_graphs` (nós e arestas do DFG com frequências).
+**MS1 (MongoDB Atlas)** — coleções `event_logs`, `traces` (eventos embutidos), `operations` e `process_graphs` (nós e arestas do DFG com frequências).
 
 ### 8.2 Segurança
 
-O login é feito no Supabase Auth com Google. O JWT é validado no API Gateway e
-de novo no Core (JWKS); o BFF repassa o token. Os serviços só aceitam chamadas
-vindas do BFF ou do Service Bus.
+O login é feito no Supabase Auth com Google. O JWT é validado no API Gateway e de novo no Core (JWKS); o BFF repassa o token. Os serviços só aceitam chamadas vindas do BFF ou do Service Bus.
 
 ### 8.3 Padrões de reuso
 
 Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, análise de drift, investigação). Manutenção preditiva (RUL, probabilidade de falha) fica fora da v1.
 
 | Padrão | Família | Exemplos | Onde |
-|--------|---------|----------|------|
+|---|---|---|---|
 | Singleton | Criacional | `AnalysisEngine` (instância única do wrapper do detector, reaproveitada entre chamadas), `AppConfig` (registro único de configuração e parâmetros padrão da análise) | Function, Core |
 | Adapter | Estrutural | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN de L. F. Picolo), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py) | Function, MS1 |
 | Observer | Comportamental | `DriftSubject` notifica `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` quando o ADWIN detecta um drift ou a análise conclui | Microfrontend |
@@ -781,12 +876,6 @@ Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, 
 ```mermaid
 classDiagram
     direction LR
-    class AnalysisEngine {
-      <<singleton>>
-      -instance$ AnalysisEngine
-      +getInstance()$ AnalysisEngine
-      +run(series, delta) List~DriftPoint~
-    }
     class DriftDetector {
       <<interface>>
       +detect(series, delta) List~DriftPoint~
@@ -796,6 +885,12 @@ classDiagram
     }
     class ipdd_adwin {
       <<código de L. F. Picolo>>
+    }
+    class AnalysisEngine {
+      <<singleton>>
+      -instance$ AnalysisEngine
+      +getInstance()$ AnalysisEngine
+      +run(series, delta) List~DriftPoint~
     }
     class DriftSubject {
       -observers List~DriftObserver~
@@ -822,17 +917,21 @@ O Adapter é o padrão que preserva a pesquisa: o código do Picolo é envolvido
 
 ### 8.4 Tratamento de erros e resiliência
 
-Erros saem como JSON `{ "error": "..." }` com status HTTP adequado. O BFF usa
-timeout por serviço e devolve agregado parcial. Eventos são idempotentes
-(chave = id do event log ou da análise).
+Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa timeout por serviço e devolve agregado parcial. Eventos são idempotentes (chave = id do event log ou da análise).
 
 ### 8.5 Testes de arquitetura
 
 | Serviço | Ferramenta | Regras |
-|---------|-----------|--------|
+|---|---|---|
 | Core (Kotlin) | Konsist | `domain` não importa `infrastructure`, `api` nem Ktor; classes de uma slice não importam outra slice |
 | BFF (Node) | dependency-cruiser | módulos de feature não se importam entre si; nenhum driver de banco no BFF |
 | MS1, MS2 (Python) | import-linter | contrato de camadas `api → application → domain`, `infrastructure → domain` |
+
+### 8.6 Configuração e segredos
+
+Cada serviço lê a configuração de variáveis de ambiente, e a mesma imagem roda em qualquer ambiente. Credenciais (strings de conexão, chaves do Supabase, tokens de deploy) ficam nos secrets do GitHub Actions e são injetadas no deploy; nenhuma credencial vai para os repositórios, que são públicos.
+
+---
 
 ## 9. Decisões de Arquitetura
 

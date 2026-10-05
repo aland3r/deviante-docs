@@ -24,7 +24,7 @@ def table_to_md(block):
     rows = [r for r in rows if r]
     if not rows:
         return ""
-    clean = lambda c: c.replace("\n", " ").replace("|", "\\|")
+    clean = lambda c: inline(c.replace("\n", " ")).replace("|", "\\|")
     out = ["| " + " | ".join(clean(c) for c in rows[0]) + " |",
            "|" + "|".join("---" for _ in rows[0]) + "|"]
     out += ["| " + " | ".join(clean(c) for c in r) + " |" for r in rows[1:]]
@@ -35,7 +35,7 @@ def inline(text):
     # [Fly.io](http://Fly.io) -> Fly.io (autolink que o Notion cria)
     text = re.sub(r"\[([^\]]+)\]\(https?://\1/?\)", r"\1", text)
     # menções a páginas do Notion viram link
-    text = re.sub(r'<mention-page url="([^"]+)"\s*/>', r"[página no Notion](\1)", text)
+    text = re.sub(r'(?:página )?<mention-page url="([^"]+)"\s*/>', r"[página no Notion](\1)", text)
     text = re.sub(r'<mention-page url="([^"]+)">([^<]*)</mention-page>', r"[\2](\1)", text)
     return text
 
