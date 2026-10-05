@@ -18,7 +18,7 @@ A presente documentação apresenta um conjunto de decisões de design que afeta
 
 O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, a partir dos registros do chão de fábrica, que uma máquina começou a demorar mais do que o normal e fornecer recursos para agir antes da falha, momento em que o custo de manutenção é menor. As tabelas abaixo resumem os requisitos:
 
-**Requisitos funcionais de negócio**
+**Requisitos funcionais**
 
 | ID | Requisito | Atendido por |
 |---|---|---|
@@ -29,6 +29,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RF-05 | Gestor cria, lista, atualiza e exclui os processos da sua empresa | Core API |
 | RF-06 | Processos da empresa visíveis para todos os seus gestores, operadores e técnicos | Core API |
 | RF-07 | Operador cria, lista, atualiza e exclui atividades de processos | Core API |
+| RF-08 | Gestor cadastra atividades e registros de eventos a partir de logs CSV ou XES | MS1 · Ingestão + Core API |
 | RF-09 | Upload de log de eventos em CSV ou XES | MS1 · Ingestão |
 | RF-10 | Gerar e exibir o DFG (Directly-Follows Graph) do log | MS1 (pm4py) |
 | RF-11 | Mapear atividades do log em uma ou mais operações do processo | Core API |
@@ -41,16 +42,11 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RF-18 | Exibir diagnóstico e prognóstico de saúde de uma máquina monitorada | Core API (classe de prognóstico em Kotlin, etapa futura) |
 | RF-19 | Exibir os equipamentos no detalhe do processo | Core API |
 | RF-20 | Agrupar um ou mais equipamentos sob um monitoramento | Core API |
-
-**Requisitos funcionais de arquitetura (Cloud)**
-
-| ID | Requisito | Atendido por |
-|---|---|---|
-| RF01 | CRUD completo no Microserviço 1 | MS1 · Ingestão (event logs) |
-| RF02 | CRUD completo no Microserviço 2 | MS2 · Análises (análises de drift) |
-| RF03 | Proxy das requisições de CRUD no BFF | BFF |
-| RF04 | `GET /aggregated-data` consome MS1, MS2 e a Function num único response | BFF |
-| RF05 | Function faz cálculo ou enriquecimento de dados | Azure Function (IPDD/ADWIN) |
+| RF-23 | Criar, listar, consultar, atualizar e excluir logs de eventos e os grafos de processo gerados a partir deles | MS1 · Ingestão (FastAPI + PM4Py, MongoDB Atlas) |
+| RF-24 | Criar, listar, consultar, atualizar e excluir análises de desvio, com parâmetros e resultados | MS2 · Análises (FastAPI, Azure SQL) |
+| RF-25 | Encaminhar os CRUDs da interface para Core API, MS1 e MS2 sem acesso direto da interface | BFF (NestJS) |
+| RF-26 | Exibir numa única tela a visão consolidada do processo, via `GET /aggregated-data` | BFF (MS1, MS2 e Azure Function) |
+| RF-27 | Calcular os pontos de drift com o IPDD/ADWIN numa função sem estado chamada pelo MS2 | Azure Function (HTTP Trigger) |
 
 **Requisitos não funcionais de negócio**
 
@@ -71,20 +67,20 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 
 | ID | Requisito | Atendido por |
 |---|---|---|
-| RNF01 | SPA estruturada como microfrontend que consome só o BFF | Microfrontend |
-| RNF02 | BFF em Node.js (Express ou NestJS) | BFF (NestJS) |
-| RNF03 | Microservices com Database per Service | Core, MS1 e MS2, cada um com seu banco |
-| RNF04 | Microserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
-| RNF05 | Microserviço 2 com Azure SQL (Free, 1 DTU) | MS2 |
-| RNF06 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger) |
-| RNF07 | API Gateway na AWS | API Gateway |
-| RNF08 | Arquitetura Orientada a Eventos | Azure Service Bus (`EventLogParsed`, `DriftDetected`) |
-| RNF09 | Clean Architecture (Domain, Application, Infrastructure, API) | Todos os serviços (§5.2) |
-| RNF10 | Vertical Slice (uma pasta por feature) | Todos os serviços (§5.2) |
-| RNF11 | Testes unitários e de arquitetura | §8.5 |
-| RNF12 | Swagger no BFF, microserviços e eventos | OpenAPI do NestJS e do FastAPI |
-| RNF13 | Imagens do BFF e dos microserviços no Docker Hub | §7 |
-| RNF14 | Aplicação em URLs da nuvem, não localhost | §7 |
+| RNF-12 | SPA estruturada como microfrontend que consome só o BFF | Microfrontend |
+| RNF-13 | BFF em Node.js (Express ou NestJS) | BFF (NestJS) |
+| RNF-14 | Microservices com Database per Service | Core, MS1 e MS2, cada um com seu banco |
+| RNF-15 | Microserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
+| RNF-16 | Microserviço 2 com Azure SQL (Free, 1 DTU) | MS2 |
+| RNF-17 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger) |
+| RNF-18 | API Gateway na AWS | API Gateway |
+| RNF-19 | Arquitetura Orientada a Eventos | Azure Service Bus (`EventLogParsed`, `DriftDetected`) |
+| RNF-20 | Clean Architecture (Domain, Application, Infrastructure, API) | Todos os serviços (§5.2) |
+| RNF-21 | Vertical Slice (uma pasta por feature) | Todos os serviços (§5.2) |
+| RNF-22 | Testes unitários e de arquitetura | §8.5 |
+| RNF-23 | Swagger no BFF, microserviços e eventos | OpenAPI do NestJS e do FastAPI |
+| RNF-24 | Imagens do BFF e dos microserviços no Docker Hub | §7 |
+| RNF-25 | Aplicação em URLs da nuvem, não localhost | §7 |
 
 ### 1.2 Metas de Qualidade
 
@@ -131,13 +127,13 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 
 | ID | Restrição | Motivo |
 |---|---|---|
-| RT1 | Interface como microfrontend em React que consome só o BFF | Exigência de Cloud (RNF01). React + Vite é decisão do grupo (RNF-03). |
-| RT2 | BFF em Node.js (NestJS), com o endpoint `GET /aggregated-data` | Exigência de Cloud (RNF02, RF03, RF04). |
-| RT3 | Microsserviço 1 com MongoDB Atlas (Free Tier) | Exigência de Cloud (RNF04). |
-| RT4 | Microsserviço 2 com Azure SQL (Free, 1 DTU) | Exigência de Cloud (RNF05). 1 DTU limita consultas pesadas. |
-| RT5 | Azure Function com HTTP Trigger ou Message Trigger | Exigência de Cloud (RNF06, RF05). |
-| RT6 | API Gateway na AWS como porta de entrada | Exigência de Cloud (RNF07). |
-| RT7 | Comunicação assíncrona por eventos entre serviços | Exigência de Cloud (RNF08). |
+| RT1 | Interface como microfrontend em React que consome só o BFF | Exigência de Cloud (RNF-12). React + Vite é decisão do grupo (RNF-03). |
+| RT2 | BFF em Node.js (NestJS), com o endpoint `GET /aggregated-data` | Exigência de Cloud (RNF-13, RF-25, RF-26). |
+| RT3 | Microsserviço 1 com MongoDB Atlas (Free Tier) | Exigência de Cloud (RNF-15). |
+| RT4 | Microsserviço 2 com Azure SQL (Free, 1 DTU) | Exigência de Cloud (RNF-16). 1 DTU limita consultas pesadas. |
+| RT5 | Azure Function com HTTP Trigger ou Message Trigger | Exigência de Cloud (RNF-17, RF-27). |
+| RT6 | API Gateway na AWS como porta de entrada | Exigência de Cloud (RNF-18). |
+| RT7 | Comunicação assíncrona por eventos entre serviços | Exigência de Cloud (RNF-19). |
 | RT8 | Back-end de domínio em Kotlin; microsserviços analíticos em Python com FastAPI | Decisão do grupo (RNF-01, RNF-05). PM4Py e o código IPDD/ADWIN só existem em Python. |
 | RT9 | Supabase para autenticação (Google) e Postgres com RLS | Decisão do grupo (RNF-02, RNF-08, RNF-10). |
 | RT10 | Código IPDD/ADWIN de L. F. Picolo reaproveitado sem reescrita | Fidelidade científica: o método publicado (Sato et al., 2025) precisa dar os mesmos resultados. |
@@ -151,9 +147,9 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | RO2 | Prazos: documentação de Cloud em 15/10/2026; Reuso e apresentação do PIBITI em 16/10/2026; arquitetura completa de Cloud em 12/11/2026 | Calendário das disciplinas e do PIBITI (banco Entregas do Notion). |
 | RO3 | Método analítico definido pela pesquisa e validado pelo orientador | O PIBITI continua o trabalho do grupo de pesquisa IPDD da PUCPR. |
 | RO4 | Um repositório público no GitHub por serviço, cada um com README (arquitetura, tecnologias, como rodar, nomes dos alunos) | Exigência de Cloud. |
-| RO5 | Imagem Docker do BFF e de cada microsserviço publicada no Docker Hub | Exigência de Cloud (RNF13). |
-| RO6 | CI com build, testes e deploy a cada alteração; testes unitários e de arquitetura | RNF-09 e exigência de Cloud (RNF11). |
-| RO7 | Demonstração em URLs da nuvem, não localhost, em vídeo no YouTube com todos os integrantes falando | Exigência de Cloud (RNF14). |
+| RO5 | Imagem Docker do BFF e de cada microsserviço publicada no Docker Hub | Exigência de Cloud (RNF-24). |
+| RO6 | CI com build, testes e deploy a cada alteração; testes unitários e de arquitetura | RNF-09 e exigência de Cloud (RNF-22). |
+| RO7 | Demonstração em URLs da nuvem, não localhost, em vídeo no YouTube com todos os integrantes falando | Exigência de Cloud (RNF-25). |
 
 ### 2.3 Convenções
 
@@ -162,8 +158,8 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | C1 | Documentação de arquitetura no template arc42 (12 seções), com diagramas C4 nos níveis de contexto, contêineres e componentes | Exigência de Cloud. |
 | C2 | O Notion é a fonte da documentação; `architecture/arc42.md` e o site são gerados a partir dele | O grupo edita num lugar só e o site acompanha (ADR 07). |
 | C3 | Diagramas em Mermaid, versionados como texto | Renderizam no site e no Notion sem ferramenta extra. |
-| C4 | Clean Architecture (`domain`, `application`, `infrastructure`, `api`) com uma pasta por feature (Vertical Slice) | Exigência de Cloud (RNF09, RNF10). |
-| C5 | APIs e eventos documentados em Swagger/OpenAPI | Exigência de Cloud (RNF12). |
+| C4 | Clean Architecture (`domain`, `application`, `infrastructure`, `api`) com uma pasta por feature (Vertical Slice) | Exigência de Cloud (RNF-20, RNF-21). |
+| C5 | APIs e eventos documentados em Swagger/OpenAPI | Exigência de Cloud (RNF-23). |
 | C6 | Figma como fonte única de tokens e componentes de interface | Decisão do grupo (RNF-04). |
 | C7 | Documentação em português; código, nomes de classes e eventos em inglês | Público da documentação é a banca da PUCPR; código segue o padrão das bibliotecas. |
 
@@ -718,8 +714,8 @@ Esta seção reúne as regras e soluções que valem para vários blocos ao mesm
 | Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
 |---|---|---|---|---|
 | Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-03, RF-05, RF-06, RF-19 |
-| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-07, RF-11, RF-12 |
-| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-13, RF-14, RF-15 |
+| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-07, RF-08, RF-11, RF-12 |
+| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-13, RF-14, RF-15, RF-24, RF-27 |
 | Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-20 |
 | Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-18, RF-19 |
 | Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-16, RF-17 |
