@@ -112,7 +112,9 @@ O Deviante é um sistema de suporte a decisões em manutenção industrial capaz
 
 | Papel | Expectativa |
 |-------|-------------|
-| Gestor de manutenção | Ver o processo, saber quando ele desviou e agendar a manutenção a tempo. |
+| Operador | Informar as atividades da cadeia produtiva e registrar os dados sem retrabalho. |
+| Gestor de manutenção | Monitorar os dados, gerar análises a partir do processo registrado e acionar a manutenção a tempo. |
+| Técnico de manutenção | Saber o que fazer, registrar a manutenção realizada e reabilitar a máquina no sistema. |
 | Analista / mentor | Validar as análises e ajustar a sensibilidade do IPDD/ADWIN. |
 | Denise Sato e Luiz Picolo, autores do detector de desvios (IPDD/ADWIN) | Ver o método aplicado com fidelidade ao trabalho original. |
 | Eduardo de Freitas Loures, orientador PIBITI | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
@@ -149,17 +151,26 @@ serverless são serviços gerenciados de terceiros.
 C4Context
     title C4 Nivel 1 - Contexto do Sistema: Deviante
 
-    Person(gestor, "Gestor de Manutencao", "Envia o event log, roda analises de drift e decide a manutencao proativa.")
+    Person(operador, "Operador", "Informa as atividades da cadeia produtiva e registra os dados do chao de fabrica.")
+    Person(gestor, "Gestor de Manutencao", "Monitora os dados, gera analises a partir do processo registrado e aciona a manutencao.")
+    Person(tecnico, "Tecnico de Manutencao", "Realiza a manutencao, registra o que foi feito e reabilita a maquina.")
     System(deviante, "Deviante", "Suporte a decisao na manutencao industrial: detecta drift de desempenho (IPDD/ADWIN).")
 
-    Rel(gestor, deviante, "Usa", "HTTPS")
+    Rel(operador, deviante, "Registra atividades e dados")
+    Rel(gestor, deviante, "Analisa e aciona manutencao")
+    Rel(tecnico, deviante, "Registra manutencao e reabilita maquina")
 
-    UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")
+    UpdateRelStyle(gestor, deviante, $offsetX="10", $offsetY="-20")
+    UpdateRelStyle(tecnico, deviante, $offsetX="60", $offsetY="10")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
 
 | Parceiro | Entrada | Saída |
 |----------|---------|-------|
-| Gestor de manutenção | Event log, mapeamentos, parâmetros de análise | Grafo, drifts, recomendações |
+| Operador | Atividades da cadeia produtiva, event log, leituras | Processo registrado |
+| Gestor de manutenção | Mapeamentos, parâmetros de análise, acionamento da manutenção | Grafo, drifts, recomendações |
+| Técnico de manutenção | Manutenção realizada, reabilitação da máquina | Manutenções agendadas |
 | Sistema de origem (MES/ERP) | — | Event log XES/CSV (exportado pelo gestor) |
 | Google | — | Identidade (OAuth 2.0) |
 
@@ -189,7 +200,7 @@ C4Context
 | Bloco | Conteúdo |
 |-------|----------|
 | Propósito | Antecipar a manutenção detectando drift de desempenho no event log. |
-| Usuários | Gestor de manutenção, analista/mentor. |
+| Usuários | Operador, gestor de manutenção, técnico de manutenção, analista/mentor. |
 | Requisitos-chave | Upload CSV/XES, grafo do processo, análise IPDD/ADWIN, recomendação e agenda de manutenção. |
 | Atributos de qualidade | Correção analítica, modificabilidade, isolamento, segurança, implantabilidade. |
 | Restrições | Stack da disciplina (Node BFF, Mongo, Azure SQL, Azure Function, AWS Gateway), free tier, prazo. |
@@ -206,7 +217,9 @@ C4Context
 
 ```mermaid
 flowchart TB
+    operador(["<b>Operador</b><br/>[Pessoa]"])
     gestor(["<b>Gestor de Manutenção</b><br/>[Pessoa]"])
+    tecnico(["<b>Técnico de Manutenção</b><br/>[Pessoa]"])
     auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>Google OAuth / JWT"]
 
     subgraph dv["Deviante [Sistema]"]
@@ -223,7 +236,7 @@ flowchart TB
         dbMs2[("<b>Azure SQL</b>")]
     end
 
-    gestor -->|HTTPS| web
+    operador & gestor & tecnico -->|HTTPS| web
     web -.->|login| auth
     web -->|REST| gw --> bff
     bff --> core & ms1 & ms2
@@ -240,7 +253,7 @@ flowchart TB
     classDef person fill:#08427B,stroke:#073B6F,color:#fff
     classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
     classDef external fill:#999999,stroke:#8A8A8A,color:#fff
-    class gestor person
+    class operador,gestor,tecnico person
     class web,gw,bff,core,ms1,ms2,fn,bus,dbCore,dbMs1,dbMs2 container
     class auth external
     style dv fill:none,stroke:#666,stroke-dasharray:5 5

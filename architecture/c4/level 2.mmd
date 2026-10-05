@@ -1,5 +1,7 @@
 flowchart TB
+    operador(["<b>Operador</b><br/>[Pessoa]"])
     gestor(["<b>Gestor de Manutenção</b><br/>[Pessoa]"])
+    tecnico(["<b>Técnico de Manutenção</b><br/>[Pessoa]"])
     auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>Google OAuth / JWT"]
 
     subgraph dv["Deviante [Sistema]"]
@@ -16,7 +18,7 @@ flowchart TB
         dbMs2[("<b>Azure SQL</b>")]
     end
 
-    gestor -->|HTTPS| web
+    operador & gestor & tecnico -->|HTTPS| web
     web -.->|login| auth
     web -->|REST| gw --> bff
     bff --> core & ms1 & ms2
@@ -33,7 +35,7 @@ flowchart TB
     classDef person fill:#08427B,stroke:#073B6F,color:#fff
     classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
     classDef external fill:#999999,stroke:#8A8A8A,color:#fff
-    class gestor person
+    class operador,gestor,tecnico person
     class web,gw,bff,core,ms1,ms2,fn,bus,dbCore,dbMs1,dbMs2 container
     class auth external
     style dv fill:none,stroke:#666,stroke-dasharray:5 5

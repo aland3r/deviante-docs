@@ -1,9 +1,16 @@
 C4Context
     title C4 Nivel 1 - Contexto do Sistema: Deviante
 
-    Person(gestor, "Gestor de Manutencao", "Envia o event log, roda analises de drift e decide a manutencao proativa.")
+    Person(operador, "Operador", "Informa as atividades da cadeia produtiva e registra os dados do chao de fabrica.")
+    Person(gestor, "Gestor de Manutencao", "Monitora os dados, gera analises a partir do processo registrado e aciona a manutencao.")
+    Person(tecnico, "Tecnico de Manutencao", "Realiza a manutencao, registra o que foi feito e reabilita a maquina.")
     System(deviante, "Deviante", "Suporte a decisao na manutencao industrial: detecta drift de desempenho (IPDD/ADWIN).")
 
-    Rel(gestor, deviante, "Usa", "HTTPS")
+    Rel(operador, deviante, "Registra atividades e dados")
+    Rel(gestor, deviante, "Analisa e aciona manutencao")
+    Rel(tecnico, deviante, "Registra manutencao e reabilita maquina")
 
-    UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")
+    UpdateRelStyle(gestor, deviante, $offsetX="10", $offsetY="-20")
+    UpdateRelStyle(tecnico, deviante, $offsetX="60", $offsetY="10")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
