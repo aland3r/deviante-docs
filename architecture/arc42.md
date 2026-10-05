@@ -569,22 +569,22 @@ flowchart TB
 
 ### 8.1 Modelo de domínio e dados
 
-**Objetos de negócio (OOUX / ORCA).** Os objetos levantados no ORCA
-(`UX/OBJECTS.md` e `UX/CTAs.md`) são o vocabulário comum entre interface,
-código e dados. Cada objeto vira uma classe de domínio (§5.3), uma tela no
-Microfrontend e uma tabela ou coleção; cada CTA vira um caso de uso.
+**Objetos de negócio (OOUX / ORCA).** Os seis objetos do ORCA são o
+vocabulário comum entre interface, código e dados. Cada objeto vira uma classe
+de domínio (§5.3), uma tela no Microfrontend e uma tabela ou coleção; cada CTA
+vira um caso de uso.
 
 | Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
 |-------------|---------------|--------------|------|------------|
-| User | `Manager` (+ usuário do Supabase Auth) | Core API | Create Account | RF-01 |
-| Process | `Process` | Core API | Run Process Analysis | RF-02, RF-03, RF-14 |
-| Operation | `OperationMapping` → `Activity` | Core API (rótulos vêm do MS1) | Run Operation Analysis | RF-06, RF-07 |
-| Asset | `Equipment` | Core API | Run Asset Analysis | RF-13, RF-14, RF-15 |
-| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | Run Drift Analysis | RF-08, RF-09, RF-10 |
-| Proactive Action | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | Recommend Proactive Action, Schedule Proactive Action | RF-11, RF-12 |
+| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-02, RF-03, RF-14 |
+| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-06, RF-07 |
+| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-02, RF-03, RF-08, RF-09, RF-10 |
+| Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-02, RF-03, RF-15 |
+| Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-13, RF-14 |
+| Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-11, RF-12 |
 
-O event log, os traces e o grafo (MS1) são dados de suporte do objeto
-Process, não objetos ORCA próprios.
+O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o
+grafo (MS1) são dados de suporte de Process e Activity.
 
 Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`).
 
@@ -786,8 +786,9 @@ timeout por serviço e devolve agregado parcial. Eventos são idempotentes
 | RUL | Remaining Useful Life: vida útil restante estimada de um equipamento. |
 | BFF | Backend for Frontend: API feita sob medida para a interface. |
 | Process (Processo) | Objeto ORCA: processo de manufatura monitorado. Ver §8.1. |
-| Operation (Operação) | Objeto ORCA: rótulo de atividade vindo do event log, mapeado para uma atividade normalizada. |
-| Asset (Equipamento) | Objeto ORCA: máquina ou equipamento ligado a processos e monitoramentos. |
+| Activity (Atividade) | Objeto ORCA: etapa normalizada do processo; os rótulos do event log são mapeados para ela. |
 | Analysis (Análise) | Objeto ORCA: execução do IPDD/ADWIN com parâmetros e pontos de drift. |
-| Proactive Action (Ação proativa) | Objeto ORCA: manutenção ou inspeção recomendada e agendada antes da falha. |
+| Monitoring (Monitoramento) | Objeto ORCA: agrupamento de máquinas acompanhadas por parâmetros e leituras. |
+| Machine (Máquina) | Objeto ORCA: equipamento do chão de fábrica; no código, `Equipment`. |
+| Maintenance (Manutenção) | Objeto ORCA: ação proativa (manutenção ou inspeção) recomendada e agendada antes da falha. |
 | OOUX / ORCA | Object-Oriented UX; ORCA = Objects, Relationships, CTAs, Attributes. |
