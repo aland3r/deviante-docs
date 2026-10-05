@@ -4,7 +4,7 @@ _Deviante é suporte à decisão em manutenção industrial. O núcleo analític
 framework **IPDD** (Interactive Process Drift Detection), de **Denise M. V. Sato**
 (Sato et al., 2025), com a implementação IPDD/ADWIN de **Luiz F. Picolo**._
 
-**Grupo:** Alander, Bernardo, Emanuelle, Murilo.
+**Grupo:** Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange.
 
 > Documento escrito como código: este `.md` é a fonte única. O site
 > [deviante.alander.io/documentacao](https://deviante.alander.io/documentacao)
@@ -267,7 +267,7 @@ flowchart TB
 ### 5.2 Nível 2 — Componentes do Core API
 
 Cada serviço segue a mesma organização; o Core é o exemplo detalhado. Os
-componentes de domínio espelham os objetos do OOUX (ver [[UX/OBJECTS]]).
+componentes de domínio espelham os objetos do ORCA (§8.1).
 
 **C4 — Nível 3 · Component**
 
@@ -311,7 +311,7 @@ flowchart TB
 
 ### 5.3 Nível 3 — Classes de domínio
 
-**C4 — Nível 4 · UML de Classes** (Core API)
+**C4 — Nível 4 · UML de Classes** (Core API). Atributos, métodos e associações de todas as classes, de todos os serviços, ficam na database Classes da [página no Notion](https://app.notion.com/p/3ec5fc7249408016b3d1fcf7e9da3725).
 
 ```mermaid
 classDiagram
@@ -586,7 +586,7 @@ vira um caso de uso.
 O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o
 grafo (MS1) são dados de suporte de Process e Activity.
 
-Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`).
+Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Detalhe por tabela (banco, campos, chaves e a classe que persiste cada uma) na database Entidades da [página no Notion](https://app.notion.com/p/3ec5fc7249408016bae5f7b940dd50d7).
 
 **Diagrama de Entidades e Relacionamentos — Core (Supabase Postgres)**
 
@@ -750,7 +750,7 @@ timeout por serviço e devolve agregado parcial. Eventos são idempotentes
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Tráfego entre nuvens (Fly, Azure, AWS) |
 | 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Consistência eventual |
 | 06 | Prognóstico de manutenção (RUL) fica para depois, como classe Kotlin no Core | Foco no drift para esta entrega | Campos de RUL ficam vazios por enquanto |
-| 07 | Arquitetura documentada como código (Markdown + Mermaid) | Uma fonte para site e PDF | PDF é gerado, não editado |
+| 07 | O arc42 é escrito no Notion; `architecture/arc42.md` é gerado a partir dele, com diagramas em Mermaid | O grupo edita num lugar só, e o site e o PDF continuam vindo de um arquivo versionado | Mudanças feitas direto no `.md` são sobrescritas na próxima sincronização |
 
 ## 10. Requisitos de Qualidade
 
