@@ -16,16 +16,9 @@ framework **IPDD** (Interactive Process Drift Detection), de **Denise M. V. Sato
 
 ## 1. Introdução e Metas
 
-O Deviante detecta, a partir do event log do chão de fábrica, quando o tempo de
-execução de uma atividade muda de comportamento (drift de desempenho) e
-transforma esse sinal em recomendação de manutenção proativa, antes da falha.
+O Deviante é um sistema de suporte a decisões em manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. O sistema identifica quando o tempo de execução de uma atividade da máquina muda de comportamento e transforma esse sinal de anomalia em recomendação de manutenção proativa, antes da falha do equipamento.
 
 ### 1.1 Visão Geral de Requisitos
-
-Fonte: base **Requirements** do Notion (IPDD: SEVEN DIMENSIONS). Aqui ficam só os
-requisitos de **negócio** e de **arquitetura** (disciplina de Cloud), um por
-linha, com o mesmo ID do Notion. Os requisitos exclusivos de Reuso ficam na
-documentação de Reuso.
 
 **Requisitos funcionais de negócio**
 
@@ -124,7 +117,7 @@ documentação de Reuso.
 | Denise Sato e Luiz Picolo, autores do detector de desvios (IPDD/ADWIN) | Ver o método aplicado com fidelidade ao trabalho original. |
 | Eduardo de Freitas Loures, orientador PIBITI | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
 | Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | Avaliar estilos arquiteturais e implantação em nuvem. |
-| Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | Avaliar padrões de projeto e reuso. |
+| Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | Avaliar padrões de projeto, variabilidade e reuso. |
 | Grupo de desenvolvimento | Uma arquitetura que caiba no prazo e no free tier. |
 
 ## 2. Restrições da Arquitetura
