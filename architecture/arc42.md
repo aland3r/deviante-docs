@@ -30,27 +30,18 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RF-06 | Processos da empresa visíveis para todos os seus gestores, operadores e técnicos | Core API |
 | RF-07 | Operador cria, lista, atualiza e exclui atividades de processos | Core API |
 | RF-08 | Gestor cadastra atividades e registros de eventos a partir de logs CSV ou XES | MS1 · Ingestão + Core API |
-| RF-09 | Upload de log de eventos em CSV ou XES | MS1 · Ingestão |
-| RF-10 | Gerar e exibir o DFG (Directly-Follows Graph) do log | MS1 (pm4py) |
-| RF-11 | Mapear atividades do log em uma ou mais operações do processo | Core API |
-| RF-12 | Editar e remover o mapeamento de operações | Core API |
-| RF-13 | Gestor cria, lista, atualiza e exclui os monitoramentos da sua empresa | Core API |
-| RF-14 | Gestor cadastra, lista, atualiza e exclui máquinas e as associa a processo, monitoramento ou análise | Core API |
-| RF-15 | Agrupar um ou mais equipamentos sob um monitoramento | Core API |
-| RF-16 | Exibir os equipamentos no detalhe do processo | Core API |
-| RF-17 | Carregar log CSV ou XES de uma máquina e registrar seus parâmetros no monitoramento | MS1 · Ingestão + Core API |
-| RF-18 | Configurar o filtro de traces antes da 1ª execução da análise | MS2 |
-| RF-19 | Executar a análise de desvio (drift) sobre um processo ou máquina | MS2 + Azure Function |
-| RF-20 | Ajustar a sensibilidade do IPDD/ADWIN e reexecutar sem novo upload | MS2 + Azure Function |
-| RF-21 | Exibir diagnóstico e prognóstico de saúde de uma máquina monitorada | Core API (classe de prognóstico em Kotlin, etapa futura) |
-| RF-22 | Criar ação proativa (manutenção ou inspeção) a partir de uma recomendação | Core API |
-| RF-23 | Editar e excluir ações proativas | Core API |
-| RF-24 | Técnico registra a execução de uma ação proativa e reabilita a máquina | Core API |
-| RF-25 | Criar, listar, consultar, atualizar e excluir logs de eventos e os grafos de processo gerados a partir deles | MS1 · Ingestão (FastAPI + PM4Py, MongoDB Atlas) |
-| RF-26 | Criar, listar, consultar, atualizar e excluir análises de desvio, com parâmetros e resultados | MS2 · Análises (FastAPI, Azure SQL) |
-| RF-27 | Calcular os pontos de drift com o IPDD/ADWIN numa função sem estado chamada pelo MS2 | Azure Function (HTTP Trigger) |
-| RF-28 | Encaminhar os CRUDs da interface para Core API, MS1 e MS2 sem acesso direto da interface | BFF (NestJS) |
-| RF-29 | Exibir numa única tela a visão consolidada do processo, via `GET /aggregated-data` | BFF (MS1, MS2 e Azure Function) |
+| RF-09 | Gerar e exibir o DFG (Directly-Follows Graph) do log carregado | MS1 · Ingestão (FastAPI + PM4Py, MongoDB Atlas) |
+| RF-10 | Mapear atividades do log em uma ou mais operações do processo, e editar e remover esse mapeamento | Core API |
+| RF-11 | Gestor cria, lista, atualiza e exclui os monitoramentos da sua empresa | Core API |
+| RF-12 | Gestor cadastra, lista, atualiza e exclui máquinas, agrupa em monitoramentos e associa a processos, que as exibem no detalhe | Core API |
+| RF-13 | Carregar log CSV ou XES de uma máquina e registrar seus parâmetros no monitoramento | MS1 · Ingestão + Core API |
+| RF-14 | Configurar os parâmetros da análise: filtro de traces antes da 1ª execução e sensibilidade do IPDD/ADWIN para reexecutar sem novo upload | MS2 |
+| RF-15 | Executar a análise de desvio (drift) sobre um processo ou máquina, com o cálculo IPDD/ADWIN numa função sem estado | MS2 · Análises (FastAPI, Azure SQL) + Azure Function (HTTP Trigger) |
+| RF-16 | Exibir diagnóstico e prognóstico de saúde de uma máquina monitorada | Core API (classe de prognóstico em Kotlin, etapa futura) |
+| RF-17 | Criar ações proativas (manutenção ou inspeção) a partir de uma recomendação, e editá-las e excluí-las | Core API |
+| RF-18 | Técnico registra a execução de uma ação proativa e reabilita a máquina | Core API |
+| RF-19 | Encaminhar os CRUDs da interface para Core API, MS1 e MS2 sem acesso direto da interface | BFF (NestJS) |
+| RF-20 | Exibir numa única tela a visão consolidada do processo, via `GET /aggregated-data` | BFF (MS1, MS2 e Azure Function) |
 
 **Requisitos não funcionais de negócio**
 
@@ -132,10 +123,10 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | ID | Restrição | Motivo |
 |---|---|---|
 | RT1 | Interface como microfrontend em React que consome só o BFF | Exigência de Cloud (RNF-12). React + Vite é decisão do grupo (RNF-03). |
-| RT2 | BFF em Node.js (NestJS), com o endpoint `GET /aggregated-data` | Exigência de Cloud (RNF-13, RF-28, RF-29). |
+| RT2 | BFF em Node.js (NestJS), com o endpoint `GET /aggregated-data` | Exigência de Cloud (RNF-13, RF-19, RF-20). |
 | RT3 | Microsserviço 1 com MongoDB Atlas (Free Tier) | Exigência de Cloud (RNF-15). |
 | RT4 | Microsserviço 2 com Azure SQL (Free, 1 DTU) | Exigência de Cloud (RNF-16). 1 DTU limita consultas pesadas. |
-| RT5 | Azure Function com HTTP Trigger ou Message Trigger | Exigência de Cloud (RNF-17, RF-27). |
+| RT5 | Azure Function com HTTP Trigger ou Message Trigger | Exigência de Cloud (RNF-17, RF-15). |
 | RT6 | API Gateway na AWS como porta de entrada | Exigência de Cloud (RNF-18). |
 | RT7 | Comunicação assíncrona por eventos entre serviços | Exigência de Cloud (RNF-19). |
 | RT8 | Back-end de domínio em Kotlin; microsserviços analíticos em Python com FastAPI | Decisão do grupo (RNF-01, RNF-05). PM4Py e o código IPDD/ADWIN só existem em Python. |
@@ -717,12 +708,12 @@ Esta seção reúne as regras e soluções que valem para vários blocos ao mesm
 
 | Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
 |---|---|---|---|---|
-| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-03, RF-05, RF-06, RF-16 |
-| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-07, RF-08, RF-11, RF-12 |
-| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-18, RF-19, RF-20, RF-26, RF-27 |
-| Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-13, RF-15, RF-17 |
-| Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-14, RF-16, RF-21 |
-| Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-22, RF-23, RF-24 |
+| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-03, RF-05, RF-06, RF-12 |
+| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-07, RF-08, RF-10 |
+| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-14, RF-15 |
+| Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-11, RF-12, RF-13 |
+| Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-12, RF-16 |
+| Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-17, RF-18 |
 
 O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o grafo (MS1) são dados de suporte de Process e Activity.
 
