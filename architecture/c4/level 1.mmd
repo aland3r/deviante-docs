@@ -1,25 +1,11 @@
 C4Context
-    title Nivel 1 - Contexto do Sistema: Deviante
+    title C4 Nivel 1 - Contexto do Sistema: Deviante
 
-    Person(gestor, "Gestor de Manutencao", "Monitora processos, roda analises de drift e decide a manutencao proativa.")
-    Person(mentor, "Mentor / Analista", "Acompanha resultados e valida as analises (acesso convidado).")
+    Person(gestor, "Gestor de Manutencao", "Envia o event log, roda analises de drift e decide a manutencao proativa.")
+    System(deviante, "Deviante", "Suporte a decisao na manutencao industrial: detecta drift de desempenho (IPDD/ADWIN).")
+    System_Ext(auth, "Autenticacao Supabase", "Provedor de identidade gerenciado (Google OAuth / JWT).")
 
-    System(deviante, "Deviante", "Suporte a decisao em manutencao industrial. Detecta drift de desempenho no event log (IPDD/ADWIN) e antecipa a manutencao.")
+    Rel(gestor, deviante, "Usa", "HTTPS")
+    Rel(deviante, auth, "Autentica usuarios", "OAuth / JWT")
 
-    System_Ext(origem, "Sistema de origem", "MES / ERP do chao de fabrica que exporta o event log (XES / CSV).")
-    System_Ext(google, "Google", "Provedor de identidade (OAuth 2.0).")
-    System_Ext(supabase, "Supabase", "Auth gerenciado e Postgres do servico de dominio.")
-    System_Ext(azure, "Microsoft Azure", "Azure Function (IPDD/ADWIN), Azure SQL e Service Bus.")
-    System_Ext(aws, "AWS", "API Gateway: entrada unica da API.")
-    System_Ext(atlas, "MongoDB Atlas", "Banco do microservico de ingestao.")
-
-    Rel(gestor, deviante, "Envia event logs, monitora e decide manutencao", "HTTPS")
-    Rel(mentor, deviante, "Consulta analises", "HTTPS")
-    Rel(gestor, origem, "Exporta event log", "XES / CSV")
-    Rel(deviante, google, "Autentica usuarios", "OAuth 2.0")
-    Rel(deviante, supabase, "Auth e dados de dominio", "JWT / JDBC")
-    Rel(deviante, azure, "Calcula drift, guarda analises, publica eventos", "HTTPS / AMQP")
-    Rel(deviante, aws, "Roteia requisicoes", "HTTPS")
-    Rel(deviante, atlas, "Guarda logs e grafos", "MongoDB driver")
-
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+    UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")

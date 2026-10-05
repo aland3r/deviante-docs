@@ -1,39 +1,39 @@
-C4Container
-    title Nivel 2 - Conteineres: Deviante
+flowchart TB
+    gestor(["<b>Gestor de Manutenção</b><br/>[Pessoa]"])
+    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>Google OAuth / JWT"]
 
-    Person(gestor, "Gestor de Manutencao", "Usuario autenticado (Google).")
+    subgraph dv["Deviante [Sistema]"]
+        web["<b>Microfrontend</b><br/>[React + Vite · Vercel]"]
+        gw["<b>API Gateway</b><br/>[AWS]"]
+        bff["<b>BFF</b><br/>[Node.js + NestJS]"]
+        core["<b>Core API</b><br/>[Kotlin + Ktor]<br/>processos e manutenção"]
+        ms1["<b>MS1 · Ingestão</b><br/>[FastAPI + pm4py]<br/>upload e grafo"]
+        ms2["<b>MS2 · Análises</b><br/>[FastAPI]<br/>CRUD de análises"]
+        fn["<b>IPDD/ADWIN</b><br/>[Azure Function]"]
+        bus{{"<b>Service Bus</b><br/>[Azure · eventos]"}}
+        dbCore[("<b>Postgres</b><br/>[Supabase]")]
+        dbMs1[("<b>MongoDB</b><br/>[Atlas]")]
+        dbMs2[("<b>Azure SQL</b>")]
+    end
 
-    System_Boundary(dv, "Deviante") {
-        Container(web, "Microfrontend", "React + Vite / Vercel", "SPA. Consome apenas o BFF, via API Gateway.")
-        Container(gw, "API Gateway", "AWS API Gateway (HTTP API)", "Entrada unica: roteamento, validacao de JWT, rate limit.")
-        Container(bff, "BFF", "Node.js + NestJS / Fly.io", "Proxy dos CRUDs e agregacao (GET /aggregated-data). Sem banco.")
-        Container(core, "Core API", "Kotlin + Ktor / Fly.io", "Dominio: processos, atividades, equipamentos, monitoramento e manutencao.")
-        Container(ms1, "MS1 - Ingestao", "Python + FastAPI + pm4py / Fly.io", "Upload CSV/XES, parse, traces e grafo do processo (DFG).")
-        Container(ms2, "MS2 - Analises de drift", "Python + FastAPI / Fly.io", "CRUD das analises; monta a serie e chama a Function.")
-        Container(fn, "Azure Function - IPDD/ADWIN", "Python / HTTP Trigger", "Calculo sem estado: devolve os pontos de drift (codigo de L. F. Picolo).")
-        ContainerQueue(bus, "Broker de eventos", "Azure Service Bus", "EventLogParsed, DriftDetected.")
-        ContainerDb(dbCore, "Banco do Core", "Supabase Postgres", "Dados de dominio.")
-        ContainerDb(dbMs1, "Banco do MS1", "MongoDB Atlas", "Event logs, traces, grafos.")
-        ContainerDb(dbMs2, "Banco do MS2", "Azure SQL", "Analises e pontos de drift.")
-    }
+    gestor -->|HTTPS| web
+    web -.->|login| auth
+    web -->|REST| gw --> bff
+    bff --> core & ms1 & ms2
+    bff -->|agregado| fn
+    ms2 -->|calcula drift| fn
+    core --> dbCore
+    ms1 --> dbMs1
+    ms2 --> dbMs2
+    ms1 -.->|EventLogParsed| bus
+    bus -.-> ms2
+    ms2 -.->|DriftDetected| bus
+    bus -.-> core
 
-    System_Ext(auth, "Supabase Auth", "Google OAuth / JWT")
-
-    Rel(gestor, web, "Usa", "HTTPS")
-    Rel(web, auth, "Login", "supabase-js")
-    Rel(web, gw, "Chama a API", "HTTPS / JSON")
-    Rel(gw, bff, "Encaminha", "HTTPS")
-    Rel(bff, core, "CRUD de dominio", "REST")
-    Rel(bff, ms1, "Upload e grafo", "REST")
-    Rel(bff, ms2, "CRUD de analises", "REST")
-    Rel(bff, fn, "Previa de drift", "HTTP Trigger")
-    Rel(ms2, fn, "Calcula drift", "HTTP Trigger")
-    Rel(ms1, bus, "Publica EventLogParsed", "AMQP")
-    Rel(bus, ms2, "Entrega EventLogParsed", "AMQP")
-    Rel(ms2, bus, "Publica DriftDetected", "AMQP")
-    Rel(bus, core, "Entrega DriftDetected", "AMQP")
-    Rel(core, dbCore, "Le e grava", "JDBC")
-    Rel(ms1, dbMs1, "Le e grava", "MongoDB driver")
-    Rel(ms2, dbMs2, "Le e grava", "ODBC")
-
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+    classDef person fill:#08427B,stroke:#073B6F,color:#fff
+    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
+    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
+    class gestor person
+    class web,gw,bff,core,ms1,ms2,fn,bus,dbCore,dbMs1,dbMs2 container
+    class auth external
+    style dv fill:none,stroke:#666,stroke-dasharray:5 5

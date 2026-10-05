@@ -1,33 +1,27 @@
-C4Component
-    title Nivel 3 - Componentes: Core API (Kotlin/Ktor)
+flowchart TB
+    bff["<b>BFF</b><br/>[Container: NestJS]"]
+    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>JWKS"]
+    bus{{"<b>Service Bus</b><br/>[Container: Azure]"}}
+    db[("<b>Postgres</b><br/>[Container: Supabase]")]
 
-    Container(bff, "BFF", "NestJS", "Unico cliente do Core")
-    System_Ext(auth, "Supabase Auth", "JWKS")
-    ContainerQueue(bus, "Service Bus", "Azure", "DriftDetected")
-    ContainerDb(db, "Supabase Postgres", "Postgres", "Dados de dominio")
+    subgraph core["Core API · Kotlin/Ktor [Container]"]
+        api["<b>api</b><br/>[Component: rotas Ktor]<br/>endpoints e validação de JWT"]
+        app["<b>application</b><br/>[Component: slices]<br/>processes · activities · equipment<br/>monitoring · maintenance"]
+        domain["<b>domain</b><br/>[Component: Kotlin puro]<br/>entidades e regras"]
+        infra["<b>infrastructure</b><br/>[Component: Exposed]<br/>repositórios e eventos"]
+    end
 
-    Container_Boundary(core, "Core API - Clean Architecture + Vertical Slice") {
-        Component(api, "api", "Ktor Routing", "Rotas por feature, DTOs, autenticacao.")
-        Component(processes, "application/processes", "Slice", "CreateProcess, UpdateProcess, DeleteProcess, ListProcesses.")
-        Component(mapping, "application/activities", "Slice", "MapOperation, ManageActivityCatalog.")
-        Component(equipment, "application/equipment", "Slice", "CRUD de equipamentos e parametros.")
-        Component(monitoring, "application/monitoring", "Slice", "CRUD de monitoramentos, leituras.")
-        Component(maintenance, "application/maintenance", "Slice", "Recommend, Schedule; PriorityStrategy.")
-        Component(domain, "domain", "Kotlin puro", "Entidades e regras: Process, Equipment, MaintenanceRecommendation...")
-        Component(infra, "infrastructure", "Exposed / JDBC / Service Bus", "Repositorios, DatabaseFactory, consumidor de eventos.")
-    }
+    bff -->|REST| api
+    api -.->|valida JWT| auth
+    api --> app --> domain
+    infra -.->|implementa portas| app
+    infra -->|JDBC| db
+    bus -.->|DriftDetected| infra
 
-    Rel(bff, api, "REST", "JSON")
-    Rel(api, auth, "Valida JWT", "JWKS")
-    Rel(api, processes, "Chama")
-    Rel(api, mapping, "Chama")
-    Rel(api, equipment, "Chama")
-    Rel(api, monitoring, "Chama")
-    Rel(api, maintenance, "Chama")
-    Rel(processes, domain, "Usa")
-    Rel(maintenance, domain, "Usa")
-    Rel(infra, domain, "Implementa portas")
-    Rel(infra, db, "SQL", "JDBC")
-    Rel(bus, infra, "DriftDetected", "AMQP")
-
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
+    classDef component fill:#85BBF0,stroke:#78A8D8,color:#000
+    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
+    class bff,bus,db container
+    class api,app,domain,infra component
+    class auth external
+    style core fill:none,stroke:#666,stroke-dasharray:5 5

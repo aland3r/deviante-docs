@@ -22,19 +22,88 @@ transforma esse sinal em recomendação de manutenção proativa, antes da falha
 
 ### 1.1 Visão Geral de Requisitos
 
-| ID | Requisito | Onde é atendido |
-|----|-----------|-----------------|
-| RF-01 | Login via conta Google | Supabase Auth + API Gateway |
-| RF-02 / RF-03 | Criar, editar e excluir processos, análises e monitoramentos | Core API, MS2 |
-| RF-04 | Upload de event log CSV ou XES | MS1 · Ingestão |
-| RF-05 | Gerar e exibir o grafo do processo (DFG) | MS1 (pm4py) |
-| RF-06 / RF-07 | Mapear, editar e remover o mapeamento de operações em atividades | Core API |
-| RF-08 / RF-09 / RF-10 | Filtrar traces, executar a análise de drift e reexecutar com outra sensibilidade sem novo upload | MS2 + Azure Function |
-| RF-11 / RF-12 | Criar, editar e excluir ações proativas | Core API |
-| RF-14 / RF-15 | Equipamentos no detalhe do processo; agrupar equipamentos em monitoramento | Core API |
-| Cloud RF01 / RF02 | CRUD completo no Microserviço 1 e no Microserviço 2 | MS1, MS2 |
-| Cloud RF03 / RF04 | BFF faz proxy dos CRUDs e expõe `GET /aggregated-data` | BFF |
-| Cloud RF05 | Function faz cálculo sobre os dados | Azure Function (IPDD/ADWIN) |
+Fonte: base **Requirements** do Notion (IPDD: SEVEN DIMENSIONS). Aqui ficam só os
+requisitos de **negócio** e de **arquitetura** (disciplina de Cloud), um por
+linha, com o mesmo ID do Notion. Os requisitos exclusivos de Reuso ficam na
+documentação de Reuso.
+
+**Requisitos funcionais de negócio**
+
+| ID | Requisito | Atendido por |
+|----|-----------|--------------|
+| RF-01 | Login via conta Google (OAuth) | Microfrontend + Supabase Auth |
+| RF-02 | Criar processos, análises e monitoramentos a partir do dashboard | Core API (processos, monitoramentos), MS2 (análises) |
+| RF-03 | Editar e excluir processos, análises e monitoramentos | Core API, MS2 |
+| RF-04 | Upload de log de eventos em CSV ou XES | MS1 · Ingestão |
+| RF-05 | Gerar e exibir o DFG (Directly-Follows Graph) do log | MS1 (pm4py) |
+| RF-06 | Mapear atividades do log em uma ou mais operações do processo | Core API |
+| RF-07 | Editar e remover o mapeamento de operações | Core API |
+| RF-08 | Configurar o filtro de traces antes da 1ª execução da análise | MS2 |
+| RF-09 | Executar a análise de desvio (drift) sobre um processo ou máquina | MS2 + Azure Function |
+| RF-10 | Ajustar a sensibilidade do IPDD/ADWIN e reexecutar sem novo upload | MS2 + Azure Function |
+| RF-11 | Criar ação proativa (manutenção ou inspeção) a partir de uma recomendação | Core API |
+| RF-12 | Editar e excluir ações proativas | Core API |
+| RF-13 | Exibir diagnóstico e prognóstico de saúde de uma máquina monitorada | Core API (classe de prognóstico em Kotlin, etapa futura) |
+| RF-14 | Exibir os equipamentos no detalhe do processo | Core API |
+| RF-15 | Agrupar um ou mais equipamentos sob um monitoramento | Core API |
+
+**Requisitos funcionais de negócio da Entrega 1 (v1, fluxo principal)**
+
+| ID | Requisito | Atendido por |
+|----|-----------|--------------|
+| RF1 | Autenticar o gestor (convite, Google/JWT) e compartilhar processos entre usuários | Supabase Auth + Core API |
+| RF2 | Manter processos de manufatura (criar, listar, editar; excluir só pelo dono) | Core API |
+| RF3 | Manter um catálogo global de atividades normalizadas | Core API |
+| RF4 | Importar event log (CSV/XES), fazer o parse e persistir operações, traces e tempos | MS1 · Ingestão |
+| RF5 | Mapear cada rótulo bruto (operation) para uma atividade normalizada | Core API |
+| RF6 | Gerar o grafo do processo observado a partir do log mapeado | MS1 (pm4py) |
+| RF7 | Executar a análise de drift (IPDD/ADWIN) e persistir o resultado | MS2 + Azure Function |
+| RF8 | Investigar o desvio e registrar a decisão de manutenção proativa | Core API |
+| RF9 | Monitorar a saúde de equipamentos por parâmetros de máquina | Core API |
+
+**Requisitos funcionais de arquitetura (Cloud)**
+
+| ID | Requisito | Atendido por |
+|----|-----------|--------------|
+| RF01 | CRUD completo no Microserviço 1 | MS1 · Ingestão (event logs) |
+| RF02 | CRUD completo no Microserviço 2 | MS2 · Análises (análises de drift) |
+| RF03 | Proxy das requisições de CRUD no BFF | BFF |
+| RF04 | `GET /aggregated-data` consome MS1, MS2 e a Function num único response | BFF |
+| RF05 | Function faz cálculo ou enriquecimento de dados | Azure Function (IPDD/ADWIN) |
+
+**Requisitos não funcionais de negócio**
+
+| ID | Requisito | Atendido por |
+|----|-----------|--------------|
+| RNF-01 | Back-end em Kotlin | Core API (Ktor) |
+| RNF-02 | Supabase com PostgreSQL em nuvem | Banco do Core |
+| RNF-03 | Interface em React + Vite | Microfrontend |
+| RNF-04 | Figma como fonte única de tokens e componentes de UI | Microfrontend |
+| RNF-05 | Microsserviços Python em FastAPI, consumidos via REST | MS1, MS2 |
+| RNF-06 | Microsserviços Python como Azure Functions (serverless) | Parcial: o IPDD/ADWIN é Function; MS1 e MS2 rodam no Fly.io (ADR 04) |
+| RNF-07 | Ingestão multiformato (CSV, XES, JSON) só por configuração | MS1 (parser por formato) |
+| RNF-08 | Isolamento de dados entre clientes com RLS | Banco do Core (RLS no Supabase) |
+| RNF-09 | Git e CI/CD com build, testes e deploy a cada alteração | GitHub Actions em cada repositório |
+| RNF-10 | Autenticação Supabase Auth com Google; JWT com tenant e papel | Supabase Auth, API Gateway, Core API |
+
+**Requisitos não funcionais de arquitetura (Cloud)**
+
+| ID | Requisito | Atendido por |
+|----|-----------|--------------|
+| RNF01 | SPA estruturada como microfrontend que consome só o BFF | Microfrontend |
+| RNF02 | BFF em Node.js (Express ou NestJS) | BFF (NestJS) |
+| RNF03 | Microservices com Database per Service | Core, MS1 e MS2, cada um com seu banco |
+| RNF04 | Microserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
+| RNF05 | Microserviço 2 com Azure SQL (Free, 1 DTU) | MS2 |
+| RNF06 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger) |
+| RNF07 | API Gateway na AWS | API Gateway |
+| RNF08 | Arquitetura Orientada a Eventos | Azure Service Bus (`EventLogParsed`, `DriftDetected`) |
+| RNF09 | Clean Architecture (Domain, Application, Infrastructure, API) | Todos os serviços (§5.2) |
+| RNF10 | Vertical Slice (uma pasta por feature) | Todos os serviços (§5.2) |
+| RNF11 | Testes unitários e de arquitetura | §8.5 |
+| RNF12 | Swagger no BFF, microserviços e eventos | OpenAPI do NestJS e do FastAPI |
+| RNF13 | Imagens do BFF e dos microserviços no Docker Hub | §7 |
+| RNF14 | Aplicação em URLs da nuvem, não localhost | §7 |
 
 ### 1.2 Metas de Qualidade
 
@@ -83,30 +152,16 @@ serverless são serviços gerenciados de terceiros.
 
 ```mermaid
 C4Context
-    title Nivel 1 - Contexto do Sistema: Deviante
+    title C4 Nivel 1 - Contexto do Sistema: Deviante
 
-    Person(gestor, "Gestor de Manutencao", "Monitora processos, roda analises de drift e decide a manutencao proativa.")
-    Person(mentor, "Mentor / Analista", "Acompanha resultados e valida as analises (acesso convidado).")
+    Person(gestor, "Gestor de Manutencao", "Envia o event log, roda analises de drift e decide a manutencao proativa.")
+    System(deviante, "Deviante", "Suporte a decisao na manutencao industrial: detecta drift de desempenho (IPDD/ADWIN).")
+    System_Ext(auth, "Autenticacao Supabase", "Provedor de identidade gerenciado (Google OAuth / JWT).")
 
-    System(deviante, "Deviante", "Suporte a decisao em manutencao industrial. Detecta drift de desempenho no event log (IPDD/ADWIN) e antecipa a manutencao.")
+    Rel(gestor, deviante, "Usa", "HTTPS")
+    Rel(deviante, auth, "Autentica usuarios", "OAuth / JWT")
 
-    System_Ext(origem, "Sistema de origem", "MES / ERP do chao de fabrica que exporta o event log (XES / CSV).")
-    System_Ext(google, "Google", "Provedor de identidade (OAuth 2.0).")
-    System_Ext(supabase, "Supabase", "Auth gerenciado e Postgres do servico de dominio.")
-    System_Ext(azure, "Microsoft Azure", "Azure Function (IPDD/ADWIN), Azure SQL e Service Bus.")
-    System_Ext(aws, "AWS", "API Gateway: entrada unica da API.")
-    System_Ext(atlas, "MongoDB Atlas", "Banco do microservico de ingestao.")
-
-    Rel(gestor, deviante, "Envia event logs, monitora e decide manutencao", "HTTPS")
-    Rel(mentor, deviante, "Consulta analises", "HTTPS")
-    Rel(gestor, origem, "Exporta event log", "XES / CSV")
-    Rel(deviante, google, "Autentica usuarios", "OAuth 2.0")
-    Rel(deviante, supabase, "Auth e dados de dominio", "JWT / JDBC")
-    Rel(deviante, azure, "Calcula drift, guarda analises, publica eventos", "HTTPS / AMQP")
-    Rel(deviante, aws, "Roteia requisicoes", "HTTPS")
-    Rel(deviante, atlas, "Guarda logs e grafos", "MongoDB driver")
-
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+    UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")
 ```
 
 | Parceiro | Entrada | Saída |
@@ -157,45 +212,45 @@ C4Context
 **C4 — Nível 2 · Container**
 
 ```mermaid
-C4Container
-    title Nivel 2 - Conteineres: Deviante
+flowchart TB
+    gestor(["<b>Gestor de Manutenção</b><br/>[Pessoa]"])
+    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>Google OAuth / JWT"]
 
-    Person(gestor, "Gestor de Manutencao", "Usuario autenticado (Google).")
+    subgraph dv["Deviante [Sistema]"]
+        web["<b>Microfrontend</b><br/>[React + Vite · Vercel]"]
+        gw["<b>API Gateway</b><br/>[AWS]"]
+        bff["<b>BFF</b><br/>[Node.js + NestJS]"]
+        core["<b>Core API</b><br/>[Kotlin + Ktor]<br/>processos e manutenção"]
+        ms1["<b>MS1 · Ingestão</b><br/>[FastAPI + pm4py]<br/>upload e grafo"]
+        ms2["<b>MS2 · Análises</b><br/>[FastAPI]<br/>CRUD de análises"]
+        fn["<b>IPDD/ADWIN</b><br/>[Azure Function]"]
+        bus{{"<b>Service Bus</b><br/>[Azure · eventos]"}}
+        dbCore[("<b>Postgres</b><br/>[Supabase]")]
+        dbMs1[("<b>MongoDB</b><br/>[Atlas]")]
+        dbMs2[("<b>Azure SQL</b>")]
+    end
 
-    System_Boundary(dv, "Deviante") {
-        Container(web, "Microfrontend", "React + Vite / Vercel", "SPA. Consome apenas o BFF, via API Gateway.")
-        Container(gw, "API Gateway", "AWS API Gateway (HTTP API)", "Entrada unica: roteamento, validacao de JWT, rate limit.")
-        Container(bff, "BFF", "Node.js + NestJS / Fly.io", "Proxy dos CRUDs e agregacao (GET /aggregated-data). Sem banco.")
-        Container(core, "Core API", "Kotlin + Ktor / Fly.io", "Dominio: processos, atividades, equipamentos, monitoramento e manutencao.")
-        Container(ms1, "MS1 - Ingestao", "Python + FastAPI + pm4py / Fly.io", "Upload CSV/XES, parse, traces e grafo do processo (DFG).")
-        Container(ms2, "MS2 - Analises de drift", "Python + FastAPI / Fly.io", "CRUD das analises; monta a serie e chama a Function.")
-        Container(fn, "Azure Function - IPDD/ADWIN", "Python / HTTP Trigger", "Calculo sem estado: devolve os pontos de drift (codigo de L. F. Picolo).")
-        ContainerQueue(bus, "Broker de eventos", "Azure Service Bus", "EventLogParsed, DriftDetected.")
-        ContainerDb(dbCore, "Banco do Core", "Supabase Postgres", "Dados de dominio.")
-        ContainerDb(dbMs1, "Banco do MS1", "MongoDB Atlas", "Event logs, traces, grafos.")
-        ContainerDb(dbMs2, "Banco do MS2", "Azure SQL", "Analises e pontos de drift.")
-    }
+    gestor -->|HTTPS| web
+    web -.->|login| auth
+    web -->|REST| gw --> bff
+    bff --> core & ms1 & ms2
+    bff -->|agregado| fn
+    ms2 -->|calcula drift| fn
+    core --> dbCore
+    ms1 --> dbMs1
+    ms2 --> dbMs2
+    ms1 -.->|EventLogParsed| bus
+    bus -.-> ms2
+    ms2 -.->|DriftDetected| bus
+    bus -.-> core
 
-    System_Ext(auth, "Supabase Auth", "Google OAuth / JWT")
-
-    Rel(gestor, web, "Usa", "HTTPS")
-    Rel(web, auth, "Login", "supabase-js")
-    Rel(web, gw, "Chama a API", "HTTPS / JSON")
-    Rel(gw, bff, "Encaminha", "HTTPS")
-    Rel(bff, core, "CRUD de dominio", "REST")
-    Rel(bff, ms1, "Upload e grafo", "REST")
-    Rel(bff, ms2, "CRUD de analises", "REST")
-    Rel(bff, fn, "Previa de drift", "HTTP Trigger")
-    Rel(ms2, fn, "Calcula drift", "HTTP Trigger")
-    Rel(ms1, bus, "Publica EventLogParsed", "AMQP")
-    Rel(bus, ms2, "Entrega EventLogParsed", "AMQP")
-    Rel(ms2, bus, "Publica DriftDetected", "AMQP")
-    Rel(bus, core, "Entrega DriftDetected", "AMQP")
-    Rel(core, dbCore, "Le e grava", "JDBC")
-    Rel(ms1, dbMs1, "Le e grava", "MongoDB driver")
-    Rel(ms2, dbMs2, "Le e grava", "ODBC")
-
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+    classDef person fill:#08427B,stroke:#073B6F,color:#fff
+    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
+    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
+    class gestor person
+    class web,gw,bff,core,ms1,ms2,fn,bus,dbCore,dbMs1,dbMs2 container
+    class auth external
+    style dv fill:none,stroke:#666,stroke-dasharray:5 5
 ```
 
 | Container | Responsabilidade | Tecnologia | Banco |
@@ -217,39 +272,33 @@ componentes de domínio espelham os objetos do OOUX (ver [[UX/OBJECTS]]).
 **C4 — Nível 3 · Component**
 
 ```mermaid
-C4Component
-    title Nivel 3 - Componentes: Core API (Kotlin/Ktor)
+flowchart TB
+    bff["<b>BFF</b><br/>[Container: NestJS]"]
+    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>JWKS"]
+    bus{{"<b>Service Bus</b><br/>[Container: Azure]"}}
+    db[("<b>Postgres</b><br/>[Container: Supabase]")]
 
-    Container(bff, "BFF", "NestJS", "Unico cliente do Core")
-    System_Ext(auth, "Supabase Auth", "JWKS")
-    ContainerQueue(bus, "Service Bus", "Azure", "DriftDetected")
-    ContainerDb(db, "Supabase Postgres", "Postgres", "Dados de dominio")
+    subgraph core["Core API · Kotlin/Ktor [Container]"]
+        api["<b>api</b><br/>[Component: rotas Ktor]<br/>endpoints e validação de JWT"]
+        app["<b>application</b><br/>[Component: slices]<br/>processes · activities · equipment<br/>monitoring · maintenance"]
+        domain["<b>domain</b><br/>[Component: Kotlin puro]<br/>entidades e regras"]
+        infra["<b>infrastructure</b><br/>[Component: Exposed]<br/>repositórios e eventos"]
+    end
 
-    Container_Boundary(core, "Core API - Clean Architecture + Vertical Slice") {
-        Component(api, "api", "Ktor Routing", "Rotas por feature, DTOs, autenticacao.")
-        Component(processes, "application/processes", "Slice", "CreateProcess, UpdateProcess, DeleteProcess, ListProcesses.")
-        Component(mapping, "application/activities", "Slice", "MapOperation, ManageActivityCatalog.")
-        Component(equipment, "application/equipment", "Slice", "CRUD de equipamentos e parametros.")
-        Component(monitoring, "application/monitoring", "Slice", "CRUD de monitoramentos, leituras.")
-        Component(maintenance, "application/maintenance", "Slice", "Recommend, Schedule; PriorityStrategy.")
-        Component(domain, "domain", "Kotlin puro", "Entidades e regras: Process, Equipment, MaintenanceRecommendation...")
-        Component(infra, "infrastructure", "Exposed / JDBC / Service Bus", "Repositorios, DatabaseFactory, consumidor de eventos.")
-    }
+    bff -->|REST| api
+    api -.->|valida JWT| auth
+    api --> app --> domain
+    infra -.->|implementa portas| app
+    infra -->|JDBC| db
+    bus -.->|DriftDetected| infra
 
-    Rel(bff, api, "REST", "JSON")
-    Rel(api, auth, "Valida JWT", "JWKS")
-    Rel(api, processes, "Chama")
-    Rel(api, mapping, "Chama")
-    Rel(api, equipment, "Chama")
-    Rel(api, monitoring, "Chama")
-    Rel(api, maintenance, "Chama")
-    Rel(processes, domain, "Usa")
-    Rel(maintenance, domain, "Usa")
-    Rel(infra, domain, "Implementa portas")
-    Rel(infra, db, "SQL", "JDBC")
-    Rel(bus, infra, "DriftDetected", "AMQP")
-
-    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
+    classDef component fill:#85BBF0,stroke:#78A8D8,color:#000
+    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
+    class bff,bus,db container
+    class api,app,domain,infra component
+    class auth external
+    style core fill:none,stroke:#666,stroke-dasharray:5 5
 ```
 
 | Slice (`application/`) | Features |
@@ -520,6 +569,23 @@ flowchart TB
 
 ### 8.1 Modelo de domínio e dados
 
+**Objetos de negócio (OOUX / ORCA).** Os seis objetos do ORCA são o
+vocabulário comum entre interface, código e dados. Cada objeto vira uma classe
+de domínio (§5.3), uma tela no Microfrontend e uma tabela ou coleção; cada CTA
+vira um caso de uso.
+
+| Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
+|-------------|---------------|--------------|------|------------|
+| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-02, RF-03, RF-14 |
+| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-06, RF-07 |
+| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-02, RF-03, RF-08, RF-09, RF-10 |
+| Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-02, RF-03, RF-15 |
+| Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-13, RF-14 |
+| Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-11, RF-12 |
+
+O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o
+grafo (MS1) são dados de suporte de Process e Activity.
+
 Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`).
 
 **Diagrama de Entidades e Relacionamentos — Core (Supabase Postgres)**
@@ -719,3 +785,10 @@ timeout por serviço e devolve agregado parcial. Eventos são idempotentes
 | DFG | Directly-Follows Graph: grafo de quais atividades seguem quais. |
 | RUL | Remaining Useful Life: vida útil restante estimada de um equipamento. |
 | BFF | Backend for Frontend: API feita sob medida para a interface. |
+| Process (Processo) | Objeto ORCA: processo de manufatura monitorado. Ver §8.1. |
+| Activity (Atividade) | Objeto ORCA: etapa normalizada do processo; os rótulos do event log são mapeados para ela. |
+| Analysis (Análise) | Objeto ORCA: execução do IPDD/ADWIN com parâmetros e pontos de drift. |
+| Monitoring (Monitoramento) | Objeto ORCA: agrupamento de máquinas acompanhadas por parâmetros e leituras. |
+| Machine (Máquina) | Objeto ORCA: equipamento do chão de fábrica; no código, `Equipment`. |
+| Maintenance (Manutenção) | Objeto ORCA: ação proativa (manutenção ou inspeção) recomendada e agendada antes da falha. |
+| OOUX / ORCA | Object-Oriented UX; ORCA = Objects, Relationships, CTAs, Attributes. |
