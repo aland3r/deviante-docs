@@ -191,7 +191,7 @@ C4Context
 | Cálculo sob demanda e barato | **Serverless**: IPDD/ADWIN como Azure Function sem estado |
 | Desacoplar ingestão, análise e domínio | **EDA**: `EventLogParsed` e `DriftDetected` no Service Bus |
 | Modificabilidade | **Clean Architecture** (`domain`, `application`, `infrastructure`, `api`) e **Vertical Slice** (uma pasta por feature em `application`) |
-| Reuso | Padrões Singleton, Template Method e Strategy (ver §8.3) |
+| Reuso | Padrões Singleton, Template Method e Adapter (ver §8.3) |
 
 ### 4.1 Software Architecture Canvas
 
@@ -408,13 +408,6 @@ classDiagram
       +complete()
       +cancel()
     }
-    class PriorityStrategy {
-      <<interface>>
-      +priorityFor(recommendation) Priority
-    }
-    class ByFailureProbability
-    class ByRemainingUsefulLife
-    class ByCriticality
 
     Manager "1" --> "*" Process : possui
     Process "*" --> "*" Activity : usa
@@ -426,10 +419,6 @@ classDiagram
     MonitoringParameter "1" --> "*" Reading : registra
     Equipment "1" --> "*" MaintenanceRecommendation : recebe
     MaintenanceRecommendation "1" --> "0..1" MaintenanceSchedule : vira
-    MaintenanceRecommendation ..> PriorityStrategy : usa
-    PriorityStrategy <|.. ByFailureProbability
-    PriorityStrategy <|.. ByRemainingUsefulLife
-    PriorityStrategy <|.. ByCriticality
 ```
 
 Classes dos outros serviços: MS1 — `EventLog`, `Trace`, `Event`, `ProcessGraph`,
@@ -724,9 +713,50 @@ vindas do BFF ou do Service Bus.
 |--------|----------|------|
 | Singleton (2) | `DatabaseFactory`, `AppConfig` (Kotlin `object`) | Core |
 | Template Method (3) | `EventLogParser` → `CsvParser`, `XesParser`, `JsonParser` | MS1 |
-| Strategy (3) | `PriorityStrategy` → `ByFailureProbability`, `ByRemainingUsefulLife`, `ByCriticality` | Core |
+| Adapter (3) | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN de L. F. Picolo), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py), `SupabaseAuthAdapter` → `TokenVerifier` (Supabase Auth / JWKS) | Function, MS1, Core |
 
-O Strategy é também o ponto de variabilidade por cliente da linha de produto.
+```mermaid
+classDiagram
+    direction LR
+    class DriftDetector {
+      <<interface>>
+      +detect(series, delta) List~DriftPoint~
+    }
+    class IpddAdwinAdapter {
+      +detect(series, delta) List~DriftPoint~
+    }
+    class ipdd_adwin {
+      <<código de L. F. Picolo>>
+    }
+    class GraphMiner {
+      <<interface>>
+      +mine(eventLog) ProcessGraph
+    }
+    class Pm4pyGraphAdapter {
+      +mine(eventLog) ProcessGraph
+    }
+    class pm4py {
+      <<biblioteca>>
+    }
+    class TokenVerifier {
+      <<interface>>
+      +verify(jwt) Manager
+    }
+    class SupabaseAuthAdapter {
+      +verify(jwt) Manager
+    }
+    class SupabaseJWKS {
+      <<serviço externo>>
+    }
+    DriftDetector <|.. IpddAdwinAdapter
+    IpddAdwinAdapter --> ipdd_adwin : adapta
+    GraphMiner <|.. Pm4pyGraphAdapter
+    Pm4pyGraphAdapter --> pm4py : adapta
+    TokenVerifier <|.. SupabaseAuthAdapter
+    SupabaseAuthAdapter --> SupabaseJWKS : adapta
+```
+
+O Adapter é o padrão de reuso de código de terceiros: o sistema depende só da interface, e a biblioteca externa fica atrás do adaptador, sem ser reescrita. Trocar o detector, o minerador ou o provedor de identidade é trocar um adaptador.
 
 ### 8.4 Tratamento de erros e resiliência
 
