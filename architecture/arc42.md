@@ -6,17 +6,13 @@ framework **IPDD** (Interactive Process Drift Detection), de **Denise M. V. Sato
 
 **Grupo:** Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange.
 
-> Documento escrito como código: este `.md` é a fonte única. O site
-> [deviante.alander.io/documentacao](https://deviante.alander.io/documentacao)
-> renderiza este arquivo direto da branch `main`, e o PDF entregue é gerado a
-> partir dele. Diagramas C4 e UML são Mermaid embutido, cada um na seção arc42
-> que explica; as versões avulsas ficam em `architecture/c4/`.
-
 ---
 
 ## 1. Introdução e Metas
 
 O Deviante é um sistema de suporte a decisões em manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. O sistema identifica quando o tempo de execução de uma atividade da máquina muda de comportamento e transforma esse sinal de anomalia em recomendação de manutenção proativa, antes da falha do equipamento.
+
+A presente documentação apresenta um conjunto de decisões de design que afetam a estrutura e o comportamento do sistema. Essas decisões incluem a escolha de padrões arquiteturais, a definição de componentes e suas interações, e a consideração de requisitos funcionais e não funcionais. A arquitetura proposta serve como um guia para o desenvolvimento, influenciando diretamente a qualidade do software e a eficiência do processo de desenvolvimento.
 
 ### 1.1 Visão Geral de Requisitos
 
