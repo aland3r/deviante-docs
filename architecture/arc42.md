@@ -10,13 +10,13 @@ framework **IPDD** (Interactive Process Drift Detection), de **Denise M. V. Sato
 
 ## 1. Introdução e Metas
 
-O Deviante é um sistema de suporte a decisões em manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. O sistema identifica quando o tempo de execução de uma atividade da máquina muda de comportamento e transforma esse sinal de anomalia em recomendação de manutenção proativa, antes da falha do equipamento.
+O Deviante é um sistema de suporte a decisões para  a gestão de manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. O sistema identifica quando o tempo de execução de uma atividade do processo produtivo muda de comportamento, sinalizando possíveis anomalias que facilitam as decisões de gestores de manutenção no agendamento de manutenções no momento mais adequado. O objetivo do projeto é a redução de custos para a empresa e o aumento da disponibilidade dos ativos industriais.
 
-A presente documentação apresenta um conjunto de decisões de design que afetam a estrutura e o comportamento do sistema. Essas decisões incluem a escolha de padrões arquiteturais, a definição de componentes e suas interações, e a consideração de requisitos funcionais e não funcionais. A arquitetura proposta serve como um guia para o desenvolvimento, influenciando diretamente a qualidade do software e a eficiência do processo de desenvolvimento.
+A presente documentação apresenta um conjunto de decisões de design que afetam a estrutura e o comportamento do sistema Deviante. Tais decisões incluem a escolha de padrões arquiteturais, a definição de componentes e suas interações, e a consideração de requisitos funcionais e não funcionais. A arquitetura proposta serve como um guia para o desenvolvimento, influenciando diretamente a qualidade do software e a eficiência do processo de desenvolvimento.
 
 ### 1.1 Visão Geral de Requisitos
 
-O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, a partir dos registros do chão de fábrica, que uma máquina começou a demorar mais do que o normal e agir antes da falha. As tabelas abaixo resumem os requisitos; a versão completa, com origem, tipo, status e evidência, fica no banco **Requirements** do Notion (IPDD: SEVEN DIMENSIONS). Os requisitos vêm de duas fontes: o negócio (PIBITI e produto) e a disciplina de Arquitetura e Soluções Cloud.
+O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, a partir dos registros do chão de fábrica, que uma máquina começou a demorar mais do que o normal e fornecer recursos para agir antes da falha, momento em que o custo de manutenção é menor. As tabelas abaixo resumem os requisitos:
 
 **Requisitos funcionais de negócio**
 
@@ -94,7 +94,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RNF11 | Testes unitários e de arquitetura | §8.5 |
 | RNF12 | Swagger no BFF, microserviços e eventos | OpenAPI do NestJS e do FastAPI |
 | RNF13 | Imagens do BFF e dos microserviços no Docker Hub | §7 |
-| RNF14 | Aplicação em URLs da nuvem, não [localhost](http://localhost) | §7 |
+| RNF14 | Aplicação em URLs da nuvem, não localhost | §7 |
 
 ### 1.2 Metas de Qualidade
 
@@ -114,7 +114,7 @@ Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os tr
 
 | Papel / Nome | Contato | Expectativa |
 |---|---|---|
-| Operador | Usuário do sistema | Informar as atividades da cadeia produtiva e registrar os dados sem retrabalho. |
+| Operador do maquinário | Usuário do sistema | Informar as atividades da cadeia produtiva e registrar os dados. |
 | Gestor de manutenção | Usuário do sistema | Monitorar os dados, gerar análises a partir do processo registrado e acionar a manutenção a tempo. |
 | Técnico de manutenção | Usuário do sistema | Saber o que fazer, registrar a manutenção realizada e reabilitar a máquina no sistema. |
 | Analista / mentor | Grupo de pesquisa IPDD (PUCPR) | Validar as análises e ajustar a sensibilidade do IPDD/ADWIN. |
@@ -123,7 +123,7 @@ Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os tr
 | Eduardo de Freitas Loures, orientador PIBITI | [eduardo.loures@pucpr.br](mailto:eduardo.loures@pucpr.br) | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
 | Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | [manoel.valerio@pucpr.br](mailto:manoel.valerio@pucpr.br) | Avaliar estilos arquiteturais e implantação em nuvem. |
 | Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | [tiago.adelino@pucpr.edu.br](mailto:tiago.adelino@pucpr.edu.br) | Avaliar padrões de projeto, variabilidade e reuso. |
-| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange | [github.com/aland3r](http://github.com/aland3r) | Uma arquitetura que caiba no prazo e no free tier. |
+| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Emanuelle Skolut Jose | menezes.alander@pucpr.eud.br | Uma arquitetura que caiba no prazo e no free tier. |
 
 ---
 
@@ -163,7 +163,7 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | RO4 | Um repositório público no GitHub por serviço, cada um com README (arquitetura, tecnologias, como rodar, nomes dos alunos) | Exigência de Cloud. |
 | RO5 | Imagem Docker do BFF e de cada microsserviço publicada no Docker Hub | Exigência de Cloud (RNF13). |
 | RO6 | CI com build, testes e deploy a cada alteração; testes unitários e de arquitetura | RNF-09 e exigência de Cloud (RNF11). |
-| RO7 | Demonstração em URLs da nuvem, não [localhost](http://localhost), em vídeo no YouTube com todos os integrantes falando | Exigência de Cloud (RNF14). |
+| RO7 | Demonstração em URLs da nuvem, não localhost, em vídeo no YouTube com todos os integrantes falando | Exigência de Cloud (RNF14). |
 
 ### 2.3 Convenções
 
