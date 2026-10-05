@@ -48,15 +48,15 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | ID | Requisito | Atendido por |
 |---|---|---|
 | RNF-01 | Back-end em Kotlin | Core API (Ktor) |
-| RNF-02 | Supabase com PostgreSQL em nuvem | Banco do Core |
+| RNF-02 | Persistência no MongoDB Atlas (databases `deviante_core` e `deviante_ingest`) e no Azure SQL; Supabase só para autenticação | Core API e MS1 (Atlas), MS2 (Azure SQL) |
 | RNF-03 | Interface em React + Vite | Microfrontend |
 | RNF-04 | Figma como fonte única de tokens e componentes de UI | Microfrontend |
 | RNF-05 | Microsserviços Python em FastAPI, consumidos via REST | MS1, MS2 |
 | RNF-06 | Microsserviços Python como Azure Functions (serverless) | Parcial: o IPDD/ADWIN é Function; MS1 e MS2 rodam no Fly.io (ADR 04) |
 | RNF-07 | Ingestão multiformato (CSV, XES, JSON) só por configuração | MS1 (parser por formato) |
-| RNF-08 | Isolamento de dados entre clientes com RLS | Banco do Core (RLS no Supabase) |
+| RNF-08 | Isolamento de dados por gestor (filtro pelo JWT) e por serviço (um usuário de banco restrito por serviço) | Core API e usuários do Atlas e do Azure SQL (§8.2) |
 | RNF-09 | Git e CI/CD com build, testes e deploy a cada alteração | GitHub Actions em cada repositório |
-| RNF-10 | Autenticação Supabase Auth com Google; JWT com tenant e papel | Supabase Auth, API Gateway, Core API |
+| RNF-10 | Autenticação Supabase Auth com Google; JWT com usuário e papel; Supabase sem dados de negócio | Supabase Auth, API Gateway, BFF, Core API |
 
 **Requisitos não funcionais de arquitetura (Cloud)**
 
@@ -64,8 +64,8 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 |---|---|---|
 | RNF-12 | SPA estruturada como microfrontend que consome só o BFF | Microfrontend |
 | RNF-13 | BFF em Node.js (Express ou NestJS) | BFF (NestJS) |
-| RNF-14 | Microservices com Database per Service | Core, MS1 e MS2, cada um com seu banco |
-| RNF-15 | Microserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
+| RNF-14 | Microservices com Database per Service | Core e MS1 com databases próprias no MongoDB Atlas; MS2 no Azure SQL |
+| RNF-15 | Microserviço 1 com MongoDB Atlas (Free Tier) | MS1 (database `deviante_ingest`) |
 | RNF-16 | Microserviço 2 com Azure SQL (Free, 1 DTU) | MS2 |
 | RNF-17 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger) |
 | RNF-18 | API Gateway na AWS | API Gateway |
@@ -130,7 +130,7 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | RT6 | API Gateway na AWS como porta de entrada | Exigência de Cloud (RNF-18). |
 | RT7 | Comunicação assíncrona por eventos entre serviços | Exigência de Cloud (RNF-19). |
 | RT8 | Back-end de domínio em Kotlin; microsserviços analíticos em Python com FastAPI | Decisão do grupo (RNF-01, RNF-05). PM4Py e o código IPDD/ADWIN só existem em Python. |
-| RT9 | Supabase para autenticação (Google) e Postgres com RLS | Decisão do grupo (RNF-02, RNF-08, RNF-10). |
+| RT9 | Supabase só para autenticação (Google OAuth e JWT); os dados de negócio ficam no MongoDB Atlas e no Azure SQL | Decisão do grupo (RNF-02, RNF-08, RNF-10). Separa identidade de dados (ADR 08). |
 | RT10 | Código IPDD/ADWIN de L. F. Picolo reaproveitado sem reescrita | Fidelidade científica: o método publicado (Sato et al., 2025) precisa dar os mesmos resultados. |
 | RT11 | Só serviços gratuitos (free tiers) | Projeto acadêmico sem orçamento. Limites de memória, conexões e DTU condicionam o desenho. |
 
@@ -223,7 +223,7 @@ Todo o tráfego externo entra por um único canal, o API Gateway da AWS, e segue
 
 O Deviante gira em torno de um fluxo curto: o operador registra o processo, o event log da máquina é importado, o IPDD/ADWIN procura mudanças no tempo das atividades e o gestor decide a manutenção que o técnico executa. As decisões abaixo saem desse fluxo, das metas de qualidade (seção 1.2) e das restrições (seção 2).
 
-**Decomposição.** O sistema é dividido por responsabilidade, cada parte com seu banco (Database per Service). A interface é um microfrontend em React que conversa só com o BFF em NestJS, e o BFF fica atrás do API Gateway da AWS. O domínio (processos, atividades, máquinas, monitoramentos e manutenções) fica na Core API em Kotlin/Ktor sobre o Supabase. A ingestão do log e o grafo do processo ficam no MS1 (FastAPI + PM4Py, MongoDB Atlas) e as análises de desvio no MS2 (FastAPI, Azure SQL).
+**Decomposição.** O sistema é dividido por responsabilidade, cada parte com seu banco (Database per Service). A interface é um microfrontend em React que conversa só com o BFF em NestJS, e o BFF fica atrás do API Gateway da AWS. O domínio (processos, atividades, máquinas, monitoramentos e manutenções) fica na Core API em Kotlin/Ktor, com database própria no MongoDB Atlas; o Supabase cuida só do login. A ingestão do log e o grafo do processo ficam no MS1 (FastAPI + PM4Py, outra database no mesmo cluster do Atlas) e as análises de desvio no MS2 (FastAPI, Azure SQL).
 
 **Núcleo analítico.** O IPDD/ADWIN roda numa Azure Function sem estado, chamada sob demanda. O código original de L. F. Picolo é envolvido por um Adapter em vez de reescrito, o que preserva os resultados do método publicado.
 
@@ -242,7 +242,7 @@ A tabela liga cada meta de qualidade à abordagem que a atende.
 | Correção analítica | Para os logs sintéticos `DR_*`, o drift detectado cai a até 5 traces do ponto injetado. | Reaproveitar o IPDD/ADWIN original por um Adapter (`IpddAdwinAdapter`), sem reescrita, e validar contra o ground truth de `adwin_dataset.py` (seções 8.3 e 10). |
 | Modificabilidade | Um novo formato de log (ex.: JSON) entra sem alterar MS2, BFF ou Core. | Um parser por formato isolado no MS1; eventos separam o MS1 de quem consome o log; Clean Architecture e Vertical Slice limitam o impacto da mudança (seções 5 e 8). |
 | Isolamento | Uma falha no MS2 ou na Function não derruba o CRUD de processos e equipamentos; o BFF devolve o agregado parcial. | Database per Service, Function sem estado, eventos idempotentes no Service Bus e BFF com timeout por serviço (seções 5, 6 e 8). |
-| Segurança | Nenhum serviço responde sem JWT válido do Supabase Auth; dados de um gestor não aparecem para outro. | Login Google pelo Supabase Auth, JWT validado no API Gateway e nos serviços, RLS no Postgres por tenant (seção 8). |
+| Segurança | Nenhum serviço responde sem JWT válido do Supabase Auth; dados de um gestor não aparecem para outro. | Login Google pelo Supabase Auth, JWT validado no API Gateway e nos serviços, filtro por gestor em todo repositório do Core e um usuário de banco por serviço (seção 8.2). |
 | Implantabilidade | Cada serviço é uma imagem Docker no Docker Hub, implantada de forma independente. | Um repositório, uma imagem e um pipeline do GitHub Actions por serviço (seção 7). |
 
 ---
@@ -271,8 +271,8 @@ flowchart TB
         ms2["<b>MS2 · Análises</b><br/>[FastAPI]<br/>CRUD de análises"]
         fn["<b>IPDD/ADWIN</b><br/>[Azure Function]"]
         bus{{"<b>Service Bus</b><br/>[Azure · eventos]"}}
-        dbCore[("<b>Postgres</b><br/>[Supabase]")]
-        dbMs1[("<b>MongoDB</b><br/>[Atlas]")]
+        dbCore[("<b>MongoDB</b><br/>[Atlas · deviante_core]")]
+        dbMs1[("<b>MongoDB</b><br/>[Atlas · deviante_ingest]")]
         dbMs2[("<b>Azure SQL</b>")]
     end
 
@@ -308,8 +308,8 @@ flowchart TB
 | Microfrontend | SPA do produto e do site público | React + Vite, Vercel | — |
 | API Gateway | Entrada única, roteamento, JWT, rate limit | AWS API Gateway (HTTP API) | — |
 | BFF | Proxy dos CRUDs; `GET /aggregated-data` junta Core, MS1, MS2 e Function num único JSON | Node.js + NestJS, Fly.io | — |
-| Core API | Processos, atividades, mapeamentos, equipamentos, monitoramento, recomendações e agendas | Kotlin + Ktor, Fly.io | Supabase Postgres |
-| MS1 · Ingestão | Upload CSV/XES, parse, operações, traces e grafo (DFG) com pm4py; CRUD de event logs | Python + FastAPI + pm4py, Fly.io | MongoDB Atlas |
+| Core API | Processos, atividades, mapeamentos, equipamentos, monitoramento, recomendações e agendas | Kotlin + Ktor, Fly.io | MongoDB Atlas (`deviante_core`) |
+| MS1 · Ingestão | Upload CSV/XES, parse, operações, traces e grafo (DFG) com pm4py; CRUD de event logs | Python + FastAPI + pm4py, Fly.io | MongoDB Atlas (`deviante_ingest`) |
 | MS2 · Análises | CRUD das análises de drift; monta a série de tempos e chama a Function | Python + FastAPI, Fly.io | Azure SQL |
 | Azure Function | IPDD/ADWIN: recebe a série, devolve os pontos de drift; sem estado | Python, HTTP Trigger | — |
 | Service Bus | Transporte de eventos entre serviços | Azure Service Bus | — |
@@ -325,20 +325,20 @@ flowchart TB
     bff["<b>BFF</b><br/>[Container: NestJS]"]
     auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>JWKS"]
     bus{{"<b>Service Bus</b><br/>[Container: Azure]"}}
-    db[("<b>Postgres</b><br/>[Container: Supabase]")]
+    db[("<b>MongoDB</b><br/>[Container: Atlas · deviante_core]")]
 
     subgraph core["Core API · Kotlin/Ktor [Container]"]
         api["<b>api</b><br/>[Component: rotas Ktor]<br/>endpoints e validação de JWT"]
         app["<b>application</b><br/>[Component: slices]<br/>processes · activities · equipment<br/>monitoring · maintenance"]
         domain["<b>domain</b><br/>[Component: Kotlin puro]<br/>entidades e regras"]
-        infra["<b>infrastructure</b><br/>[Component: Exposed]<br/>repositórios e eventos"]
+        infra["<b>infrastructure</b><br/>[Component: driver MongoDB]<br/>repositórios e eventos"]
     end
 
     bff -->|REST| api
     api -.->|valida JWT| auth
     api --> app --> domain
     infra -.->|implementa portas| app
-    infra -->|JDBC| db
+    infra -->|MongoDB driver| db
     bus -.->|DriftDetected| infra
 
     classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
@@ -655,33 +655,34 @@ flowchart TB
     subgraph aws["AWS"]
         gw["API Gateway"]
     end
-    subgraph fly["Fly.io (imagens do Docker Hub)"]
+    subgraph fly["Fly.io · iad (imagens do Docker Hub)"]
         bff["BFF"]
         core["Core API"]
         ms1["MS1 Ingestão"]
         ms2["MS2 Análises"]
     end
-    subgraph azure["Microsoft Azure"]
+    subgraph azure["Microsoft Azure · eastus · rg-deviante"]
         fn["Function IPDD/ADWIN"]
         sql[("Azure SQL")]
         bus{{"Service Bus"}}
     end
     subgraph saas["SaaS"]
-        supa[("Supabase Postgres + Auth")]
-        mongo[("MongoDB Atlas")]
+        supa["Supabase Auth"]
+        mongo[("MongoDB Atlas pjbl · us-east-1<br/>deviante_core · deviante_ingest")]
     end
     browser -->|HTTPS| fe
     fe -->|HTTPS| gw --> bff
     bff --> core & ms1 & ms2
     bff --> fn
     ms2 --> fn
-    core --> supa
+    fe -.->|login| supa
+    core --> mongo
     ms1 --> mongo
     ms2 --> sql
     ms1 & ms2 & core <--> bus
 ```
 
-**Motivação.** As restrições de Cloud (§2) fixam o API Gateway na AWS e a Azure Function e o Azure SQL na Azure, que também hospeda o barramento de eventos. Os serviços em contêiner ficam no Fly.io, onde o deploy já funcionava no plano gratuito (§9, decisão 04), rodando as mesmas imagens publicadas no Docker Hub. Os bancos gerenciados (Supabase, MongoDB Atlas) evitam operar banco próprio.
+**Motivação.** As restrições de Cloud (§2) fixam o API Gateway na AWS e a Azure Function e o Azure SQL na Azure, que também hospeda o barramento de eventos. Os serviços em contêiner ficam no Fly.io, onde o deploy já funcionava no plano gratuito (§9, decisão 04), rodando as mesmas imagens publicadas no Docker Hub. Os bancos gerenciados (MongoDB Atlas e Azure SQL) evitam operar banco próprio, e o Supabase fica só com a autenticação (§9, decisão 08). Core e MS1 dividem o cluster `pjbl` do Atlas, cada um com sua database. Azure, Fly.io e Atlas ficam na mesma área, a costa leste dos EUA (eastus, iad e us-east-1); a assinatura Azure for Students não libera East US 2.
 
 **Características de qualidade.** O Fly.io e a Azure Function escalam a zero quando não há uso, o que mantém o custo em zero, mas a primeira chamada depois de um período parado demora mais (cold start). O BFF tolera essa latência com timeout por serviço e resposta parcial (§6.2, §8.4).
 
@@ -692,9 +693,10 @@ flowchart TB
 | Microfrontend | Vercel | Deploy a cada push na `main` |
 | API Gateway | AWS API Gateway (HTTP API) | Configuração de rotas e autorizador JWT |
 | BFF, Core API, MS1, MS2 | Fly.io, uma app por serviço | Imagem no Docker Hub, deploy via GitHub Actions |
-| Azure Function IPDD/ADWIN | Azure Functions, plano Consumption | Deploy via GitHub Actions |
+| Azure Function IPDD/ADWIN | Azure Functions, plano Consumption, eastus, resource group `rg-deviante` | Deploy via GitHub Actions com login OIDC na managed identity, sem segredo |
 | Service Bus | Azure Service Bus | Filas e tópicos dos eventos `EventLogParsed` e `DriftDetected` |
-| Bancos | Supabase Postgres, MongoDB Atlas M0, Azure SQL Free | Serviços gerenciados; segredos de conexão nos secrets do GitHub Actions |
+| Bancos | MongoDB Atlas M0 `pjbl` (us-east-1, databases `deviante_core` e `deviante_ingest`), Azure SQL Free (eastus) | Serviços gerenciados; um usuário de banco por serviço, restrito à própria database; strings de conexão nos secrets do GitHub Actions |
+| Autenticação | Supabase Auth | Só login Google e emissão do JWT; nenhum dado de negócio |
 
 ---
 
@@ -717,90 +719,75 @@ Esta seção reúne as regras e soluções que valem para vários blocos ao mesm
 
 O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o grafo (MS1) são dados de suporte de Process e Activity.
 
-Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Detalhe por tabela (banco, campos, chaves e a classe que persiste cada uma) na database Entidades da [página no Notion](https://app.notion.com/p/3ec5fc7249408016bae5f7b940dd50d7).
+Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Core e MS1 dividem o cluster `pjbl` do MongoDB Atlas, mas cada um tem sua database e seu usuário, com `readWrite` só nela; nenhum serviço lê a database do outro. Detalhe por tabela (banco, campos, chaves e a classe que persiste cada uma) na database Entidades da [página no Notion](https://app.notion.com/p/3ec5fc7249408016bae5f7b940dd50d7).
 
-**Diagrama de Entidades e Relacionamentos — Core (Supabase Postgres)**
+**Modelo de dados — Core (MongoDB Atlas, database ****`deviante_core`****)**
+
+Cada caixa é uma coleção. Listas curtas que só existem dentro do pai ficam embutidas (mapeamentos no processo, parâmetros no monitoramento); o resto é referência por id. As leituras ficam numa coleção time series. Toda coleção com `manager_id` é consultada sempre filtrando pelo gestor do JWT (§8.2).
 
 ```mermaid
 erDiagram
     MANAGERS ||--o{ PROCESSES : possui
     MANAGERS ||--o{ EQUIPMENT : cadastra
     MANAGERS ||--o{ MONITORINGS : cria
-    PROCESSES ||--o{ PROCESS_ACTIVITIES : usa
-    ACTIVITIES ||--o{ PROCESS_ACTIVITIES : compoe
-    PROCESSES ||--o{ OPERATION_MAPPINGS : mapeia
-    ACTIVITIES ||--o{ OPERATION_MAPPINGS : destino
-    PROCESSES ||--o{ PROCESS_EQUIPMENT : envolve
-    EQUIPMENT ||--o{ PROCESS_EQUIPMENT : participa
-    MONITORINGS ||--o{ MONITORING_EQUIPMENT : acompanha
-    EQUIPMENT ||--o{ MONITORING_EQUIPMENT : monitorado
-    MONITORINGS ||--o{ MONITORING_PARAMETERS : mede
-    MONITORING_PARAMETERS ||--o{ MONITORING_READINGS : registra
+    PROCESSES }o--o{ ACTIVITIES : activity_ids
+    PROCESSES }o--o{ EQUIPMENT : equipment_ids
+    MONITORINGS }o--o{ EQUIPMENT : equipment_ids
+    MONITORINGS ||--o{ READINGS : registra
     EQUIPMENT ||--o{ MAINTENANCE_RECOMMENDATIONS : recebe
     MAINTENANCE_RECOMMENDATIONS ||--o| MAINTENANCE_SCHEDULES : vira
     MANAGERS {
-        uuid id PK
-        uuid user_id
+        ObjectId _id PK
+        string user_id "sub do JWT"
         string email
         string role
     }
     PROCESSES {
-        uuid id PK
-        uuid manager_id FK
+        ObjectId _id PK
+        ObjectId manager_id FK
         string name
         string company_name
         string sector
+        array activity_ids
+        array equipment_ids
+        array operation_mappings "embutido"
     }
     ACTIVITIES {
-        uuid id PK
+        ObjectId _id PK
         string name
     }
-    OPERATION_MAPPINGS {
-        uuid id PK
-        uuid process_id FK
-        uuid activity_id FK
-        string operation_ref
-        string raw_label
-        string status
-    }
     EQUIPMENT {
-        uuid id PK
-        uuid manager_id FK
+        ObjectId _id PK
+        ObjectId manager_id FK
         string name
         string tag
         string status
     }
     MONITORINGS {
-        uuid id PK
-        uuid manager_id FK
+        ObjectId _id PK
+        ObjectId manager_id FK
         string name
         string status
+        array equipment_ids
+        array parameters "embutido"
     }
-    MONITORING_PARAMETERS {
-        uuid id PK
-        uuid monitoring_id FK
-        uuid equipment_id FK
-        string name
-        string unit
-    }
-    MONITORING_READINGS {
-        uuid id PK
-        uuid parameter_id FK
-        timestamp observed_at
+    READINGS {
+        date observed_at "time series"
+        object meta "monitoring, parâmetro, equipamento"
         float value
     }
     MAINTENANCE_RECOMMENDATIONS {
-        uuid id PK
-        uuid equipment_id FK
+        ObjectId _id PK
+        ObjectId equipment_id FK
         string analysis_ref
         string priority
         string status
     }
     MAINTENANCE_SCHEDULES {
-        uuid id PK
-        uuid recommendation_id FK
+        ObjectId _id PK
+        ObjectId recommendation_id FK
         string title
-        timestamp scheduled_start
+        date scheduled_start
         string status
     }
 ```
@@ -838,11 +825,17 @@ erDiagram
     }
 ```
 
-**MS1 (MongoDB Atlas)** — coleções `event_logs`, `traces` (eventos embutidos), `operations` e `process_graphs` (nós e arestas do DFG com frequências).
+**MS1 (MongoDB Atlas, database ****`deviante_ingest`****)** — coleções `event_logs`, `traces` (eventos embutidos), `operations` e `process_graphs` (nós e arestas do DFG com frequências).
 
 ### 8.2 Segurança
 
 O login é feito no Supabase Auth com Google. O JWT é validado no API Gateway e de novo no Core (JWKS); o BFF repassa o token. Os serviços só aceitam chamadas vindas do BFF ou do Service Bus.
+
+**Identidade separada dos dados (RNF-02, RNF-10).** O Supabase só emite e valida o JWT e não guarda dado de negócio, então a chave pública que vai no front não dá acesso a dado nenhum. Identidade e dados ficam em provedores separados, e o vazamento de um não expõe o outro (ADR 08).
+
+**Isolamento por gestor e por serviço (RNF-08).** Toda consulta da Core API filtra pelo gestor identificado no JWT, e um teste de arquitetura garante o filtro (§8.5). Cada serviço acessa o banco com um usuário próprio, restrito à sua database no Atlas ou ao seu schema no Azure SQL, e não lê os dados de outro serviço. Atlas e Azure SQL aceitam conexões só dos IPs de saída dos serviços, nunca do navegador.
+
+**Azure sem segredo.** O deploy acessa a Azure por uma managed identity com papel Contributor só no resource group `rg-deviante`, com login OIDC do GitHub Actions, sem senha guardada.
 
 ### 8.3 Padrões de reuso
 
@@ -904,7 +897,7 @@ Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa time
 
 | Serviço | Ferramenta | Regras |
 |---|---|---|
-| Core (Kotlin) | Konsist | `domain` não importa `infrastructure`, `api` nem Ktor; classes de uma slice não importam outra slice |
+| Core (Kotlin) | Konsist | `domain` não importa `infrastructure`, `api` nem Ktor; classes de uma slice não importam outra slice; toda consulta dos repositórios filtra por `manager_id` |
 | BFF (Node) | dependency-cruiser | módulos de feature não se importam entre si; nenhum driver de banco no BFF |
 | MS1, MS2 (Python) | import-linter | contrato de camadas `api → application → domain`, `infrastructure → domain` |
 
@@ -922,11 +915,12 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 |---|---|---|---|---|
 | 01 | IPDD/ADWIN roda como Azure Function e o MS2 só gerencia as análises | Reaproveitar o código de L. F. Picolo sem estado; o enunciado conta MS2 (CRUD + Azure SQL) e Function separadamente | Rodar o detector dentro do MS2 | Uma chamada HTTP a mais por análise |
 | 02 | MS1 = ingestão + grafo com pm4py, em MongoDB | Log e traces têm forma de documento | Guardar o log em tabelas no Postgres, como hoje | Consultas relacionais sobre traces ficam no MS2/Core |
-| 03 | Core API em Kotlin continua como serviço de domínio no Supabase | Reaproveita o `deviante-api` e o Auth já em produção | Reescrever o domínio em Node ou Python | Três bancos para operar |
+| 03 | Core API em Kotlin continua como serviço de domínio, com os dados no MongoDB Atlas (database `deviante_core`, no mesmo cluster do MS1) | Reaproveita a lógica do `deviante-api`; o Atlas já é exigido para o MS1, então o Core não traz um terceiro banco | Manter o Core no Postgres do Supabase; mover o Core para o Azure SQL, dividindo 1 DTU com o MS2 | Repositórios do Core reescritos para o driver MongoDB; isolamento entre gestores feito na aplicação; os 512 MB do M0 ficam divididos com o MS1 |
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Contêineres na Azure ou na AWS | Tráfego entre nuvens (Fly, Azure, AWS) |
 | 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Chamadas REST encadeadas entre os serviços | Consistência eventual |
 | 06 | Prognóstico de manutenção (RUL) fica para depois, como classe Kotlin no Core | Foco no drift para esta entrega | Calcular o RUL na Azure Function junto com o drift | Campos de RUL ficam vazios por enquanto |
 | 07 | O arc42 é escrito no Notion; `architecture/arc42.md` é gerado a partir dele, com diagramas em Mermaid | O grupo edita num lugar só, e o site e o PDF continuam vindo de um arquivo versionado | Editar o `.md` direto no GitHub | Mudanças feitas direto no `.md` são sobrescritas na próxima sincronização |
+| 08 | Supabase só para identidade (Google OAuth e JWT), sem dados de negócio | Separar identidade de dados: a chave do Supabase vai no front e não dá acesso a dado de negócio, e cada serviço acessa seu banco com um usuário de menor privilégio | Manter os dados do Core no Postgres do Supabase, com um usuário restrito | Só os usuários autorizados são migrados, sem seed; o RLS sai e o isolamento entre gestores fica na aplicação (§8.2) |
 
 ---
 
@@ -965,10 +959,13 @@ Esta seção lista, por prioridade, os riscos técnicos e as dívidas conhecidas
 | Prioridade | Tipo | Risco / dívida | Mitigação |
 |---|---|---|---|
 | 1 | Dívida | Hoje MS1 e MS2 são um só serviço (`mining/`) sobre Postgres | Separar em dois deploys e migrar dados para Mongo e Azure SQL |
-| 2 | Risco | Limites do free tier (Azure SQL 1 DTU, Atlas M0, cold start da Function) | Séries pequenas, cache no BFF, aquecer a Function antes da demo |
+| 2 | Risco | Limites do free tier: Azure SQL com 1 DTU, Atlas M0 com 512 MB e sem backup automático dividido entre Core e MS1, cold start da Function | Séries pequenas, cache no BFF, aquecer a Function antes da demo; logs grandes fora do Atlas, acompanhar o uso do M0 e exportar com `mongodump` antes das entregas |
 | 3 | Risco | Latência entre três nuvens | Chamadas em paralelo no BFF |
 | 4 | Dívida | Código atual organizado por tipo, não por feature | Reorganizar em slices junto com os testes de arquitetura |
 | 5 | Dívida | Testes de arquitetura ainda não existem | Konsist, dependency-cruiser e import-linter (§8.5) |
+| 6 | Dívida | O código do Core ainda grava no Postgres do Supabase (schema `deviante`, usuário `postgres`); o desenho desta documentação é o alvo | Migrar o Core para o Atlas (`deviante_core`) entre 17/10 e 12/11, antes da Entrega 3, levando só os usuários autorizados, sem seed; até lá, trocar o usuário `postgres` por um restrito ao schema |
+| 7 | Risco | Sem RLS, o isolamento entre gestores depende da aplicação | Todo repositório do Core filtra por `manager_id` do JWT, com teste de arquitetura no Konsist (§8.5) |
+| 8 | Risco | A assinatura Azure for Students só libera algumas regiões (East US 2 bloqueada) | Recursos Azure em eastus, na mesma área do Fly.io (iad) e do Atlas (us-east-1) |
 
 ---
 
