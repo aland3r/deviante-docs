@@ -151,10 +151,8 @@ C4Context
 
     Person(gestor, "Gestor de Manutencao", "Envia o event log, roda analises de drift e decide a manutencao proativa.")
     System(deviante, "Deviante", "Suporte a decisao na manutencao industrial: detecta drift de desempenho (IPDD/ADWIN).")
-    System_Ext(auth, "Autenticacao Supabase", "Provedor de identidade gerenciado (Google OAuth / JWT).")
 
     Rel(gestor, deviante, "Usa", "HTTPS")
-    Rel(deviante, auth, "Autentica usuarios", "OAuth / JWT")
 
     UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")
 ```
