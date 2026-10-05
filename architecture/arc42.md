@@ -121,8 +121,10 @@ documentação de Reuso.
 |-------|-------------|
 | Gestor de manutenção | Ver o processo, saber quando ele desviou e agendar a manutenção a tempo. |
 | Analista / mentor | Validar as análises e ajustar a sensibilidade do IPDD/ADWIN. |
-| Pesquisadores (D. Sato, L. F. Picolo) | Ver o método aplicado com fidelidade ao trabalho original. |
-| Professores de Cloud e Reuso | Avaliar estilos arquiteturais, implantação em nuvem e reuso. |
+| Denise Sato e Luiz Picolo, autores do detector de desvios (IPDD/ADWIN) | Ver o método aplicado com fidelidade ao trabalho original. |
+| Eduardo de Freitas Loures, orientador PIBITI | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
+| Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | Avaliar estilos arquiteturais e implantação em nuvem. |
+| Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | Avaliar padrões de projeto e reuso. |
 | Grupo de desenvolvimento | Uma arquitetura que caiba no prazo e no free tier. |
 
 ## 2. Restrições da Arquitetura
