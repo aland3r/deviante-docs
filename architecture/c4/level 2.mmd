@@ -1,28 +1,39 @@
 C4Container
-    title Nivel 2 - Conteineres: Deviante (IPDD)
+    title Nivel 2 - Conteineres: Deviante
 
-    Person(gestor, "Gestor de Manutencao", "Usuario autenticado (invite-only, Google).")
+    Person(gestor, "Gestor de Manutencao", "Usuario autenticado (Google).")
 
     System_Boundary(dv, "Deviante") {
-        Container(web, "Web App", "React + Vite / Vercel", "SPA publica (docs) + app autenticado. Host: deviante.alander.io")
-        Container(api, "API", "Kotlin + Ktor / Fly.io", "Regras de negocio, CRUD e orquestracao. Host: deviante-api.fly.dev (proxy /api/*)")
-        Container(mining, "Servico de Mineracao", "Python + FastAPI", "Deteccao de drift ADWIN sobre series temporais (PM4Py).")
+        Container(web, "Microfrontend", "React + Vite / Vercel", "SPA. Consome apenas o BFF, via API Gateway.")
+        Container(gw, "API Gateway", "AWS API Gateway (HTTP API)", "Entrada unica: roteamento, validacao de JWT, rate limit.")
+        Container(bff, "BFF", "Node.js + NestJS / Fly.io", "Proxy dos CRUDs e agregacao (GET /aggregated-data). Sem banco.")
+        Container(core, "Core API", "Kotlin + Ktor / Fly.io", "Dominio: processos, atividades, equipamentos, monitoramento e manutencao.")
+        Container(ms1, "MS1 - Ingestao", "Python + FastAPI + pm4py / Fly.io", "Upload CSV/XES, parse, traces e grafo do processo (DFG).")
+        Container(ms2, "MS2 - Analises de drift", "Python + FastAPI / Fly.io", "CRUD das analises; monta a serie e chama a Function.")
+        Container(fn, "Azure Function - IPDD/ADWIN", "Python / HTTP Trigger", "Calculo sem estado: devolve os pontos de drift (codigo de L. F. Picolo).")
+        ContainerQueue(bus, "Broker de eventos", "Azure Service Bus", "EventLogParsed, DriftDetected.")
+        ContainerDb(dbCore, "Banco do Core", "Supabase Postgres", "Dados de dominio.")
+        ContainerDb(dbMs1, "Banco do MS1", "MongoDB Atlas", "Event logs, traces, grafos.")
+        ContainerDb(dbMs2, "Banco do MS2", "Azure SQL", "Analises e pontos de drift.")
     }
 
-    System_Boundary(sb, "Supabase") {
-        Container(auth, "Auth", "Supabase Auth", "Identidade / JWT (Google OAuth), invite-only.")
-        ContainerDb(db, "Banco", "Postgres", "Processos, operacoes, traces, analises, monitoramento.")
-    }
-
-    System_Ext(origem, "Event log", "XES / CSV do chao de fabrica")
+    System_Ext(auth, "Supabase Auth", "Google OAuth / JWT")
 
     Rel(gestor, web, "Usa", "HTTPS")
-    Rel(web, auth, "Login / sessao", "supabase-js")
-    Rel(web, api, "Dados de negocio", "REST /api/* (JSON)")
-    Rel(api, db, "Le e grava", "JDBC / HikariCP")
-    Rel(api, auth, "Valida JWT", "JWKS")
-    Rel(api, mining, "Detecta drift", "REST /monitoring/detect")
-    Rel(gestor, web, "Envia event log", "upload XES/CSV")
-    Rel(web, origem, "Importa", "arquivo")
+    Rel(web, auth, "Login", "supabase-js")
+    Rel(web, gw, "Chama a API", "HTTPS / JSON")
+    Rel(gw, bff, "Encaminha", "HTTPS")
+    Rel(bff, core, "CRUD de dominio", "REST")
+    Rel(bff, ms1, "Upload e grafo", "REST")
+    Rel(bff, ms2, "CRUD de analises", "REST")
+    Rel(bff, fn, "Previa de drift", "HTTP Trigger")
+    Rel(ms2, fn, "Calcula drift", "HTTP Trigger")
+    Rel(ms1, bus, "Publica EventLogParsed", "AMQP")
+    Rel(bus, ms2, "Entrega EventLogParsed", "AMQP")
+    Rel(ms2, bus, "Publica DriftDetected", "AMQP")
+    Rel(bus, core, "Entrega DriftDetected", "AMQP")
+    Rel(core, dbCore, "Le e grava", "JDBC")
+    Rel(ms1, dbMs1, "Le e grava", "MongoDB driver")
+    Rel(ms2, dbMs2, "Le e grava", "ODBC")
 
-    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="2")
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

@@ -1,70 +1,114 @@
 classDiagram
     direction LR
 
-    class User {
+    class Manager {
       +UUID id
+      +UUID userId
       +String email
+      +String fullName
       +Role role
-      +authenticate()
+      +canEdit(process) Boolean
+      +isOwner() Boolean
     }
     class Process {
       +UUID id
+      +UUID managerId
       +String name
-      +ProcessStatus status
-      +uploadEventLog()
-      +runAnalysis()
+      +String companyName
+      +String sector
+      +rename(name)
+      +addActivity(activity)
+      +linkEquipment(equipment)
+      +canBeDeletedBy(manager) Boolean
     }
-    class EventLog {
-      +UUID id
-      +Format format
-      +DateTime importedAt
-      +parse()
-    }
-    class Trace {
-      +UUID id
-      +String caseId
-    }
-    class Operation {
+    class Activity {
       +UUID id
       +String name
-      +Duration sojournTime
-      +DateTime startTime
-      +DateTime finishTime
+      +String description
+      +matches(rawLabel) Boolean
     }
-    class Analysis {
+    class OperationMapping {
       +UUID id
-      +AnalysisParams params
-      +AnalysisStatus status
-      +run()
+      +UUID processId
+      +String operationRef
+      +String rawLabel
+      +MappingStatus status
+      +mapTo(activity)
+      +unmap()
+      +autoMap(catalog)
     }
-    class DriftPoint {
-      +int changeIndex
-      +double magnitude
-      +DateTime detectedAt
-    }
-    class ProactiveAction {
+    class Equipment {
       +UUID id
-      +ActionKind kind
-      +DateTime dueDate
-      +ActionStatus status
+      +String name
+      +String tag
+      +String kind
+      +EquipmentStatus status
+      +changeStatus(status)
+      +addParameter(parameter)
     }
     class Monitoring {
       +UUID id
-      +HealthState health
-      +detect()
+      +String name
+      +String sourceType
+      +MonitoringStatus status
+      +addEquipment(equipment)
+      +removeEquipment(equipment)
+      +activate()
+      +pause()
     }
-    class Machine {
+    class MonitoringParameter {
       +UUID id
-      +String tag
-      +MachineState state
+      +String name
+      +String unit
+      +record(reading)
+      +history(range) List
     }
+    class Reading {
+      +UUID id
+      +Instant observedAt
+      +Double value
+      +String quality
+      +isValid() Boolean
+    }
+    class MaintenanceRecommendation {
+      +UUID id
+      +String analysisRef
+      +String action
+      +Priority priority
+      +RecommendationStatus status
+      +accept()
+      +reject()
+      +toSchedule() MaintenanceSchedule
+    }
+    class MaintenanceSchedule {
+      +UUID id
+      +String title
+      +Instant scheduledStart
+      +Instant scheduledEnd
+      +ScheduleStatus status
+      +reschedule(start, end)
+      +complete()
+      +cancel()
+    }
+    class PriorityStrategy {
+      <<interface>>
+      +priorityFor(recommendation) Priority
+    }
+    class ByFailureProbability
+    class ByRemainingUsefulLife
+    class ByCriticality
 
-    User "1" --> "*" Process : mantem
-    Process "1" --> "1" EventLog : contextualiza
-    EventLog "1" --> "*" Trace : contem
-    Trace "1" --> "*" Operation : compoe
-    Process "1" --> "*" Analysis : origina
-    Analysis "1" --> "*" DriftPoint : detecta
-    Analysis "1" --> "*" ProactiveAction : recomenda
-    Monitoring "1" --> "1" Machine : observa
-    Monitoring "*" --> "*" Process : liga
+    Manager "1" --> "*" Process : possui
+    Process "*" --> "*" Activity : usa
+    Process "1" --> "*" OperationMapping : mapeia
+    OperationMapping "*" --> "0..1" Activity : destino
+    Process "*" --> "*" Equipment : envolve
+    Monitoring "*" --> "*" Equipment : acompanha
+    Monitoring "1" --> "*" MonitoringParameter : mede
+    MonitoringParameter "1" --> "*" Reading : registra
+    Equipment "1" --> "*" MaintenanceRecommendation : recebe
+    MaintenanceRecommendation "1" --> "0..1" MaintenanceSchedule : vira
+    MaintenanceRecommendation ..> PriorityStrategy : usa
+    PriorityStrategy <|.. ByFailureProbability
+    PriorityStrategy <|.. ByRemainingUsefulLife
+    PriorityStrategy <|.. ByCriticality

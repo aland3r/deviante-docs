@@ -1,46 +1,33 @@
 C4Component
-    title Nivel 3 - Componentes: API do Deviante (Kotlin/Ktor)
+    title Nivel 3 - Componentes: Core API (Kotlin/Ktor)
 
-    Container(web, "Web App", "React + Vite", "SPA do produto")
-    System_Ext(auth, "Supabase Auth", "Identidade / JWKS")
-    System_Ext(mining, "Servico de Mineracao", "FastAPI - ADWIN / PM4Py")
-    ContainerDb(db, "Postgres", "Banco", "Supabase")
+    Container(bff, "BFF", "NestJS", "Unico cliente do Core")
+    System_Ext(auth, "Supabase Auth", "JWKS")
+    ContainerQueue(bus, "Service Bus", "Azure", "DriftDetected")
+    ContainerDb(db, "Supabase Postgres", "Postgres", "Dados de dominio")
 
-    Container_Boundary(api, "API - Kotlin/Ktor") {
-        Component(authPlugin, "Auth Plugin", "Ktor / JWT", "Valida o token do Supabase e injeta o usuario.")
-        Component(routes, "Routes / Controllers", "Ktor Routing", "Endpoints JSON /api/*, binding request/response.")
-
-        %% Dominio - espelha o OOUX
-        Component(process, "Process", "Servico de dominio", "Contexto da cadeia produtiva; agrega operacoes e analises.")
-        Component(operation, "Operation", "Servico de dominio", "Atividade normalizada a partir dos eventos do log.")
-        Component(analysis, "Analysis", "Servico de dominio", "Roda a analise de desvio e persiste o resultado.")
-        Component(action, "Proactive Action", "Servico de dominio", "Recomendacao / agendamento de manutencao.")
-        Component(monitoring, "Monitoring", "Servico de dominio", "Saude de equipamento; liga maquina e processo.")
-
-        %% Tecnico - sem objeto OOUX
-        Component(parser, "Event-log Parser", "Kotlin", "Converte XES/CSV em traces e operacoes.")
-        Component(detector, "Drift Detector Client", "Kotlin", "Chama o servico de mineracao e trata a resposta.")
-        Component(repo, "Repositories", "Exposed / JDBC", "Persistencia por agregado.")
+    Container_Boundary(core, "Core API - Clean Architecture + Vertical Slice") {
+        Component(api, "api", "Ktor Routing", "Rotas por feature, DTOs, autenticacao.")
+        Component(processes, "application/processes", "Slice", "CreateProcess, UpdateProcess, DeleteProcess, ListProcesses.")
+        Component(mapping, "application/activities", "Slice", "MapOperation, ManageActivityCatalog.")
+        Component(equipment, "application/equipment", "Slice", "CRUD de equipamentos e parametros.")
+        Component(monitoring, "application/monitoring", "Slice", "CRUD de monitoramentos, leituras.")
+        Component(maintenance, "application/maintenance", "Slice", "Recommend, Schedule; PriorityStrategy.")
+        Component(domain, "domain", "Kotlin puro", "Entidades e regras: Process, Equipment, MaintenanceRecommendation...")
+        Component(infra, "infrastructure", "Exposed / JDBC / Service Bus", "Repositorios, DatabaseFactory, consumidor de eventos.")
     }
 
-    Rel(web, routes, "Chama endpoints", "REST /api/* (JSON)")
-    Rel(routes, authPlugin, "Exige autenticacao", "")
-    Rel(authPlugin, auth, "Busca chaves", "JWKS")
+    Rel(bff, api, "REST", "JSON")
+    Rel(api, auth, "Valida JWT", "JWKS")
+    Rel(api, processes, "Chama")
+    Rel(api, mapping, "Chama")
+    Rel(api, equipment, "Chama")
+    Rel(api, monitoring, "Chama")
+    Rel(api, maintenance, "Chama")
+    Rel(processes, domain, "Usa")
+    Rel(maintenance, domain, "Usa")
+    Rel(infra, domain, "Implementa portas")
+    Rel(infra, db, "SQL", "JDBC")
+    Rel(bus, infra, "DriftDetected", "AMQP")
 
-    Rel(routes, process, "CRUD de processo", "")
-    Rel(routes, analysis, "Dispara analise", "")
-    Rel(routes, monitoring, "Consulta saude", "")
-
-    Rel(parser, operation, "Cria operacoes", "")
-    Rel(process, analysis, "Contextualiza", "")
-    Rel(analysis, detector, "Pede deteccao", "")
-    Rel(detector, mining, "Detecta drift", "REST /monitoring/detect")
-    Rel(analysis, action, "Gera recomendacao", "")
-    Rel(monitoring, detector, "Saude via ADWIN", "")
-
-    Rel(process, repo, "Persiste", "")
-    Rel(analysis, repo, "Persiste", "")
-    Rel(operation, repo, "Persiste", "")
-    Rel(repo, db, "SQL", "JDBC")
-
-    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
