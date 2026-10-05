@@ -23,34 +23,24 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | ID | Requisito | Atendido por |
 |---|---|---|
 | RF-01 | Login via conta Google (OAuth) | Microfrontend + Supabase Auth |
-| RF-02 | Criar processos, análises e monitoramentos a partir do dashboard | Core API (processos, monitoramentos), MS2 (análises) |
-| RF-03 | Editar e excluir processos, análises e monitoramentos | Core API, MS2 |
-| RF-04 | Upload de log de eventos em CSV ou XES | MS1 · Ingestão |
-| RF-05 | Gerar e exibir o DFG (Directly-Follows Graph) do log | MS1 (pm4py) |
-| RF-06 | Mapear atividades do log em uma ou mais operações do processo | Core API |
-| RF-07 | Editar e remover o mapeamento de operações | Core API |
-| RF-08 | Configurar o filtro de traces antes da 1ª execução da análise | MS2 |
-| RF-09 | Executar a análise de desvio (drift) sobre um processo ou máquina | MS2 + Azure Function |
-| RF-10 | Ajustar a sensibilidade do IPDD/ADWIN e reexecutar sem novo upload | MS2 + Azure Function |
-| RF-11 | Criar ação proativa (manutenção ou inspeção) a partir de uma recomendação | Core API |
-| RF-12 | Editar e excluir ações proativas | Core API |
-| RF-13 | Exibir diagnóstico e prognóstico de saúde de uma máquina monitorada | Core API (classe de prognóstico em Kotlin, etapa futura) |
-| RF-14 | Exibir os equipamentos no detalhe do processo | Core API |
-| RF-15 | Agrupar um ou mais equipamentos sob um monitoramento | Core API |
-
-**Requisitos funcionais de negócio da Entrega 1 (v1, fluxo principal)**
-
-| ID | Requisito | Atendido por |
-|---|---|---|
-| RF1 | Autenticar o gestor (convite, Google/JWT) e compartilhar processos entre usuários | Supabase Auth + Core API |
-| RF2 | Manter processos de manufatura (criar, listar, editar; excluir só pelo dono) | Core API |
-| RF3 | Manter um catálogo global de atividades normalizadas | Core API |
-| RF4 | Importar event log (CSV/XES), fazer o parse e persistir operações, traces e tempos | MS1 · Ingestão |
-| RF5 | Mapear cada rótulo bruto (operation) para uma atividade normalizada | Core API |
-| RF6 | Gerar o grafo do processo observado a partir do log mapeado | MS1 (pm4py) |
-| RF7 | Executar a análise de drift (IPDD/ADWIN) e persistir o resultado | MS2 + Azure Function |
-| RF8 | Investigar o desvio e registrar a decisão de manutenção proativa | Core API |
-| RF9 | Monitorar a saúde de equipamentos por parâmetros de máquina | Core API |
+| RF-02 | Validar o papel do usuário na autenticação: administrador, gestor, operador ou técnico | Supabase Auth (papel no JWT) + Core API |
+| RF-03 | Administrador cria, lista, atualiza e exclui todos os processos do sistema | Core API |
+| RF-04 | Gestor cadastra, lista, atualiza e exclui operadores e técnicos da sua empresa | Core API |
+| RF-05 | Gestor cria, lista, atualiza e exclui os processos da sua empresa | Core API |
+| RF-06 | Processos da empresa visíveis para todos os seus gestores, operadores e técnicos | Core API |
+| RF-07 | Operador cria, lista, atualiza e exclui atividades de processos | Core API |
+| RF-09 | Upload de log de eventos em CSV ou XES | MS1 · Ingestão |
+| RF-10 | Gerar e exibir o DFG (Directly-Follows Graph) do log | MS1 (pm4py) |
+| RF-11 | Mapear atividades do log em uma ou mais operações do processo | Core API |
+| RF-12 | Editar e remover o mapeamento de operações | Core API |
+| RF-13 | Configurar o filtro de traces antes da 1ª execução da análise | MS2 |
+| RF-14 | Executar a análise de desvio (drift) sobre um processo ou máquina | MS2 + Azure Function |
+| RF-15 | Ajustar a sensibilidade do IPDD/ADWIN e reexecutar sem novo upload | MS2 + Azure Function |
+| RF-16 | Criar ação proativa (manutenção ou inspeção) a partir de uma recomendação | Core API |
+| RF-17 | Editar e excluir ações proativas | Core API |
+| RF-18 | Exibir diagnóstico e prognóstico de saúde de uma máquina monitorada | Core API (classe de prognóstico em Kotlin, etapa futura) |
+| RF-19 | Exibir os equipamentos no detalhe do processo | Core API |
+| RF-20 | Agrupar um ou mais equipamentos sob um monitoramento | Core API |
 
 **Requisitos funcionais de arquitetura (Cloud)**
 
@@ -727,12 +717,12 @@ Esta seção reúne as regras e soluções que valem para vários blocos ao mesm
 
 | Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
 |---|---|---|---|---|
-| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-02, RF-03, RF-14 |
-| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-06, RF-07 |
-| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-02, RF-03, RF-08, RF-09, RF-10 |
-| Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-02, RF-03, RF-15 |
-| Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-13, RF-14 |
-| Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-11, RF-12 |
+| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-03, RF-05, RF-06, RF-19 |
+| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-07, RF-11, RF-12 |
+| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-13, RF-14, RF-15 |
+| Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-20 |
+| Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-18, RF-19 |
+| Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-16, RF-17 |
 
 O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o grafo (MS1) são dados de suporte de Process e Activity.
 
