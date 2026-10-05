@@ -935,40 +935,68 @@ Cada serviço lê a configuração de variáveis de ambiente, e a mesma imagem r
 
 ## 9. Decisões de Arquitetura
 
-| ADR | Decisão | Motivo | Consequência |
-|-----|---------|--------|--------------|
-| 01 | IPDD/ADWIN roda como Azure Function e o MS2 só gerencia as análises | Reaproveitar o código de L. F. Picolo sem estado; o enunciado conta MS2 (CRUD + Azure SQL) e Function separadamente | Uma chamada HTTP a mais por análise |
-| 02 | MS1 = ingestão + grafo com pm4py, em MongoDB | Log e traces têm forma de documento | Consultas relacionais sobre traces ficam no MS2/Core |
-| 03 | Core API em Kotlin continua como serviço de domínio no Supabase | Reaproveita o `deviante-api` e o Auth já em produção | Três bancos para operar |
-| 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Tráfego entre nuvens (Fly, Azure, AWS) |
-| 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Consistência eventual |
-| 06 | Prognóstico de manutenção (RUL) fica para depois, como classe Kotlin no Core | Foco no drift para esta entrega | Campos de RUL ficam vazios por enquanto |
-| 07 | O arc42 é escrito no Notion; `architecture/arc42.md` é gerado a partir dele, com diagramas em Mermaid | O grupo edita num lugar só, e o site e o PDF continuam vindo de um arquivo versionado | Mudanças feitas direto no `.md` são sobrescritas na próxima sincronização |
+Esta seção registra as decisões de arquitetura importantes, caras de reverter ou arriscadas, que não estão fixadas pelas restrições da seção 2. As ideias gerais aparecem na seção 4; aqui fica o porquê de cada escolha e o que ela custa.
+
+| ADR | Decisão | Motivo | Alternativa descartada | Consequência |
+|---|---|---|---|---|
+| 01 | IPDD/ADWIN roda como Azure Function e o MS2 só gerencia as análises | Reaproveitar o código de L. F. Picolo sem estado; o enunciado conta MS2 (CRUD + Azure SQL) e Function separadamente | Rodar o detector dentro do MS2 | Uma chamada HTTP a mais por análise |
+| 02 | MS1 = ingestão + grafo com pm4py, em MongoDB | Log e traces têm forma de documento | Guardar o log em tabelas no Postgres, como hoje | Consultas relacionais sobre traces ficam no MS2/Core |
+| 03 | Core API em Kotlin continua como serviço de domínio no Supabase | Reaproveita o `deviante-api` e o Auth já em produção | Reescrever o domínio em Node ou Python | Três bancos para operar |
+| 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Contêineres na Azure ou na AWS | Tráfego entre nuvens (Fly, Azure, AWS) |
+| 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Chamadas REST encadeadas entre os serviços | Consistência eventual |
+| 06 | Prognóstico de manutenção (RUL) fica para depois, como classe Kotlin no Core | Foco no drift para esta entrega | Calcular o RUL na Azure Function junto com o drift | Campos de RUL ficam vazios por enquanto |
+| 07 | O arc42 é escrito no Notion; `architecture/arc42.md` é gerado a partir dele, com diagramas em Mermaid | O grupo edita num lugar só, e o site e o PDF continuam vindo de um arquivo versionado | Editar o `.md` direto no GitHub | Mudanças feitas direto no `.md` são sobrescritas na próxima sincronização |
+
+---
 
 ## 10. Requisitos de Qualidade
 
+Esta seção detalha as metas de qualidade da seção 1.2 em cenários que podem ser testados. A árvore resume quais características da ISO/IEC 25010 importam e em quais cenários cada uma é verificada.
+
+### 10.1 Árvore de qualidade
+
+| Característica (ISO/IEC 25010) | Subcaracterística | Meta da §1.2 | Cenários |
+|---|---|---|---|
+| Adequação funcional | Correção | Sim | Q1 |
+| Eficiência de desempenho | Comportamento no tempo | Não | Q2 |
+| Confiabilidade | Tolerância a falhas | Sim | Q3 |
+| Manutenibilidade | Modificabilidade | Sim | Q4 |
+| Segurança | Confidencialidade, autenticidade | Sim | Q5 |
+| Flexibilidade | Instalabilidade | Sim | Q6 |
+
+### 10.2 Cenários de qualidade
+
 | ID | Atributo | Cenário | Medida |
-|----|----------|---------|--------|
+|---|---|---|---|
 | Q1 | Correção | Rodar a análise em `DR_01.xes` … `DR_30.xes` | Drift a até 5 traces do ground truth em ≥ 90% dos logs |
 | Q2 | Desempenho | `GET /aggregated-data` com os quatro serviços no ar | Resposta em até 2 s |
-| Q3 | Disponibilidade parcial | MS2 fora do ar | CRUD de processos segue funcionando; agregado vem sem análises |
+| Q3 | Tolerância a falhas | MS2 fora do ar | CRUD de processos segue funcionando; agregado vem sem análises |
 | Q4 | Modificabilidade | Novo formato de log | Uma classe nova no MS1, zero mudança nos demais |
 | Q5 | Segurança | Chamada sem JWT | 401 no API Gateway |
+| Q6 | Instalabilidade | Subir um serviço num ambiente novo | A mesma imagem do Docker Hub sobe só com variáveis de ambiente, sem rebuild |
+
+---
 
 ## 11. Riscos e Dívida Técnica
 
-| Prioridade | Risco / dívida | Mitigação |
-|-----------|----------------|-----------|
-| 1 | Hoje MS1 e MS2 são um só serviço (`mining/`) sobre Postgres | Separar em dois deploys e migrar dados para Mongo e Azure SQL |
-| 2 | Limites do free tier (Azure SQL 1 DTU, Atlas M0, cold start da Function) | Séries pequenas, cache no BFF, aquecer a Function antes da demo |
-| 3 | Latência entre três nuvens | Chamadas em paralelo no BFF |
-| 4 | Código atual organizado por tipo, não por feature | Reorganizar em slices junto com os testes de arquitetura |
-| 5 | Testes de arquitetura ainda não existem | Konsist, dependency-cruiser e import-linter (§8.5) |
+Esta seção lista, por prioridade, os riscos técnicos e as dívidas conhecidas, cada um com a forma de mitigação prevista.
+
+| Prioridade | Tipo | Risco / dívida | Mitigação |
+|---|---|---|---|
+| 1 | Dívida | Hoje MS1 e MS2 são um só serviço (`mining/`) sobre Postgres | Separar em dois deploys e migrar dados para Mongo e Azure SQL |
+| 2 | Risco | Limites do free tier (Azure SQL 1 DTU, Atlas M0, cold start da Function) | Séries pequenas, cache no BFF, aquecer a Function antes da demo |
+| 3 | Risco | Latência entre três nuvens | Chamadas em paralelo no BFF |
+| 4 | Dívida | Código atual organizado por tipo, não por feature | Reorganizar em slices junto com os testes de arquitetura |
+| 5 | Dívida | Testes de arquitetura ainda não existem | Konsist, dependency-cruiser e import-linter (§8.5) |
+
+---
 
 ## 12. Glossário
 
+Termos de domínio e técnicos usados neste documento, para que o grupo, os professores e os parceiros usem as mesmas palavras.
+
 | Termo | Definição |
-|-------|-----------|
+|---|---|
 | Event log | Registro de eventos de um processo: caso (trace), atividade e tempos de início e fim. |
 | Trace | Sequência de eventos de um mesmo caso. |
 | Sojourn time | Tempo que um caso passa numa atividade (fim − início). |
@@ -978,6 +1006,11 @@ Cada serviço lê a configuração de variáveis de ambiente, e a mesma imagem r
 | DFG | Directly-Follows Graph: grafo de quais atividades seguem quais. |
 | RUL | Remaining Useful Life: vida útil restante estimada de um equipamento. |
 | BFF | Backend for Frontend: API feita sob medida para a interface. |
+| API Gateway | Porta de entrada única das requisições externas; roteia, valida o JWT e limita a taxa. |
+| Service Bus | Barramento de mensagens da Azure que transporta os eventos entre os serviços. |
+| JWT | JSON Web Token: token assinado que identifica o usuário em cada chamada. |
+| MES/ERP | Sistemas de execução e de gestão da fábrica; são a origem do event log. |
+| Delta (sensibilidade) | Parâmetro de confiança do ADWIN; quanto menor, mais evidência é exigida para apontar um drift. |
 | Process (Processo) | Objeto ORCA: processo de manufatura monitorado. Ver §8.1. |
 | Activity (Atividade) | Objeto ORCA: etapa normalizada do processo; os rótulos do event log são mapeados para ela. |
 | Analysis (Análise) | Objeto ORCA: execução do IPDD/ADWIN com parâmetros e pontos de drift. |
