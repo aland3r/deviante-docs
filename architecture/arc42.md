@@ -191,7 +191,7 @@ C4Context
 | Cálculo sob demanda e barato | **Serverless**: IPDD/ADWIN como Azure Function sem estado |
 | Desacoplar ingestão, análise e domínio | **EDA**: `EventLogParsed` e `DriftDetected` no Service Bus |
 | Modificabilidade | **Clean Architecture** (`domain`, `application`, `infrastructure`, `api`) e **Vertical Slice** (uma pasta por feature em `application`) |
-| Reuso | Padrões Singleton, Template Method e Adapter (ver §8.3) |
+| Reuso | Padrões Singleton, Adapter e Observer, um de cada família (ver §8.3) |
 
 ### 4.1 Software Architecture Canvas
 
@@ -709,15 +709,23 @@ vindas do BFF ou do Service Bus.
 
 ### 8.3 Padrões de reuso
 
-| Padrão | Exemplos | Onde |
-|--------|----------|------|
-| Singleton (2) | `DatabaseFactory`, `AppConfig` (Kotlin `object`) | Core |
-| Template Method (3) | `EventLogParser` → `CsvParser`, `XesParser`, `JsonParser` | MS1 |
-| Adapter (3) | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN de L. F. Picolo), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py), `SupabaseAuthAdapter` → `TokenVerifier` (Supabase Auth / JWKS) | Function, MS1, Core |
+Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, análise de drift, investigação). Manutenção preditiva (RUL, probabilidade de falha) fica fora da v1.
+
+| Padrão | Família | Exemplos | Onde |
+|--------|---------|----------|------|
+| Singleton | Criacional | `AnalysisEngine` (instância única do wrapper do detector, reaproveitada entre chamadas), `AppConfig` (registro único de configuração e parâmetros padrão da análise) | Function, Core |
+| Adapter | Estrutural | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN de L. F. Picolo), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py) | Function, MS1 |
+| Observer | Comportamental | `DriftSubject` notifica `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` quando o ADWIN detecta um drift ou a análise conclui | Microfrontend |
 
 ```mermaid
 classDiagram
     direction LR
+    class AnalysisEngine {
+      <<singleton>>
+      -instance$ AnalysisEngine
+      +getInstance()$ AnalysisEngine
+      +run(series, delta) List~DriftPoint~
+    }
     class DriftDetector {
       <<interface>>
       +detect(series, delta) List~DriftPoint~
@@ -728,35 +736,28 @@ classDiagram
     class ipdd_adwin {
       <<código de L. F. Picolo>>
     }
-    class GraphMiner {
+    class DriftSubject {
+      -observers List~DriftObserver~
+      +subscribe(o)
+      +notify(event)
+    }
+    class DriftObserver {
       <<interface>>
-      +mine(eventLog) ProcessGraph
+      +update(event)
     }
-    class Pm4pyGraphAdapter {
-      +mine(eventLog) ProcessGraph
-    }
-    class pm4py {
-      <<biblioteca>>
-    }
-    class TokenVerifier {
-      <<interface>>
-      +verify(jwt) Manager
-    }
-    class SupabaseAuthAdapter {
-      +verify(jwt) Manager
-    }
-    class SupabaseJWKS {
-      <<serviço externo>>
-    }
+    class InvestigationPanel
+    class MonitoringContext
+    class AnalysisHud
+    AnalysisEngine --> DriftDetector : usa
     DriftDetector <|.. IpddAdwinAdapter
     IpddAdwinAdapter --> ipdd_adwin : adapta
-    GraphMiner <|.. Pm4pyGraphAdapter
-    Pm4pyGraphAdapter --> pm4py : adapta
-    TokenVerifier <|.. SupabaseAuthAdapter
-    SupabaseAuthAdapter --> SupabaseJWKS : adapta
+    DriftSubject --> DriftObserver : notifica
+    DriftObserver <|.. InvestigationPanel
+    DriftObserver <|.. MonitoringContext
+    DriftObserver <|.. AnalysisHud
 ```
 
-O Adapter é o padrão de reuso de código de terceiros: o sistema depende só da interface, e a biblioteca externa fica atrás do adaptador, sem ser reescrita. Trocar o detector, o minerador ou o provedor de identidade é trocar um adaptador.
+O Adapter é o padrão que preserva a pesquisa: o código do Picolo é envolvido, não copiado nem alterado ("wrap, não fork"). O Singleton evita recarregar o detector a cada chamada, e o Observer desacopla a detecção das telas que reagem a ela.
 
 ### 8.4 Tratamento de erros e resiliência
 
