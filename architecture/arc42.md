@@ -194,10 +194,10 @@ C4Context
 
     System(e1, " ", " ")
     Person(operador, "Operador", "Informa as atividades da cadeia produtiva e registra os dados.")
-    System(e2, " ", " ")
+    System_Ext(google, "Google", "Provedor de identidade (OAuth 2.0 / OpenID Connect).")
     Person(gestor, "Gestor", "Monitora os dados, gera analises e aciona a manutenção.")
     System(deviante, "Deviante", "Sistema de Suporte a Decisão na gestão de manutenção industrial.")
-    System(e3, " ", " ")
+    System_Ext(mes, "Sistema de origem (MES/ERP)", "Sistema da fábrica que exporta o event log do processo.")
     System(e4, " ", " ")
     Person(tecnico, "Técnico", "Realiza a manutenção, registrando o que foi feito para reabilitar a máquina.")
     System(e5, " ", " ")
@@ -205,12 +205,13 @@ C4Context
     Rel(operador, deviante, "Registra atividades e dados")
     Rel(gestor, deviante, "Analisa e aciona manutenção")
     Rel(tecnico, deviante, "Registra manutenção e reabilita maquina")
+    Rel(mes, deviante, "Event log")
+    Rel(deviante, google, "Autentica usuários")
 
     UpdateRelStyle(gestor, deviante, $offsetX="-100", $offsetY="-75")
+    UpdateRelStyle(mes, deviante, $offsetX="-15", $offsetY="-20")
 
     UpdateElementStyle(e1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
-    UpdateElementStyle(e2, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
-    UpdateElementStyle(e3, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
     UpdateElementStyle(e4, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
     UpdateElementStyle(e5, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
 
