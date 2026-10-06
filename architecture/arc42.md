@@ -1,6 +1,6 @@
 # Arquitetura do Deviante — arc42
 
-**Grupo:** Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange.
+**Grupo:** Alander Menezes Arantes de Ávila, Emanuelle Skolut Jose.
 
 ---
 
@@ -134,8 +134,8 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 
 | ID | Restrição | Motivo |
 |---|---|---|
-| RO1 | Equipe de quatro alunos | Grupo do projeto integrador (PjBL) do 6º período. |
-| RO2 | Prazos: documentação de Cloud em 15/10/2026; Reuso e apresentação do PIBITI em 16/10/2026; arquitetura completa de Cloud em 12/11/2026 | Calendário das disciplinas e do PIBITI (banco Entregas do Notion). |
+| RO1 | Equipe de dois alunos | Grupo do projeto integrador (PjBL) do 6º período. |
+| RO2 | Prazos: documentação de Cloud em 15/10/2026; Reuso e apresentação do PIBITI em 16/10/2026; arquitetura completa de Cloud em 12/11/2026 | Calendário das disciplinas e do PIBITI. |
 | RO3 | Método analítico definido pela pesquisa e validado pelo orientador | O PIBITI continua o trabalho do grupo de pesquisa IPDD da PUCPR. |
 | RO4 | Um repositório público no GitHub por serviço, cada um com README (arquitetura, tecnologias, como rodar, nomes dos alunos) | Exigência de Cloud. |
 | RO5 | Imagem Docker do BFF e de cada microsserviço publicada no Docker Hub | Exigência de Cloud (RNF-24). |
@@ -147,12 +147,11 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | ID | Convenção | Motivo |
 |---|---|---|
 | C1 | Documentação de arquitetura no template arc42 (12 seções), com diagramas C4 nos níveis de contexto, contêineres e componentes | Exigência de Cloud. |
-| C2 | O Notion é a fonte da documentação; `architecture/arc42.md` e o site são gerados a partir dele | O grupo edita num lugar só e o site acompanha (ADR 07). |
-| C3 | Diagramas em Mermaid, versionados como texto | Renderizam no site e no Notion sem ferramenta extra. |
-| C4 | Clean Architecture (`domain`, `application`, `infrastructure`, `api`) com uma pasta por feature (Vertical Slice) | Exigência de Cloud (RNF-20, RNF-21). |
-| C5 | APIs e eventos documentados em Swagger/OpenAPI | Exigência de Cloud (RNF-23). |
-| C6 | Figma como fonte única de tokens e componentes de interface | Decisão do grupo (RNF-04). |
-| C7 | Documentação em português; código, nomes de classes e eventos em inglês | Público da documentação é a banca da PUCPR; código segue o padrão das bibliotecas. |
+| C2 | Diagramas em Mermaid, versionados como texto | Renderizam a partir do próprio texto, sem ferramenta de desenho. |
+| C3 | Clean Architecture (`domain`, `application`, `infrastructure`, `api`) com uma pasta por feature (Vertical Slice) | Exigência de Cloud (RNF-20, RNF-21). |
+| C4 | APIs e eventos documentados em Swagger/OpenAPI | Exigência de Cloud (RNF-23). |
+| C5 | Figma como fonte única de tokens e componentes de interface | Decisão do grupo (RNF-04). |
+| C6 | Documentação em português; código, nomes de classes e eventos em inglês | Público da documentação é a banca da PUCPR; código segue o padrão das bibliotecas. |
 
 ---
 
@@ -230,11 +229,9 @@ O sistema é dividido por responsabilidade, cada parte com seu banco (Database p
 
 No nível da arquitetura, o Deviante combina microsserviços com Database per Service, Backend for Frontend (BFF), API Gateway e comunicação orientada a eventos (publish/subscribe no Service Bus); dentro de cada serviço, Clean Architecture com uma pasta por feature (Vertical Slice). No nível do código, adota um padrão de cada família GoF: o **Singleton** (criacional) garante uma única instância do motor de análise na Function (`AnalysisEngine`) e da configuração (`AppConfig`); o **Adapter** (estrutural) envolve o código IPDD/ADWIN da pesquisa (`IpddAdwinAdapter` → `DriftDetector`) e o PM4Py (`Pm4pyGraphAdapter` → `GraphMiner`) atrás de interfaces próprias; e o **Observer** (comportamental) faz o `DriftSubject` notificar `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` no microfrontend quando um drift é detectado. Os detalhes de cada padrão estão na seção 8.3.
 
-### 4.3 Tecnologia e organização
+### 4.3 Tecnologia e operação
 
 Só serviços gratuitos: Vercel para a interface, Fly.io para a Core API, o MS1 e o MS2 (ADR 04), Azure para a Function, o Service Bus e o Azure SQL. Cada serviço vira uma imagem no Docker Hub e é publicado pelo GitHub Actions.
-
-A documentação é escrita no Notion e publicada no site a partir do repositório (ADR 07), para que o grupo edite num lugar só.
 
 ### 4.4 Metas de qualidade e abordagens
 
@@ -252,58 +249,67 @@ A tabela liga cada meta de qualidade (seção 1.2) à abordagem que a atende.
 
 ## 5. Visão de Blocos de Construção
 
-Esta seção mostra a decomposição estática do Deviante em três níveis, na mesma lógica de zoom do C4: o nível 1 mostra os containers, o nível 2 abre o Core API em componentes e o nível 3 detalha o código em UML. Cada nível traz o diagrama, a motivação da divisão e os blocos que ele contém.
+Esta seção abre a caixa-preta do contexto da seção 3 (C4 nível 1) e mostra a decomposição estática do Deviante em três níveis, na mesma lógica de zoom do C4: o nível 1 mostra os containers, o nível 2 abre o Core API em componentes e o nível 3 detalha o código em UML. Cada nível traz o diagrama, a motivação da divisão e os blocos que ele contém.
 
 ### 5.1 Nível 1 — Containers (C4 · Nível 2)
 
-Caixa branca do Deviante. Autenticação Supabase, Google e o sistema de origem (MES/ERP) aparecem como externos.
+Caixa branca do Deviante. O Supabase Auth (login com Google) e o sistema de origem (MES/ERP) aparecem como externos.
 
 ```mermaid
-flowchart TB
-    operador(["<b>Operador</b><br/>[Pessoa]"])
-    gestor(["<b>Gestor de Manutenção</b><br/>[Pessoa]"])
-    tecnico(["<b>Técnico de Manutenção</b><br/>[Pessoa]"])
-    mes["<b>Sistema de origem</b><br/>[Sistema externo]<br/>MES/ERP · exporta o event log"]
-    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>JWT"]
-    google["<b>Google</b><br/>[Sistema externo]<br/>OAuth 2.0 / OpenID Connect"]
+%%{init: {"wrap": true, "c4": {"width": 200, "wrap": true}}}%%
+C4Container
 
-    subgraph dv["Deviante [Sistema]"]
-        web["<b>Microfrontend</b><br/>[React + Vite · Vercel]"]
-        gw["<b>API Gateway</b><br/>[AWS]"]
-        bff["<b>BFF</b><br/>[Node.js + NestJS]"]
-        core["<b>Core API</b><br/>[Kotlin + Ktor]<br/>processos e manutenção"]
-        ms1["<b>MS1 · Ingestão</b><br/>[FastAPI + pm4py]<br/>upload e grafo"]
-        ms2["<b>MS2 · Análises</b><br/>[FastAPI]<br/>CRUD de análises"]
-        fn["<b>IPDD/ADWIN</b><br/>[Azure Function]"]
-        bus{{"<b>Service Bus</b><br/>[Azure · eventos]"}}
-        dbCore[("<b>Postgres</b><br/>[Supabase]")]
-        dbMs1[("<b>MongoDB</b><br/>[Atlas]")]
-        dbMs2[("<b>Azure SQL</b>")]
-    end
+    Person(operador, "Operador", "Registra atividades e dados.")
+    Person(gestor, "Gestor", "Analisa e aciona manutenção.")
+    Person(tecnico, "Técnico", "Registra a manutenção.")
+    System_Ext(auth, "Supabase Auth", "Login com Google e emissão do JWT.")
+    System(s1, " ", " ")
+    System(s2, " ", " ")
+    System(s3, " ", " ")
+    System_Ext(mes, "MES/ERP", "Sistema da fábrica que exporta o event log.")
 
-    operador & gestor & tecnico -->|HTTPS| web
-    mes -.->|event log XES/CSV, por upload| web
-    web -.->|login| auth
-    auth -.->|OAuth| google
-    web -->|REST| gw --> bff
-    bff --> core & ms1 & ms2
-    bff -->|agregado| fn
-    ms2 -->|calcula drift| fn
-    core --> dbCore
-    ms1 --> dbMs1
-    ms2 --> dbMs2
-    ms1 -.->|EventLogParsed| bus
-    bus -.-> ms2
-    ms2 -.->|DriftDetected| bus
-    bus -.-> core
+    System_Boundary(dv, "Deviante") {
+        Container(s4, " ", " ")
+        Container(web, "Microfrontend", "React + Vite, Vercel", "Telas do produto.")
+        Container(gw, "API Gateway", "AWS", "Entrada única; valida o JWT.")
+        Container(bff, "BFF", "Node.js + NestJS", "Encaminha os CRUDs e agrega os dados.")
+        Container(ms1, "MS1 · Ingestão", "FastAPI + pm4py", "Upload do event log e grafo.")
+        Container(ms2, "MS2 · Análises", "FastAPI", "CRUD das análises de drift.")
+        Container(fn, "IPDD/ADWIN", "Azure Function", "Calcula os pontos de drift, sem estado.")
+        Container(core, "Core API", "Kotlin + Ktor", "Processos, máquinas e manutenção.")
+        ContainerDb(dbMs1, "MongoDB", "Atlas", "Event logs, traces e grafos.")
+        ContainerQueue(bus, "Service Bus", "Azure", "Entrega EventLogParsed ao MS2 e DriftDetected ao Core.")
+        ContainerDb(dbMs2, "Azure SQL", "Azure", "Análises e drifts.")
+        ContainerDb(dbCore, "Postgres", "Supabase", "Dados do Core.")
+    }
 
-    classDef person fill:#08427B,stroke:#073B6F,color:#fff
-    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
-    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
-    class operador,gestor,tecnico person
-    class web,gw,bff,core,ms1,ms2,fn,bus,dbCore,dbMs1,dbMs2 container
-    class mes,auth,google external
-    style dv fill:none,stroke:#666,stroke-dasharray:5 5
+    Rel(operador, web, "Usa")
+    Rel(gestor, web, "Usa")
+    Rel(tecnico, web, "Usa")
+    Rel(web, auth, "Login")
+    Rel(mes, web, "Event log por upload")
+    Rel(web, gw, "REST")
+    Rel(gw, bff, "REST")
+    Rel(bff, fn, "Prévia")
+    Rel(bff, core, "REST")
+    Rel(bff, ms1, "REST")
+    Rel(bff, ms2, "REST")
+    Rel(ms2, fn, "Calcula drift")
+    Rel(ms1, bus, "EventLogParsed")
+    Rel(ms2, bus, "DriftDetected")
+    Rel(core, dbCore, "JDBC")
+    Rel(ms1, dbMs1, "Driver")
+    Rel(ms2, dbMs2, "Driver")
+
+    UpdateRelStyle(ms2, fn, $offsetX="-5", $offsetY="-20")
+    UpdateRelStyle(mes, web, $offsetX="60", $offsetY="-90")
+
+    UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s2, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s3, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s4, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+
+    UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
 ```
 
 **Motivação.** Cada serviço é dono de um grupo de objetos ORCA e do seu próprio banco, para que ingestão, análise e domínio evoluam e sejam implantados separadamente (meta de manutenibilidade, §4). Cada banco combina com o dado do serviço (persistência poliglota, ADR 08): o domínio do Core é relacional e fica no Postgres, os logs e traces do MS1 são documentos e ficam no MongoDB, e as análises do MS2 ficam no Azure SQL. O BFF concentra a agregação para que o Microfrontend faça uma única chamada por tela, e o cálculo IPDD/ADWIN fica isolado numa função sem estado, que pode ser trocada sem mexer nos serviços.
@@ -338,33 +344,37 @@ flowchart TB
 Caixa branca do Core API.
 
 ```mermaid
-flowchart TB
-    bff["<b>BFF</b><br/>[Container: NestJS]"]
-    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>JWKS"]
-    bus{{"<b>Service Bus</b><br/>[Container: Azure]"}}
-    db[("<b>Postgres</b><br/>[Container: Supabase]")]
+%%{init: {"wrap": true, "c4": {"width": 200, "wrap": true}}}%%
+C4Component
 
-    subgraph core["Core API · Kotlin/Ktor [Container]"]
-        api["<b>api</b><br/>[Component: rotas Ktor]<br/>endpoints e validação de JWT"]
-        app["<b>application</b><br/>[Component: slices]<br/>processes · activities · equipment<br/>monitoring · maintenance"]
-        domain["<b>domain</b><br/>[Component: Kotlin puro]<br/>entidades e regras"]
-        infra["<b>infrastructure</b><br/>[Component: Exposed]<br/>repositórios e eventos"]
-    end
+    Container(bff, "BFF", "Node.js + NestJS", "Encaminha as chamadas da interface.")
+    System_Ext(auth, "Supabase Auth", "Publica as chaves (JWKS) do JWT.")
+    ContainerQueue(bus, "Service Bus", "Azure", "Entrega o evento DriftDetected.")
+    ContainerDb(db, "Postgres", "Supabase", "Dados do Core.")
 
-    bff -->|REST| api
-    api -.->|valida JWT| auth
-    api --> app --> domain
-    infra -.->|implementa portas| app
-    infra -->|JDBC| db
-    bus -.->|DriftDetected| infra
+    Container_Boundary(core, "Core API") {
+        Component(api, "api", "Rotas Ktor", "Endpoints e validação do JWT.")
+        Component(app, "application", "Slices", "processes, activities, equipment, monitoring, maintenance.")
+        Component(infra, "infrastructure", "Exposed", "Repositórios e consumo de eventos.")
+        Component(s1, " ", " ")
+        Component(s2, " ", " ")
+        Component(domain, "domain", "Kotlin puro", "Entidades e regras de negócio.")
+    }
 
-    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
-    classDef component fill:#85BBF0,stroke:#78A8D8,color:#000
-    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
-    class bff,bus,db container
-    class api,app,domain,infra component
-    class auth external
-    style core fill:none,stroke:#666,stroke-dasharray:5 5
+    Rel(bff, api, "REST")
+    Rel(api, auth, "Valida JWT")
+    Rel(api, app, "Chama")
+    Rel(app, domain, "Usa")
+    Rel(infra, app, "Implementa as portas")
+    Rel(infra, db, "JDBC")
+    Rel(bus, infra, "DriftDetected")
+
+    UpdateRelStyle(infra, app, $offsetX="-75", $offsetY="-30")
+
+    UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s2, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+
+    UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
 ```
 
 **Motivação.** O Core foi escolhido para abrir porque é dono de cinco dos seis objetos ORCA (§8.1) e concentra as regras de negócio. MS1 e MS2 seguem a mesma divisão, e o cálculo de drift, que é a parte de maior risco, já está isolado na Function (ADR 01). O Core combina Clean Architecture (RNF-20), com o `domain` sem dependências externas, e Vertical Slice (RNF-21), com uma pasta por feature dentro de `application`.
@@ -382,7 +392,7 @@ flowchart TB
 
 O nível de código é detalhado por três diagramas UML: Classes e Componentes aqui, e Sequência na seção 6.
 
-**C4 — Nível 4 · UML de Classes** (componente `domain` do Core API). Atributos, métodos e associações de todas as classes, de todos os serviços, ficam na database Classes da [página no Notion](https://app.notion.com/p/3ec5fc7249408016b3d1fcf7e9da3725).
+**C4 — Nível 4 · UML de Classes** (componente `domain` do Core API)
 
 ```mermaid
 classDiagram
@@ -731,7 +741,7 @@ Esta seção reúne as regras e soluções que valem para vários blocos ao mesm
 
 O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o grafo (MS1) são dados de suporte de Process e Activity.
 
-Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Cada serviço acessa só o próprio banco, com um usuário seu; nenhum serviço lê os dados do outro. Detalhe por tabela (banco, campos, chaves e a classe que persiste cada uma) na database Entidades da [página no Notion](https://app.notion.com/p/3ec5fc7249408016bae5f7b940dd50d7).
+Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Cada serviço acessa só o próprio banco, com um usuário seu; nenhum serviço lê os dados do outro.
 
 **Diagrama de Entidades e Relacionamentos — Core (Supabase Postgres)**
 
@@ -937,7 +947,6 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Contêineres na Azure ou na AWS | Tráfego entre nuvens (Fly, Azure, AWS) |
 | 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Chamadas REST encadeadas entre os serviços | Consistência eventual |
 | 06 | Prognóstico de manutenção (RUL) fica fora do escopo desta versão | Foco no drift para esta entrega | Calcular o RUL na Azure Function junto com o drift | Nenhum serviço calcula nem guarda RUL; se voltar ao escopo, entra como nova decisão |
-| 07 | O arc42 é escrito no Notion; `architecture/arc42.md` é gerado a partir dele, com diagramas em Mermaid | O grupo edita num lugar só, e o site e o PDF continuam vindo de um arquivo versionado | Editar o `.md` direto no GitHub | Mudanças feitas direto no `.md` são sobrescritas na próxima sincronização |
 | 08 | Persistência poliglota: cada serviço usa o banco que combina com o seu dado (Postgres no Core, MongoDB no MS1, Azure SQL no MS2) | O domínio do Core é relacional, logs e traces do MS1 são documentos e o Azure SQL do MS2 é exigência da disciplina; atende à integração com múltiplos bancos da Entrega 3 | Consolidar Core e MS1 no MongoDB Atlas | Três provedores de dados, cada um com sua credencial; entre bancos só trafegam ids |
 
 ---
