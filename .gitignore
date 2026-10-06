@@ -20,3 +20,6 @@ ambientevev/
 
 # Referências bibliográficas (PDFs de terceiros)
 referencias bibliográficas/
+
+# Trava do Astah enquanto o arquivo está aberto
+*.asta.lock

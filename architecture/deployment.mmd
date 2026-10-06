@@ -1,0 +1,24 @@
+%% Diagrama de Implantacao (arc42 Secao 7) - mapeamento dos conteineres para a
+%% infraestrutura de execucao e os canais entre os nos.
+flowchart TB
+    subgraph client["Dispositivo do usuario"]
+        browser["Navegador"]
+    end
+    subgraph vercel["Vercel"]
+        web["Web App<br/>React + Vite<br/>deviante.alander.io"]
+    end
+    subgraph fly["Fly.io"]
+        api["Aplicação Backend<br/>Kotlin + Ktor<br/>deviante-api.fly.dev"]
+        mining["Serviço de Mineração<br/>Python + FastAPI"]
+    end
+    subgraph supa["Supabase (nuvem gerenciada)"]
+        authn["Autenticação Supabase<br/>Google OAuth / JWT"]
+        db[("Banco de Dados<br/>Postgres · schema deviante")]
+    end
+
+    browser -->|HTTPS| web
+    browser -->|OAuth| authn
+    web -->|REST /api/*| api
+    api -->|REST /parse, /detect| mining
+    api -->|JDBC / HikariCP| db
+    api -->|JWKS| authn

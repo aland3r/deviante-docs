@@ -14,13 +14,16 @@ O arc42 do Deviante tem 12 seções, cada uma trabalhada em uma thread separada.
 - Decisões (ADRs): subpágina **9. Decisões de Arquitetura** no Notion.
 - Requisitos: banco **Requirements** no Notion (um requisito por linha, com o ID do Notion).
 - Pendências: banco **Checklist** no Notion.
+- Diagramas UML: a versão oficial são os arquivos do **Astah** neste repositório (`Deviante-Diagrams.asta`, `DVE-UML.asta`).
+- OOUX/ORCA (objetos, CTAs, atributos, personas): a pasta `UX/` deste repositório.
 
 ## Repositório e versionamento
 
 - Só existe a branch `main`. Commit direto na `main`, sem PR.
 - Nenhuma thread publica a própria branch (`claude/*`) nem cria tags. Se uma branch escapar, avise com o link para ela ser apagada.
-- Diagramas ficam no Notion como código Mermaid, sem imagens. O site e o gerador do Word renderizam o código.
-- A cópia local (`C:\gestalt\deviante\docs`) é só um espelho da `main`, sem alterações locais nem arquivos fora do git. Atualize com `C:\gestalt\deviante\atualizar-repos.ps1`. Não faça commit a partir dela.
+- No Notion, diagramas ficam como código Mermaid, sem imagens. O site e o gerador do Word renderizam o código.
+- A pasta local `C:\gestalt\deviante\docs` (também o vault do Obsidian) e o repositório ficam sempre iguais, nos dois sentidos: o que é criado no PC (Astah, UX, notas) sobe para a `main`, e o que muda no GitHub desce para o PC. `C:\gestalt\deviante\atualizar-repos.ps1` faz as duas coisas. A configuração `.obsidian/` é local e não vai para o git.
+- Nada é apagado da pasta local sem pedido explícito.
 
 ## Escopo desta thread
 

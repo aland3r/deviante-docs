@@ -1,0 +1,31 @@
+%% C4 Nivel 4 (Codigo) - UML de SEQUENCIA
+%% Cenario: upload do event log -> mapeamento -> analise de drift (UC4 -> UC12).
+sequenceDiagram
+    actor G as Gestor de Manutencao
+    participant W as Web App (React)
+    participant A as Aplicação Backend (Ktor)
+    participant M as Serviço de Mineração (FastAPI)
+    participant DB as Banco de Dados (Postgres)
+
+    G->>W: Seleciona Processo e envia event log (CSV/XES)
+    W->>A: POST /api/processes/{id}/event-logs
+    A->>M: POST /parse (arquivo)
+    M->>M: PM4Py extrai operacoes, traces e tempos
+    M-->>A: labels, traces, eventos (JSON)
+    A->>DB: INSERT event_logs, operations, traces, trace_events
+    A-->>W: Event Log parseado (contagens)
+
+    G->>W: Mapeia cada Operation (alias) para uma Activity
+    W->>A: PATCH /api/operations/{id} (activity_id)
+    A->>DB: UPDATE operations.mapping_status
+    A-->>W: Mapeamento validado, grafo liberado
+
+    G->>W: Executa analise de drift (delta)
+    W->>A: POST /api/processes/{id}/analyses
+    A->>DB: SELECT serie de duracoes por trace
+    A->>M: POST /detect (values, delta, treatment)
+    M->>M: IPDD + ADWIN (river) sobre a serie
+    M-->>A: pontos de drift, janelas, outliers
+    A->>DB: INSERT analyses (result_json)
+    A-->>W: Resultado da analise
+    W-->>G: Grafo, pontos de drift e recomendacao

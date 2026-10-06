@@ -1,0 +1,163 @@
+%% Diagrama Entidade-Relacionamento - reflete o banco real em producao
+%% (Supabase projeto ydjtrcjxhtmygytmebrk, schema deviante).
+erDiagram
+    users ||--o| managers : "e"
+    managers ||--o{ processes : "mantem"
+    managers ||--o{ equipment : "possui"
+    managers ||--o{ monitorings : "cria"
+
+    processes ||--o{ event_logs : "recebe"
+    processes ||--o{ analyses : "origina"
+    processes }o--o{ activities : "process_activities"
+    processes }o--o{ equipment : "process_equipment"
+
+    event_logs ||--o{ operations : "extrai"
+    event_logs ||--o{ traces : "contem"
+    event_logs |o--o{ analyses : "usada por"
+    activities |o--o{ operations : "normaliza"
+
+    traces ||--o{ trace_events : "compoe"
+    operations ||--o{ trace_events : "ocorre em"
+
+    equipment ||--o{ maintenance_recommendations : "recebe"
+    equipment ||--o{ maintenance_schedules : "agenda"
+    monitorings }o--o{ equipment : "monitoring_equipment"
+    monitorings ||--o{ monitoring_parameters : "define"
+    monitoring_parameters ||--o{ monitoring_readings : "coleta"
+    equipment ||--o{ equipment_analysis_runs : "analisa"
+    equipment_analysis_runs |o--o{ maintenance_recommendations : "gera"
+
+    users {
+      uuid id PK
+      varchar email UK
+    }
+    managers {
+      uuid id PK
+      uuid user_id FK
+      varchar full_name
+      varchar email
+      varchar role
+    }
+    processes {
+      uuid id PK
+      uuid manager_id FK
+      varchar name
+      varchar company_name
+      varchar sector
+    }
+    activities {
+      uuid id PK
+      varchar name
+      text description
+    }
+    process_activities {
+      uuid process_id PK_FK
+      uuid activity_id PK_FK
+    }
+    event_logs {
+      uuid id PK
+      uuid process_id FK
+      varchar file_name
+      varchar format
+      varchar parse_status
+      int operation_count
+      int trace_count
+    }
+    operations {
+      uuid id PK
+      uuid event_log_id FK
+      varchar raw_label
+      int occurrence_count
+      uuid activity_id FK
+      varchar mapping_status
+    }
+    traces {
+      uuid id PK
+      uuid event_log_id FK
+      varchar case_id
+      int event_count
+      timestamptz started_at
+      timestamptz ended_at
+      numeric duration_seconds
+    }
+    trace_events {
+      uuid id PK
+      uuid trace_id FK
+      uuid operation_id FK
+      int sequence_index
+      timestamptz occurred_at
+      numeric duration_seconds
+    }
+    analyses {
+      uuid id PK
+      uuid process_id FK
+      uuid event_log_id FK
+      varchar name
+      varchar method
+      float8 delta
+      int drift_count
+      text result_json
+    }
+    equipment {
+      uuid id PK
+      uuid manager_id FK
+      varchar name
+      varchar tag
+      varchar status
+    }
+    process_equipment {
+      uuid process_id PK_FK
+      uuid equipment_id PK_FK
+    }
+    monitorings {
+      uuid id PK
+      uuid manager_id FK
+      varchar name
+      varchar source_type
+      varchar status
+    }
+    monitoring_equipment {
+      uuid monitoring_id PK_FK
+      uuid equipment_id PK_FK
+    }
+    monitoring_parameters {
+      uuid id PK
+      uuid monitoring_id FK
+      uuid equipment_id FK
+      varchar name
+      varchar unit
+    }
+    monitoring_readings {
+      uuid id PK
+      uuid parameter_id FK
+      timestamptz observed_at
+      float8 value
+    }
+    equipment_analysis_runs {
+      uuid id PK
+      uuid equipment_id FK
+      uuid monitoring_id FK
+      uuid parameter_id FK
+      float8 rul_value
+      float8 failure_probability
+      text result_json
+    }
+    maintenance_recommendations {
+      uuid id PK
+      uuid equipment_id FK
+      uuid analysis_run_id FK
+      uuid manager_id FK
+      text action
+      varchar priority
+      varchar status
+    }
+    maintenance_schedules {
+      uuid id PK
+      uuid equipment_id FK
+      uuid process_id FK
+      uuid recommendation_id FK
+      uuid manager_id FK
+      varchar title
+      timestamptz scheduled_start
+      varchar status
+    }

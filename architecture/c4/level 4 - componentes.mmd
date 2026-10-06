@@ -1,0 +1,35 @@
+%% C4 Nivel 4 (Codigo) - UML de COMPONENTES
+%% Componentes da API com interfaces providas/requeridas (notacao lollipop).
+%% Atores externos (Web, Mineracao, Auth, Banco) nas bordas.
+flowchart LR
+    web["&laquo;external&raquo;<br/>Web App"]
+    auth["&laquo;external&raquo;<br/>Autenticação Supabase"]
+    mining["&laquo;external&raquo;<br/>Serviço de Mineração"]
+    db[("&laquo;external&raquo;<br/>Banco de Dados")]
+
+    iRest(("REST /api/*"))
+    iJwks(("JWKS"))
+    iParse(("/parse"))
+    iDetect(("/detect"))
+    iJdbc(("JDBC"))
+
+    web --- iRest
+    iRest --> routes
+
+    subgraph API["&laquo;subsystem&raquo; Aplicação Backend - Kotlin/Ktor"]
+        routes["&laquo;component&raquo;<br/>Rotas / Controllers"]
+        authPlugin["&laquo;component&raquo;<br/>Auth Plugin"]
+        domain["&laquo;component&raquo;<br/>Servicos de Dominio<br/>(Process, Activity, Mapping,<br/>Analysis, Monitoring)"]
+        clients["&laquo;component&raquo;<br/>Clientes de Mineracao<br/>(Parser, Detector)"]
+        repo["&laquo;component&raquo;<br/>Repositories (Exposed)"]
+
+        routes --> authPlugin
+        routes --> domain
+        domain --> clients
+        domain --> repo
+    end
+
+    authPlugin --- iJwks --> auth
+    clients --- iParse --> mining
+    clients --- iDetect --> mining
+    repo --- iJdbc --> db
