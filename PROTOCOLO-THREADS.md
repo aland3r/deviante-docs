@@ -14,8 +14,8 @@ O arc42 do Deviante tem 12 seções, cada uma trabalhada em uma thread separada.
 - Decisões (ADRs): subpágina **9. Decisões de Arquitetura** no Notion.
 - Requisitos: banco **Requirements** no Notion (um requisito por linha, com o ID do Notion).
 - Pendências: banco **Checklist** no Notion.
-- Diagramas UML: a versão oficial são os arquivos do **Astah** neste repositório (`Deviante-Diagrams.asta`, `DVE-UML.asta`).
-- OOUX/ORCA (objetos, CTAs, atributos, personas): a pasta `UX/` deste repositório.
+- Diagramas UML: hoje valem os do arc42 no Notion (Mermaid). O **Astah** (`Deviante-Diagrams.asta`, `DVE-UML.asta`) ainda está incompleto; quando estiver alinhado ao código, passa a ser a fonte oficial do UML.
+- OOUX/ORCA: a documentação oficial é o [PIBITI: IPDD ORCA Hub 2.2](https://app.notion.com/p/PIBITI-IPDD-ORCA-Hub-2-2-1a75fc72494082c0b09581f320767cc3) no Notion. A pasta `UX/` (vault do Obsidian) é apoio: canvas, anotações e explicações do processo ORCA.
 
 ## Repositório e versionamento
 
