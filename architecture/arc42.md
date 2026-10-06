@@ -33,7 +33,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RF-13 | Carregar log CSV ou XES de uma máquina e registrar seus parâmetros no monitoramento | MS1 · Ingestão + Core API |
 | RF-14 | Configurar os parâmetros da análise: filtro de traces antes da 1ª execução e sensibilidade do IPDD/ADWIN para reexecutar sem novo upload | MS2 |
 | RF-15 | Executar a análise de desvio (drift) sobre um processo ou máquina, com o cálculo IPDD/ADWIN numa função sem estado | MS2 · Análises (FastAPI, Azure SQL) + Azure Function (HTTP Trigger) |
-| RF-16 | Exibir diagnóstico e prognóstico de saúde de uma máquina monitorada | Core API (classe de prognóstico em Kotlin, etapa futura) |
+| RF-16 | Exibir o diagnóstico de saúde de uma máquina monitorada, incluindo a degradação de seus componentes | Core API |
 | RF-17 | Criar ações proativas (manutenção ou inspeção) a partir de uma recomendação, e editá-las e excluí-las | Core API |
 | RF-18 | Técnico registra a execução de uma ação proativa e reabilita a máquina | Core API |
 | RF-19 | Encaminhar os CRUDs da interface para Core API, MS1 e MS2 sem acesso direto da interface | BFF (NestJS) |
@@ -252,18 +252,20 @@ A tabela liga cada meta de qualidade (seção 1.2) à abordagem que a atende.
 
 ## 5. Visão de Blocos de Construção
 
-Esta seção mostra a decomposição estática do Deviante, do sistema inteiro até as classes de domínio do Core. Cada nível abre uma caixa do nível de cima e traz o diagrama, a motivação da divisão e a tabela dos blocos que ela contém.
+Esta seção mostra a decomposição estática do Deviante em três níveis, na mesma lógica de zoom do C4: o nível 1 mostra os containers, o nível 2 abre o Core API em componentes e o nível 3 detalha o código em UML. Cada nível traz o diagrama, a motivação da divisão e os blocos que ele contém.
 
-### 5.1 Nível 1 — Containers
+### 5.1 Nível 1 — Containers (C4 · Nível 2)
 
-**C4 — Nível 2 · Container**
+Caixa branca do Deviante. Autenticação Supabase, Google e o sistema de origem (MES/ERP) aparecem como externos.
 
 ```mermaid
 flowchart TB
     operador(["<b>Operador</b><br/>[Pessoa]"])
     gestor(["<b>Gestor de Manutenção</b><br/>[Pessoa]"])
     tecnico(["<b>Técnico de Manutenção</b><br/>[Pessoa]"])
-    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>Google OAuth / JWT"]
+    mes["<b>Sistema de origem</b><br/>[Sistema externo]<br/>MES/ERP · exporta o event log"]
+    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>JWT"]
+    google["<b>Google</b><br/>[Sistema externo]<br/>OAuth 2.0 / OpenID Connect"]
 
     subgraph dv["Deviante [Sistema]"]
         web["<b>Microfrontend</b><br/>[React + Vite · Vercel]"]
@@ -280,7 +282,9 @@ flowchart TB
     end
 
     operador & gestor & tecnico -->|HTTPS| web
+    mes -.->|event log XES/CSV, por upload| web
     web -.->|login| auth
+    auth -.->|OAuth| google
     web -->|REST| gw --> bff
     bff --> core & ms1 & ms2
     bff -->|agregado| fn
@@ -298,7 +302,7 @@ flowchart TB
     classDef external fill:#999999,stroke:#8A8A8A,color:#fff
     class operador,gestor,tecnico person
     class web,gw,bff,core,ms1,ms2,fn,bus,dbCore,dbMs1,dbMs2 container
-    class auth external
+    class mes,auth,google external
     style dv fill:none,stroke:#666,stroke-dasharray:5 5
 ```
 
@@ -317,11 +321,21 @@ flowchart TB
 | Azure Function | IPDD/ADWIN: recebe a série, devolve os pontos de drift; sem estado | Python, HTTP Trigger | — |
 | Service Bus | Transporte de eventos entre serviços | Azure Service Bus | — |
 
-### 5.2 Nível 2 — Componentes do Core API
+**Interfaces importantes.** São os contratos entre os containers. As REST passam pelo BFF; as de evento passam pelo Service Bus. O diagrama de componentes da §5.3 mostra quem fornece e quem requer cada uma.
 
-Cada serviço segue a mesma organização; o Core é o exemplo detalhado. Os componentes de domínio espelham os objetos do ORCA (§8.1).
+| Interface | Fornecida por | Tipo | Usada por |
+|---|---|---|---|
+| `IAggregatedData` | BFF | REST, `GET /aggregated-data` | Microfrontend |
+| `IDomainCrud` | Core API | REST | BFF |
+| `IEventLogs` | MS1 · Ingestão | REST, upload multipart | BFF |
+| `IAnalyses` | MS2 · Análises | REST | BFF |
+| `IDriftCalculation` | Azure Function | HTTP, `POST /ipdd-adwin` | BFF, MS2 |
+| `IEventLogParsedHandler` | MS2 · Análises | Evento `EventLogParsed` | MS1 (publica) |
+| `IDriftDetectedHandler` | Core API | Evento `DriftDetected` | MS2 (publica) |
 
-**C4 — Nível 3 · Component**
+### 5.2 Nível 2 — Componentes do Core API (C4 · Nível 3)
+
+Caixa branca do Core API.
 
 ```mermaid
 flowchart TB
@@ -353,17 +367,22 @@ flowchart TB
     style core fill:none,stroke:#666,stroke-dasharray:5 5
 ```
 
-| Slice (`application/`) | Features |
+**Motivação.** O Core foi escolhido para abrir porque é dono de cinco dos seis objetos ORCA (§8.1) e concentra as regras de negócio. MS1 e MS2 seguem a mesma divisão, e o cálculo de drift, que é a parte de maior risco, já está isolado na Function (ADR 01). O Core combina Clean Architecture (RNF-20), com o `domain` sem dependências externas, e Vertical Slice (RNF-21), com uma pasta por feature dentro de `application`.
+
+**Blocos contidos**
+
+| Componente | Responsabilidade |
 |---|---|
-| `processes` | CreateProcess, UpdateProcess, DeleteProcess, ListProcesses |
-| `activities` | ManageActivityCatalog, MapOperation, UnmapOperation |
-| `equipment` | CreateEquipment, UpdateEquipment, DeleteEquipment, ManageParameters |
-| `monitoring` | CreateMonitoring, LinkEquipment, RecordReading |
-| `maintenance` | RecommendMaintenance, ScheduleMaintenance, CompleteMaintenance |
+| `api` | Rotas Ktor, validação do JWT (JWKS) e conversão de requisição e resposta |
+| `application` | Casos de uso, uma slice por feature: `processes` (CreateProcess, UpdateProcess, DeleteProcess, ListProcesses), `activities` (ManageActivityCatalog, MapOperation, UnmapOperation), `equipment` (CreateEquipment, UpdateEquipment, DeleteEquipment, ManageParameters), `monitoring` (CreateMonitoring, LinkEquipment, RecordReading) e `maintenance` (RecommendMaintenance, ScheduleMaintenance, CompleteMaintenance) |
+| `domain` | Entidades e regras em Kotlin puro, detalhadas na §5.3 |
+| `infrastructure` | Repositórios com Exposed sobre o Postgres e consumo do evento `DriftDetected`; implementa as portas definidas em `application` |
 
-### 5.3 Nível 3 — Classes de domínio
+### 5.3 Nível 3 — Código (C4 · Nível 4)
 
-**C4 — Nível 4 · UML de Classes** (Core API). Atributos, métodos e associações de todas as classes, de todos os serviços, ficam na database Classes da [página no Notion](https://app.notion.com/p/3ec5fc7249408016b3d1fcf7e9da3725).
+O nível de código é detalhado por três diagramas UML: Classes e Componentes aqui, e Sequência na seção 6.
+
+**C4 — Nível 4 · UML de Classes** (componente `domain` do Core API). Atributos, métodos e associações de todas as classes, de todos os serviços, ficam na database Classes da [página no Notion](https://app.notion.com/p/3ec5fc7249408016b3d1fcf7e9da3725).
 
 ```mermaid
 classDiagram
@@ -471,23 +490,7 @@ classDiagram
     MaintenanceRecommendation "1" --> "0..1" MaintenanceSchedule : vira
 ```
 
-Classes dos outros serviços: MS1 — `EventLog`, `Trace`, `Event`, `ProcessGraph`, `EventLogParser` (+ `CsvParser`, `XesParser`, `JsonParser`); MS2 — `DriftAnalysis`, `DriftPoint`; Function — `IpddAdwinDetector`.
-
-### 5.4 Interfaces importantes
-
-As interfaces abaixo são os contratos entre os containers. As REST passam pelo BFF; as de evento passam pelo Service Bus.
-
-| Interface | Fornecida por | Tipo | Usada por |
-|---|---|---|---|
-| `IAggregatedData` | BFF | REST, `GET /aggregated-data` | Microfrontend |
-| `IDomainCrud` | Core API | REST | BFF |
-| `IEventLogs` | MS1 · Ingestão | REST, upload multipart | BFF |
-| `IAnalyses` | MS2 · Análises | REST | BFF |
-| `IDriftCalculation` | Azure Function | HTTP, `POST /ipdd-adwin` | BFF, MS2 |
-| `IEventLogParsedHandler` | MS2 · Análises | Evento `EventLogParsed` | MS1 (publica) |
-| `IDriftDetectedHandler` | Core API | Evento `DriftDetected` | MS2 (publica) |
-
-**C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas)
+**C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas entre os containers da §5.1)
 
 ```mermaid
 flowchart LR
@@ -521,11 +524,9 @@ flowchart LR
 
 ## 6. Visão de Runtime
 
-Esta seção mostra como os blocos da seção 5 colaboram em tempo de execução. Foram escolhidos os cenários que carregam o objetivo do sistema (do event log até a manutenção), a interação com a interface externa de identidade e o comportamento quando algo falha.
+Esta seção mostra como os blocos da seção 5 colaboram em tempo de execução. Foram escolhidos os cenários que carregam o objetivo do sistema (do event log até a manutenção), a interação com a interface externa de identidade e o comportamento quando algo falha. Cada cenário traz o diagrama de sequência (C4 nível 4) e a análise do que ele mostra.
 
 ### 6.1 Upload do event log e análise de drift
-
-O gestor envia o event log exportado do MES/ERP. A ingestão responde na hora e o resto da cadeia segue por eventos, até o Core criar a recomendação de manutenção. Se o arquivo for inválido, o MS1 marca o event log como falho e nenhum evento é publicado.
 
 **C4 — Nível 4 · UML de Sequência**
 
@@ -559,9 +560,11 @@ sequenceDiagram
     end
 ```
 
+**Análise.** O gestor envia o event log exportado do MES/ERP. A ingestão responde na hora e o resto da cadeia segue por eventos, até o Core criar a recomendação de manutenção. Se o arquivo for inválido, o MS1 marca o event log como falho e nenhum evento é publicado.
+
 ### 6.2 Abrir o processo (`GET /aggregated-data`)
 
-Ao abrir um processo, o Microfrontend faz uma única chamada. O BFF consulta os serviços em paralelo e devolve um JSON único, mesmo que um deles falhe.
+**C4 — Nível 4 · UML de Sequência**
 
 ```mermaid
 sequenceDiagram
@@ -584,9 +587,11 @@ sequenceDiagram
     Note over B: se um serviço falhar, o campo vem nulo<br/>e o restante é devolvido
 ```
 
+**Análise.** Ao abrir um processo, o Microfrontend faz uma única chamada. O BFF consulta os serviços em paralelo e devolve um JSON único, mesmo que um deles falhe.
+
 ### 6.3 Login com Google
 
-O login é a única interação com o provedor de identidade. Depois dele, toda chamada leva o JWT, que é validado no API Gateway e de novo no Core.
+**C4 — Nível 4 · UML de Sequência**
 
 ```mermaid
 sequenceDiagram
@@ -615,9 +620,11 @@ sequenceDiagram
     end
 ```
 
+**Análise.** O login é a única interação com o provedor de identidade. Depois dele, toda chamada leva o JWT, que é validado no API Gateway e de novo no Core.
+
 ### 6.4 Da recomendação à manutenção realizada
 
-A recomendação criada em 6.1 só vira manutenção quando o gestor aceita. O técnico registra a execução, o que fecha o ciclo e reabilita a máquina.
+**C4 — Nível 4 · UML de Sequência**
 
 ```mermaid
 sequenceDiagram
@@ -641,13 +648,15 @@ sequenceDiagram
     C->>C: equipamento volta a operar
 ```
 
+**Análise.** A recomendação criada em 6.1 só vira manutenção quando o gestor aceita. O técnico registra a execução, o que fecha o ciclo e reabilita a máquina.
+
 ---
 
 ## 7. Visão de Implantação
 
 Esta seção mostra a infraestrutura onde o Deviante roda e onde cada bloco da seção 5 é implantado. Tudo roda em planos gratuitos ou de estudante de nuvem pública, sem servidor próprio.
 
-### 7.1 Infraestrutura — nível 1
+### 7.1 Infraestrutura — nível 1 (produção)
 
 ```mermaid
 flowchart TB
@@ -685,7 +694,7 @@ flowchart TB
     ms1 & ms2 & core <--> bus
 ```
 
-**Motivação.** As restrições de Cloud (§2) fixam o API Gateway na AWS e a Azure Function e o Azure SQL na Azure, que também hospeda o barramento de eventos. Os serviços em contêiner ficam no Fly.io, onde o deploy já funcionava no plano gratuito (§9, decisão 04), rodando as mesmas imagens publicadas no Docker Hub. Os bancos gerenciados (Supabase, MongoDB Atlas e Azure SQL) evitam operar banco próprio, um por serviço (§9, decisão 08). Azure, Fly.io e Atlas ficam na mesma área, a costa leste dos EUA (eastus, iad e us-east-1); a assinatura Azure for Students não libera East US 2.
+**Motivação.** As restrições de Cloud (§2) fixam o API Gateway na AWS e a Azure Function e o Azure SQL na Azure, que também hospeda o barramento de eventos. Os serviços em contêiner ficam no Fly.io, onde o deploy já funcionava no plano gratuito (ADR 04), rodando as mesmas imagens publicadas no Docker Hub. Os bancos gerenciados (Supabase, MongoDB Atlas e Azure SQL) evitam operar banco próprio, um por serviço (ADR 08). Azure, Fly.io e Atlas ficam na mesma área, a costa leste dos EUA (eastus, iad e us-east-1); a assinatura Azure for Students não libera East US 2.
 
 **Características de qualidade.** O Fly.io e a Azure Function escalam a zero quando não há uso, o que mantém o custo em zero, mas a primeira chamada depois de um período parado demora mais (cold start). O BFF tolera essa latência com timeout por serviço e resposta parcial (§6.2, §8.4).
 
@@ -713,11 +722,11 @@ Esta seção reúne as regras e soluções que valem para vários blocos ao mesm
 
 | Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
 |---|---|---|---|---|
-| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-03, RF-05, RF-06, RF-12 |
+| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-03, RF-05, RF-06, RF-09, RF-12 |
 | Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-07, RF-08, RF-10 |
-| Analysis | `Analysis` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-14, RF-15 |
+| Analysis | `DriftAnalysis`, `DriftPoint` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-14, RF-15 |
 | Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-11, RF-12, RF-13 |
-| Machine | `Equipment` | Core API | ver diagnóstico e prognóstico | RF-12, RF-16 |
+| Machine | `Equipment` | Core API | ver diagnóstico de saúde | RF-12, RF-16 |
 | Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-17, RF-18 |
 
 O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o grafo (MS1) são dados de suporte de Process e Activity.
@@ -832,15 +841,6 @@ erDiagram
         float mean_before
         float mean_after
     }
-    EQUIPMENT_ANALYSIS_RUNS {
-        uuid id PK
-        string equipment_ref
-        string parameter_ref
-        float delta
-        int observation_count
-        float rul_value
-        float failure_probability
-    }
 ```
 
 **MS1 (MongoDB Atlas)** — coleções `event_logs`, `traces` (eventos embutidos), `operations` e `process_graphs` (nós e arestas do DFG com frequências).
@@ -936,7 +936,7 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 | 03 | Core API em Kotlin continua como serviço de domínio no Supabase Postgres | Reaproveita o `deviante-api` e o Auth já em produção; o domínio (processos, atividades, equipamentos, monitoramento e manutenção) é relacional e usa chaves estrangeiras | Reescrever o domínio em Node ou Python; mover o Core para o MongoDB Atlas do MS1 | Três bancos para operar, um por serviço (ADR 08) |
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Contêineres na Azure ou na AWS | Tráfego entre nuvens (Fly, Azure, AWS) |
 | 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Chamadas REST encadeadas entre os serviços | Consistência eventual |
-| 06 | Prognóstico de manutenção (RUL) fica para depois, como classe Kotlin no Core | Foco no drift para esta entrega | Calcular o RUL na Azure Function junto com o drift | Campos de RUL ficam vazios por enquanto |
+| 06 | Prognóstico de manutenção (RUL) fica fora do escopo desta versão | Foco no drift para esta entrega | Calcular o RUL na Azure Function junto com o drift | Nenhum serviço calcula nem guarda RUL; se voltar ao escopo, entra como nova decisão |
 | 07 | O arc42 é escrito no Notion; `architecture/arc42.md` é gerado a partir dele, com diagramas em Mermaid | O grupo edita num lugar só, e o site e o PDF continuam vindo de um arquivo versionado | Editar o `.md` direto no GitHub | Mudanças feitas direto no `.md` são sobrescritas na próxima sincronização |
 | 08 | Persistência poliglota: cada serviço usa o banco que combina com o seu dado (Postgres no Core, MongoDB no MS1, Azure SQL no MS2) | O domínio do Core é relacional, logs e traces do MS1 são documentos e o Azure SQL do MS2 é exigência da disciplina; atende à integração com múltiplos bancos da Entrega 3 | Consolidar Core e MS1 no MongoDB Atlas | Três provedores de dados, cada um com sua credencial; entre bancos só trafegam ids |
 
