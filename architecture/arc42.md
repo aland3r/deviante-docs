@@ -1,16 +1,12 @@
 # Arquitetura do Deviante — arc42
 
-_Deviante é suporte à decisão em manutenção industrial. O núcleo analítico é o
-framework **IPDD** (Interactive Process Drift Detection), de **Denise M. V. Sato**
-(Sato et al., 2025), com a implementação IPDD/ADWIN de **Luiz F. Picolo**._
-
 **Grupo:** Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange.
 
 ---
 
 ## 1. Introdução e Metas
 
-O Deviante é um sistema de suporte a decisões para  a gestão de manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. Fundamentada em técnicas de mineração de processo e aprendizagem de máquina, o sistema identifica quando o tempo de execução de uma atividade do processo produtivo muda de comportamento, sinalizando possíveis anomalias que facilitam as decisões de gestores de manutenção no agendamento de manutenções no momento mais adequado. O objetivo do projeto é a redução de custos para a empresa e o aumento da disponibilidade dos ativos industriais.
+O Deviante é um sistema de suporte a decisões para a gestão de manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. Orientado por técnicas de mineração de processo e aprendizagem de máquina, o sistema identifica quando o tempo de execução de uma atividade do processo produtivo muda de comportamento, sinalizando possíveis anomalias que facilitam as decisões de gestores de manutenção no agendamento de inspeções e manutenções no momento mais adequado. O objetivo do projeto é a redução de custos para a empresa e o aumento da disponibilidade dos ativos industriais.
 
 A presente documentação apresenta um conjunto de decisões de design que afetam a estrutura e o comportamento do sistema Deviante. Tais decisões incluem a escolha de padrões arquiteturais, a definição de componentes e suas interações, e a consideração de requisitos funcionais e não funcionais. A arquitetura proposta serve como um guia para o desenvolvimento, influenciando diretamente a qualidade do software e a eficiência do processo de desenvolvimento.
 
@@ -100,11 +96,11 @@ Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os tr
 | Técnico de manutenção | Usuário do sistema | Saber o que fazer, registrar a manutenção realizada e reabilitar a máquina no sistema. |
 | Analista / mentor | Grupo de pesquisa IPDD (PUCPR) | Validar as análises e ajustar a sensibilidade do IPDD/ADWIN. |
 | Denise M. V. Sato, autora do framework IPDD | [denise.vecino@pucpr.br](mailto:denise.vecino@pucpr.br) | Ver o método aplicado com fidelidade ao trabalho original. |
-| Luiz F. Picolo, autor da implementação IPDD/ADWIN | [luiz.picolo@pucpr.edu.br](mailto:luiz.picolo@pucpr.edu.br) | Ver o detector reaproveitado sem alteração e com resultados reproduzíveis. |
+| Luiz F. Picolo, pesquisador do grupo IPDD | [luiz.picolo@pucpr.edu.br](mailto:luiz.picolo@pucpr.edu.br) | Ver o detector reaproveitado sem alteração e com resultados reproduzíveis. |
 | Eduardo de Freitas Loures, orientador PIBITI | [eduardo.loures@pucpr.br](mailto:eduardo.loures@pucpr.br) | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
 | Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | [manoel.valerio@pucpr.br](mailto:manoel.valerio@pucpr.br) | Avaliar estilos arquiteturais e implantação em nuvem. |
 | Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | [tiago.adelino@pucpr.edu.br](mailto:tiago.adelino@pucpr.edu.br) | Avaliar padrões de projeto, variabilidade e reuso. |
-| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Emanuelle Skolut Jose | menezes.alander@pucpr.eud.br | Uma arquitetura que caiba no prazo e no free tier. |
+| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Emanuelle Skolut Jose | [menezes.alander@pucpr.edu.br](mailto:menezes.alander@pucpr.edu.br) | Uma arquitetura que caiba no prazo e no free tier. |
 
 ---
 
@@ -112,9 +108,9 @@ Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os tr
 
 O Deviante atende a três frentes, cada uma com suas restrições e demandas.
 
-A primeira é a Iniciação Tecnológica (PIBITI), vigente de agosto de 2025 a julho de 2026 e apresentada no SEMIC em outubro de 2026, com orientação do Prof. Eduardo de Freitas Loures. O produto continua uma pesquisa da PUCPR que envolve graduandos, mestrandos e doutorandos. Por isso parte da estratégia já chega consolidada e validada pelo grupo de pesquisa: o PM4Py para minerar o processo e o IPDD/ADWIN para detectar os desvios de desempenho.
+A primeira é a Iniciação Tecnológica (PIBITI), vigente de agosto de 2025 a julho de 2026 e apresentada no SEMIC em outubro de 2026. O produto continua uma pesquisa da PUCPR que envolve graduandos, mestrandos e doutorandos. Por isso parte da estratégia já chega consolidada e validada pelo grupo de pesquisa: o PM4Py para minerar o processo e o IPDD/ADWIN para detectar os desvios de desempenho.
 
-As outras duas são disciplinas do 6º período de Engenharia de Software da PUCPR. **Arquitetura e Soluções Cloud** (Prof. Manoel Valerio da Silveira Neto) define o estilo e a infraestrutura: microfrontend, BFF em Node.js, dois microsserviços com bancos próprios (MongoDB Atlas e Azure SQL), uma Azure Function, API Gateway na AWS e comunicação por eventos, com Clean Architecture, Vertical Slice, testes unitários e de arquitetura, imagens no Docker Hub, repositórios públicos e documentação arc42 com C4. **Desenvolvimento Orientado a Reuso** (Prof. Tiago Adelino Navarro) pede que o projeto seja modelado com padrões de projeto, deixe explícitos os pontos de variabilidade e reaproveite componentes existentes em vez de reescrevê-los.
+As outras duas são disciplinas do 6º período de Engenharia de Software da PUCPR. **Arquitetura e Soluções Cloud** define o estilo e a infraestrutura: microfrontend, BFF em Node.js, dois microsserviços com bancos próprios (MongoDB Atlas e Azure SQL), uma Azure Function, API Gateway na AWS e comunicação por eventos, com Clean Architecture, Vertical Slice, testes unitários e de arquitetura, imagens no Docker Hub, repositórios públicos e documentação arc42 com C4. **Desenvolvimento Orientado a Reuso** pede que o projeto seja modelado com padrões de projeto, deixe explícitos os pontos de variabilidade e reaproveite componentes existentes em vez de reescrevê-los.
 
 As restrições abaixo seguem o template arc42 em três grupos: técnicas, organizacionais e convenções. Cada uma traz o motivo que a impõe.
 
@@ -131,14 +127,14 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | RT7 | Comunicação assíncrona por eventos entre serviços | Exigência de Cloud (RNF-19). |
 | RT8 | Back-end de domínio em Kotlin; microsserviços analíticos em Python com FastAPI | Decisão do grupo (RNF-01, RNF-05). PM4Py e o código IPDD/ADWIN só existem em Python. |
 | RT9 | Supabase para autenticação (Google) e PostgreSQL do Core | Decisão do grupo (RNF-02, RNF-10). O domínio do Core é relacional (ADR 03 e 08). |
-| RT10 | Código IPDD/ADWIN de L. F. Picolo reaproveitado sem reescrita | Fidelidade científica: o método publicado (Sato et al., 2025) precisa dar os mesmos resultados. |
+| RT10 | Código IPDD/ADWIN da pesquisa reaproveitado sem reescrita | Fidelidade científica: o método publicado precisa dar os mesmos resultados. |
 | RT11 | Só serviços gratuitos (free tiers) | Projeto acadêmico sem orçamento. Limites de memória, conexões e DTU condicionam o desenho. |
 
 ### 2.2 Restrições organizacionais
 
 | ID | Restrição | Motivo |
 |---|---|---|
-| RO1 | Equipe de quatro alunos: Alander, Bernardo, Emanuelle e Murilo | Grupo do projeto integrador (PjBL) do 6º período. |
+| RO1 | Equipe de quatro alunos | Grupo do projeto integrador (PjBL) do 6º período. |
 | RO2 | Prazos: documentação de Cloud em 15/10/2026; Reuso e apresentação do PIBITI em 16/10/2026; arquitetura completa de Cloud em 12/11/2026 | Calendário das disciplinas e do PIBITI (banco Entregas do Notion). |
 | RO3 | Método analítico definido pela pesquisa e validado pelo orientador | O PIBITI continua o trabalho do grupo de pesquisa IPDD da PUCPR. |
 | RO4 | Um repositório público no GitHub por serviço, cada um com README (arquitetura, tecnologias, como rodar, nomes dos alunos) | Exigência de Cloud. |
@@ -169,9 +165,8 @@ O Deviante é tratado aqui como uma caixa-preta. Dentro do escopo estão o regis
 **C4 — Nível 1 · System Context**
 
 ```mermaid
-%%{init: {"c4": {"width": 300}}}%%
+%%{init: {"wrap": true, "c4": {"width": 200, "wrap": true}}}%%
 C4Context
-    title C4 Nivel 1 - Contexto do Sistema: Deviante
 
     System(e1, " ", " ")
     Person(operador, "Operador", "Informa as atividades da cadeia produtiva e registra os dados.")
@@ -221,15 +216,15 @@ Todo o tráfego externo entra por um único canal, o API Gateway da AWS, e segue
 
 ## 4. Estratégia da Solução
 
-O Deviante gira em torno de um fluxo curto: o operador registra o processo, o event log da máquina é importado, o IPDD/ADWIN procura mudanças no tempo das atividades e o gestor decide a manutenção que o técnico executa. As decisões abaixo saem desse fluxo, das metas de qualidade (seção 1.2) e das restrições (seção 2).
+Esta seção resume as decisões que dão forma ao Deviante: como o sistema é dividido, quais tecnologias usa, quais padrões arquiteturais e de projeto adota e como isso atende às metas de qualidade (seção 1.2) dentro das restrições da seção 2. A estrutura detalhada está na seção 5 e os conceitos transversais na seção 8.
 
 **Decomposição.** O sistema é dividido por responsabilidade, cada parte com seu banco (Database per Service). A interface é um microfrontend em React que conversa só com o BFF em NestJS, e o BFF fica atrás do API Gateway da AWS. O domínio (processos, atividades, máquinas, monitoramentos e manutenções) fica na Core API em Kotlin/Ktor sobre o Postgres do Supabase, que também cuida do login. A ingestão do log e o grafo do processo ficam no MS1 (FastAPI + PM4Py, MongoDB Atlas) e as análises de desvio no MS2 (FastAPI, Azure SQL). Cada serviço usa o banco que combina com o seu dado (persistência poliglota): relacional no Core, documentos no MS1 e Azure SQL no MS2.
 
-**Núcleo analítico.** O IPDD/ADWIN roda numa Azure Function sem estado, chamada sob demanda. O código original de L. F. Picolo é envolvido por um Adapter em vez de reescrito, o que preserva os resultados do método publicado.
+**Núcleo analítico.** O IPDD/ADWIN roda numa Azure Function sem estado, chamada sob demanda, reaproveitando o código da pesquisa sem reescrita para preservar os resultados do método publicado.
 
 **Integração.** Os serviços trocam eventos no Azure Service Bus (`EventLogParsed`, `DriftDetected`). Assim ingestão, análise e domínio evoluem e falham separados, e o BFF consegue devolver um agregado parcial quando um deles está fora.
 
-**Estrutura interna e reuso.** Todo serviço segue Clean Architecture com uma pasta por feature (Vertical Slice). Os padrões Singleton, Adapter e Observer, um de cada família GoF, resolvem pontos concretos do fluxo (seção 8.3).
+**Padrões arquiteturais e de projeto.** No nível da arquitetura, o Deviante combina microsserviços com Database per Service, Backend for Frontend (BFF), API Gateway e comunicação orientada a eventos (publish/subscribe no Service Bus); dentro de cada serviço, Clean Architecture com uma pasta por feature (Vertical Slice). No nível do código, adota um padrão de cada família GoF: o **Singleton** (criacional) garante uma única instância do motor de análise na Function (`AnalysisEngine`) e da configuração (`AppConfig`); o **Adapter** (estrutural) envolve o código IPDD/ADWIN da pesquisa (`IpddAdwinAdapter` → `DriftDetector`) e o PM4Py (`Pm4pyGraphAdapter` → `GraphMiner`) atrás de interfaces próprias; e o **Observer** (comportamental) faz o `DriftSubject` notificar `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` no microfrontend quando um drift é detectado. Os detalhes de cada padrão estão na seção 8.3.
 
 **Tecnologia e operação.** Só serviços gratuitos: Vercel para a interface, Fly.io para a Core API, o MS1 e o MS2 (ADR 04), Azure para a Function, o Service Bus e o Azure SQL. Cada serviço vira uma imagem no Docker Hub e é publicado pelo GitHub Actions.
 
@@ -859,7 +854,7 @@ Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, 
 | Padrão | Família | Exemplos | Onde |
 |---|---|---|---|
 | Singleton | Criacional | `AnalysisEngine` (instância única do wrapper do detector, reaproveitada entre chamadas), `AppConfig` (registro único de configuração e parâmetros padrão da análise) | Function, Core |
-| Adapter | Estrutural | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN de L. F. Picolo), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py) | Function, MS1 |
+| Adapter | Estrutural | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN da pesquisa), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py) | Function, MS1 |
 | Observer | Comportamental | `DriftSubject` notifica `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` quando o ADWIN detecta um drift ou a análise conclui | Microfrontend |
 
 ```mermaid
@@ -873,7 +868,7 @@ classDiagram
       +detect(series, delta) List~DriftPoint~
     }
     class ipdd_adwin {
-      <<código de L. F. Picolo>>
+      <<código da pesquisa>>
     }
     class AnalysisEngine {
       <<singleton>>
@@ -902,7 +897,7 @@ classDiagram
     DriftObserver <|.. AnalysisHud
 ```
 
-O Adapter é o padrão que preserva a pesquisa: o código do Picolo é envolvido, não copiado nem alterado ("wrap, não fork"). O Singleton evita recarregar o detector a cada chamada, e o Observer desacopla a detecção das telas que reagem a ela.
+O Adapter é o padrão que preserva a pesquisa: o código da pesquisa é envolvido, não copiado nem alterado ("wrap, não fork"). O Singleton evita recarregar o detector a cada chamada, e o Observer desacopla a detecção das telas que reagem a ela.
 
 ### 8.4 Tratamento de erros e resiliência
 
@@ -928,7 +923,7 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 
 | ADR | Decisão | Motivo | Alternativa descartada | Consequência |
 |---|---|---|---|---|
-| 01 | IPDD/ADWIN roda como Azure Function e o MS2 só gerencia as análises | Reaproveitar o código de L. F. Picolo sem estado; o enunciado conta MS2 (CRUD + Azure SQL) e Function separadamente | Rodar o detector dentro do MS2 | Uma chamada HTTP a mais por análise |
+| 01 | IPDD/ADWIN roda como Azure Function e o MS2 só gerencia as análises | Reaproveitar o código da pesquisa sem estado; o enunciado conta MS2 (CRUD + Azure SQL) e Function separadamente | Rodar o detector dentro do MS2 | Uma chamada HTTP a mais por análise |
 | 02 | MS1 = ingestão + grafo com pm4py, em MongoDB | Log e traces têm forma de documento | Guardar o log em tabelas no Postgres, como hoje | Consultas relacionais sobre traces ficam no MS2/Core |
 | 03 | Core API em Kotlin continua como serviço de domínio no Supabase Postgres | Reaproveita o `deviante-api` e o Auth já em produção; o domínio (processos, atividades, equipamentos, monitoramento e manutenção) é relacional e usa chaves estrangeiras | Reescrever o domínio em Node ou Python; mover o Core para o MongoDB Atlas do MS1 | Três bancos para operar, um por serviço (ADR 08) |
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Contêineres na Azure ou na AWS | Tráfego entre nuvens (Fly, Azure, AWS) |
@@ -993,7 +988,7 @@ Termos de domínio e técnicos usados neste documento, para que o grupo, os prof
 | Trace | Sequência de eventos de um mesmo caso. |
 | Sojourn time | Tempo que um caso passa numa atividade (fim − início). |
 | Drift | Mudança estatisticamente relevante no comportamento de uma série, aqui o sojourn time. |
-| IPDD | Interactive Process Drift Detection, framework de D. Sato. |
+| IPDD | Interactive Process Drift Detection, framework de detecção de desvios do grupo de pesquisa IPDD da PUCPR. |
 | ADWIN | Adaptive Windowing: algoritmo que detecta mudança na média de uma série. |
 | DFG | Directly-Follows Graph: grafo de quais atividades seguem quais. |
 | RUL | Remaining Useful Life: vida útil restante estimada de um equipamento. |
