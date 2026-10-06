@@ -10,7 +10,7 @@ framework **IPDD** (Interactive Process Drift Detection), de **Denise M. V. Sato
 
 ## 1. Introdução e Metas
 
-O Deviante é um sistema de suporte a decisões para  a gestão de manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. O sistema identifica quando o tempo de execução de uma atividade do processo produtivo muda de comportamento, sinalizando possíveis anomalias que facilitam as decisões de gestores de manutenção no agendamento de manutenções no momento mais adequado. O objetivo do projeto é a redução de custos para a empresa e o aumento da disponibilidade dos ativos industriais.
+O Deviante é um sistema de suporte a decisões para  a gestão de manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. Fundamentada em técnicas de mineração de processo e aprendizagem de máquina, o sistema identifica quando o tempo de execução de uma atividade do processo produtivo muda de comportamento, sinalizando possíveis anomalias que facilitam as decisões de gestores de manutenção no agendamento de manutenções no momento mais adequado. O objetivo do projeto é a redução de custos para a empresa e o aumento da disponibilidade dos ativos industriais.
 
 A presente documentação apresenta um conjunto de decisões de design que afetam a estrutura e o comportamento do sistema Deviante. Tais decisões incluem a escolha de padrões arquiteturais, a definição de componentes e suas interações, e a consideração de requisitos funcionais e não funcionais. A arquitetura proposta serve como um guia para o desenvolvimento, influenciando diretamente a qualidade do software e a eficiência do processo de desenvolvimento.
 
