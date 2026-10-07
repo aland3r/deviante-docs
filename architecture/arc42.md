@@ -584,10 +584,39 @@ classDiagram
     Machine <-- Intervention : is performed on
     Intervention <|-- Maintenance
     Intervention <|-- Inspection
-    Maintenance --> ComponentReplacement : records
+    ComponentReplacement <-- Maintenance : records
     Component <-- ComponentReplacement : replaces
     Inspection --> Finding : produces
     Maintenance <-- Finding : opens
+
+    %% cores com alto contraste para fundo escuro
+    style User fill:#0f2f2c,stroke:#2dd4bf,stroke-width:2px,color:#f8fafc
+    style EventStream fill:#0f2f2c,stroke:#2dd4bf,stroke-width:2px,color:#f8fafc
+    style ComponentReplacement fill:#0f2f2c,stroke:#2dd4bf,stroke-width:2px,color:#f8fafc
+    style Administrator fill:#3a2410,stroke:#fb923c,stroke-width:2px,color:#f8fafc
+    style Event fill:#3a2410,stroke:#fb923c,stroke-width:2px,color:#f8fafc
+    style Manager fill:#0c2c36,stroke:#22d3ee,stroke-width:2px,color:#f8fafc
+    style Machine fill:#0c2c36,stroke:#22d3ee,stroke-width:2px,color:#f8fafc
+    style Intervention fill:#0c2c36,stroke:#22d3ee,stroke-width:2px,color:#f8fafc
+    style Operator fill:#0f2d1a,stroke:#4ade80,stroke-width:2px,color:#f8fafc
+    style Component fill:#0f2d1a,stroke:#4ade80,stroke-width:2px,color:#f8fafc
+    style Maintenance fill:#0f2d1a,stroke:#4ade80,stroke-width:2px,color:#f8fafc
+    style Technician fill:#261c42,stroke:#a78bfa,stroke-width:2px,color:#f8fafc
+    style Sensor fill:#261c42,stroke:#a78bfa,stroke-width:2px,color:#f8fafc
+    style Drift fill:#261c42,stroke:#a78bfa,stroke-width:2px,color:#f8fafc
+    style Business fill:#36143a,stroke:#e879f9,stroke-width:2px,color:#f8fafc
+    style EventLog fill:#36143a,stroke:#e879f9,stroke-width:2px,color:#f8fafc
+    style Inspection fill:#36143a,stroke:#e879f9,stroke-width:2px,color:#f8fafc
+    style Workspace fill:#3d1622,stroke:#fb7185,stroke-width:2px,color:#f8fafc
+    style Parameter fill:#3d1622,stroke:#fb7185,stroke-width:2px,color:#f8fafc
+    style Finding fill:#3d1622,stroke:#fb7185,stroke-width:2px,color:#f8fafc
+    style Process fill:#33290b,stroke:#fbbf24,stroke-width:2px,color:#f8fafc
+    style Reading fill:#33290b,stroke:#fbbf24,stroke-width:2px,color:#f8fafc
+    style Monitoring fill:#122241,stroke:#60a5fa,stroke-width:2px,color:#f8fafc
+    style Activity fill:#122241,stroke:#60a5fa,stroke-width:2px,color:#f8fafc
+    style Analysis fill:#1f2d0d,stroke:#a3e635,stroke-width:2px,color:#f8fafc
+    style Recommendation fill:#1f2d0d,stroke:#a3e635,stroke-width:2px,color:#f8fafc
+    style EventSource fill:#1f2d0d,stroke:#a3e635,stroke-width:2px,color:#f8fafc
 ```
 
 **C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas entre os containers da §5.1)
