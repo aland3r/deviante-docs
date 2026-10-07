@@ -392,112 +392,202 @@ C4Component
 
 O nível de código é detalhado por três diagramas UML: Classes e Componentes aqui, e Sequência na seção 6.
 
-**C4 — Nível 4 · UML de Classes** (componente `domain` do Core API)
+**C4 — Nível 4 · UML de Classes** (modelo de domínio)
+
+Classes, atributos e relações do domínio do Deviante. As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`), as origens de eventos, por upload de log ou em fluxo contínuo (`EventSource`), e as intervenções feitas na máquina (`Intervention`).
 
 ```mermaid
 classDiagram
-    direction LR
+    direction TB
 
-    class Manager {
+    class User {
+      <<abstract>>
       +UUID id
-      +UUID userId
       +String email
       +String fullName
-      +Role role
-      +canEdit(process) Boolean
-      +isOwner() Boolean
     }
-    class Process {
+    class Administrator
+    class Manager
+    class Operator {
+      +String shift
+    }
+    class Technician {
+      +String specialty
+    }
+    class Business {
       +UUID id
-      +UUID managerId
       +String name
-      +String companyName
+      +String cnpj
       +String sector
-      +rename(name)
-      +addActivity(activity)
-      +linkEquipment(equipment)
-      +canBeDeletedBy(manager) Boolean
+    }
+    class Workspace {
+      <<abstract>>
+      +UUID id
+      +String name
+      +String description
+      +WorkspaceStatus status
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Process
+    class Monitoring {
+      +SourceType sourceType
+      +String sourceName
+    }
+    class Analysis {
+      +String method
+      +Double delta
+      +Int smoothingWindow
+      +Int traceCount
+      +Int driftCount
     }
     class Activity {
       +UUID id
       +String name
       +String description
-      +matches(rawLabel) Boolean
     }
-    class OperationMapping {
+    class EventSource {
+      <<abstract>>
       +UUID id
-      +UUID processId
-      +String operationRef
-      +String rawLabel
-      +MappingStatus status
-      +mapTo(activity)
-      +unmap()
-      +autoMap(catalog)
+      +Instant createdAt
     }
-    class Equipment {
+    class EventLog {
+      +String fileName
+      +LogFormat format
+      +ParseStatus parseStatus
+      +String parseError
+      +Int traceCount
+      +Int operationCount
+      +Instant uploadedAt
+    }
+    class EventStream {
+      +String endpoint
+      +Instant lastEventAt
+    }
+    class Event {
+      +UUID id
+      +String caseId
+      +String rawLabel
+      +Int sequenceIndex
+      +Instant start
+      +Instant complete
+      +Decimal durationSeconds
+    }
+    class Machine {
       +UUID id
       +String name
       +String tag
       +String kind
-      +EquipmentStatus status
-      +changeStatus(status)
-      +addParameter(parameter)
+      +String location
+      +String manufacturer
+      +String model
+      +String serialNumber
+      +MachineStatus status
     }
-    class Monitoring {
+    class Component {
       +UUID id
       +String name
-      +String sourceType
-      +MonitoringStatus status
-      +addEquipment(equipment)
-      +removeEquipment(equipment)
-      +activate()
-      +pause()
+      +String partNumber
+      +Instant installedAt
     }
-    class MonitoringParameter {
+    class Sensor {
+      +UUID id
+      +String kind
+    }
+    class Parameter {
       +UUID id
       +String name
       +String unit
-      +record(reading)
-      +history(range) List
+      +String description
     }
     class Reading {
       +UUID id
       +Instant observedAt
       +Double value
       +String quality
-      +isValid() Boolean
     }
-    class MaintenanceRecommendation {
+    class Drift {
       +UUID id
-      +String analysisRef
+      +Int traceIndex
+      +Double meanBefore
+      +Double meanAfter
+    }
+    class Recommendation {
+      +UUID id
       +String action
+      +String rationale
       +Priority priority
       +RecommendationStatus status
-      +accept()
-      +reject()
-      +toSchedule() MaintenanceSchedule
+      +Instant recommendedStart
+      +Instant recommendedEnd
     }
-    class MaintenanceSchedule {
+    class Intervention {
+      <<abstract>>
       +UUID id
       +String title
+      +String notes
       +Instant scheduledStart
       +Instant scheduledEnd
-      +ScheduleStatus status
-      +reschedule(start, end)
-      +complete()
-      +cancel()
+      +InterventionStatus status
+    }
+    class Maintenance {
+      +MaintenanceType type
+    }
+    class Inspection {
+      +String checklist
+    }
+    class Finding {
+      +UUID id
+      +Severity severity
+      +String description
+    }
+    class ComponentReplacement {
+      +UUID id
+      +String removedPart
+      +String installedPart
+      +Instant replacedAt
     }
 
-    Manager "1" --> "*" Process : possui
-    Process "*" --> "*" Activity : usa
-    Process "1" --> "*" OperationMapping : mapeia
-    OperationMapping "*" --> "0..1" Activity : destino
-    Process "*" --> "*" Equipment : envolve
-    Monitoring "*" --> "*" Equipment : acompanha
-    Monitoring "1" --> "*" MonitoringParameter : mede
-    MonitoringParameter "1" --> "*" Reading : registra
-    Equipment "1" --> "*" MaintenanceRecommendation : recebe
-    MaintenanceRecommendation "1" --> "0..1" MaintenanceSchedule : vira
+    User <|-- Administrator
+    User <|-- Manager
+    User <|-- Operator
+    User <|-- Technician
+    User --> Business : belongs to
+    Business --> Workspace : owns
+
+    Workspace <|-- Process
+    Workspace <|-- Monitoring
+    Workspace <|-- Analysis
+    Manager --> Workspace : maintains
+
+    Process --> Activity : contains
+    Machine <-- Process : uses
+    EventSource <|-- EventLog
+    EventSource <|-- EventStream
+    Process <-- EventSource : records
+    EventSource --> Event : contains
+    Activity <-- Event : corresponds to
+    Machine <-- Event : occurs on
+    Operator --> Event : registers
+
+    Machine --> Component : contains
+    Component --> Sensor : has
+    Sensor --> Parameter : measures
+    Parameter --> Reading : records
+    Machine <-- Monitoring : observes
+
+    Analysis --> EventSource : analyzes
+    Analysis --> Drift : detects
+    Drift --> Recommendation : generates
+    Recommendation --> Intervention : becomes
+    Technician --> Intervention : performs
+    Machine <-- Intervention : is performed on
+    Intervention <|-- Maintenance
+    Intervention <|-- Inspection
+    Maintenance --> ComponentReplacement : records
+    Component <-- ComponentReplacement : replaces
+    Inspection --> Finding : produces
+    Maintenance <-- Finding : opens
 ```
 
 **C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas entre os containers da §5.1)
