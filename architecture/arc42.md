@@ -561,7 +561,7 @@ classDiagram
     Manager --> Workspace : maintains
 
     Process --> Activity : contains
-    Machine <-- Process : uses
+    Process --> Machine : uses
     EventSource <|-- EventLog
     EventSource <|-- EventStream
     Process <-- EventSource : records
@@ -574,7 +574,7 @@ classDiagram
     Component --> Sensor : has
     Sensor --> Parameter : measures
     Parameter --> Reading : records
-    Machine <-- Monitoring : observes
+    Monitoring --> Machine : observes
 
     Analysis --> EventSource : analyzes
     Analysis --> Drift : detects
