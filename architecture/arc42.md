@@ -589,34 +589,43 @@ classDiagram
     Inspection --> Finding : produces
     Maintenance <-- Finding : opens
 
-    %% cores com alto contraste para fundo escuro
-    style User fill:#0f2f2c,stroke:#2dd4bf,stroke-width:2px,color:#f8fafc
-    style EventStream fill:#0f2f2c,stroke:#2dd4bf,stroke-width:2px,color:#f8fafc
-    style ComponentReplacement fill:#0f2f2c,stroke:#2dd4bf,stroke-width:2px,color:#f8fafc
-    style Administrator fill:#3a2410,stroke:#fb923c,stroke-width:2px,color:#f8fafc
-    style Event fill:#3a2410,stroke:#fb923c,stroke-width:2px,color:#f8fafc
-    style Manager fill:#0c2c36,stroke:#22d3ee,stroke-width:2px,color:#f8fafc
-    style Machine fill:#0c2c36,stroke:#22d3ee,stroke-width:2px,color:#f8fafc
-    style Intervention fill:#0c2c36,stroke:#22d3ee,stroke-width:2px,color:#f8fafc
-    style Operator fill:#0f2d1a,stroke:#4ade80,stroke-width:2px,color:#f8fafc
-    style Component fill:#0f2d1a,stroke:#4ade80,stroke-width:2px,color:#f8fafc
-    style Maintenance fill:#0f2d1a,stroke:#4ade80,stroke-width:2px,color:#f8fafc
-    style Technician fill:#261c42,stroke:#a78bfa,stroke-width:2px,color:#f8fafc
-    style Sensor fill:#261c42,stroke:#a78bfa,stroke-width:2px,color:#f8fafc
-    style Drift fill:#261c42,stroke:#a78bfa,stroke-width:2px,color:#f8fafc
-    style Business fill:#36143a,stroke:#e879f9,stroke-width:2px,color:#f8fafc
-    style EventLog fill:#36143a,stroke:#e879f9,stroke-width:2px,color:#f8fafc
-    style Inspection fill:#36143a,stroke:#e879f9,stroke-width:2px,color:#f8fafc
-    style Workspace fill:#3d1622,stroke:#fb7185,stroke-width:2px,color:#f8fafc
-    style Parameter fill:#3d1622,stroke:#fb7185,stroke-width:2px,color:#f8fafc
-    style Finding fill:#3d1622,stroke:#fb7185,stroke-width:2px,color:#f8fafc
-    style Process fill:#33290b,stroke:#fbbf24,stroke-width:2px,color:#f8fafc
-    style Reading fill:#33290b,stroke:#fbbf24,stroke-width:2px,color:#f8fafc
-    style Monitoring fill:#122241,stroke:#60a5fa,stroke-width:2px,color:#f8fafc
-    style Activity fill:#122241,stroke:#60a5fa,stroke-width:2px,color:#f8fafc
-    style Analysis fill:#1f2d0d,stroke:#a3e635,stroke-width:2px,color:#f8fafc
-    style Recommendation fill:#1f2d0d,stroke:#a3e635,stroke-width:2px,color:#f8fafc
-    style EventSource fill:#1f2d0d,stroke:#a3e635,stroke-width:2px,color:#f8fafc
+    %% cores pastel por objeto
+    %% Humano e empresa
+    style User fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Administrator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Manager fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Operator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Business fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    %% Workspace (base de Process, Monitoring e Analysis)
+    style Workspace fill:#d4d9e1,stroke:#475569,stroke-width:2px,color:#111827
+    %% Process
+    style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style EventSource fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style EventStream fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    %% Activity
+    style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    %% Equipment e Component
+    style Machine fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
+    style Component fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
+    style Sensor fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
+    %% Monitoring
+    style Monitoring fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
+    style Parameter fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
+    style Reading fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
+    %% Analysis
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Drift fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Recommendation fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    %% Maintenance
+    style Intervention fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    style Maintenance fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    style ComponentReplacement fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    %% Inspection
+    style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
+    style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
 ```
 
 **C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas entre os containers da §5.1)
