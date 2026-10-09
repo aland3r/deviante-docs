@@ -394,11 +394,13 @@ O nível de código é detalhado por três diagramas UML: Classes e Componentes 
 
 **C4 — Nível 4 · UML de Classes** (modelo de domínio)
 
-Classes, atributos e relações do domínio do Deviante. Atributos partem do que o código já persiste hoje e do mínimo da solução alvo (empresa, papéis, peça, inspeção). As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`) e as intervenções (`Intervention`). Na Phase 1 o histórico entra só por **upload de `EventLog`**: colunas de condição encontradas no noun foraging (`temperature`, `vibration`, `noiseLevel`) vão no `Event` quando o log as traz — não há telemetria IoT em tempo real. `Component` carrega idade/degradação da peça. `Monitoring` é o agrupamento de máquinas sob acompanhamento de saúde (não um stream de sensores). `Operation` é o rótulo extraído do log, mapeável a `Activity`. O papel *administrador* é um valor de `Role` em `User`. Associações trazem cardinalidade.
+Classes, atributos e relações do domínio do Deviante, em **quatro vistas** largas (`direction LR`) para evitar linha por cima de caixa e espaços vazios enormes. Atributos partem do código e do mínimo da solução alvo. Na Phase 1 o histórico entra por **upload de `EventLog`**: `temperature` / `vibration` / `noiseLevel` no `Event` quando o log traz; `Component` carrega idade/degradação; `Monitoring` agrupa máquinas sob acompanhamento de saúde (não IoT). O papel *administrador* é valor de `Role` em `User`. Cardinalidades nas associações.
+
+**Vista 1 — Pessoas e painel** (`User` → `Business` → `Workspace`; `Manager` entre `Operator` e `Business`)
 
 ```mermaid
 classDiagram
-    direction TB
+    direction LR
 
     class User {
       <<abstract>>
@@ -446,13 +448,35 @@ classDiagram
       +Int driftCount
       +AnalysisStatus status
     }
-    class Activity {
-      +UUID id
-      +String name
-      +String description
-      +Instant createdAt
-      +Instant updatedAt
-    }
+
+    User <|-- Operator
+    User <|-- Manager
+    User "0..*" --> "1" Business : belongs to
+    User <|-- Technician
+    Business "1" --> "0..*" Workspace : owns
+    Manager "1" --> "0..*" Workspace : maintains
+    Workspace <|-- Process
+    Workspace <|-- Monitoring
+    Workspace <|-- Analysis
+
+    style User fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Operator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Manager fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Business fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Workspace fill:#d4d9e1,stroke:#475569,stroke-width:2px,color:#111827
+    style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Monitoring fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+```
+
+**Vista 2 — Event log e processo** (upload Phase 1: log → operações/eventos → atividades e máquinas)
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Process
     class EventLog {
       +UUID id
       +String fileName
@@ -470,6 +494,13 @@ classDiagram
       +String rawLabel
       +Int occurrenceCount
       +MappingStatus mappingStatus
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Activity {
+      +UUID id
+      +String name
+      +String description
       +Instant createdAt
       +Instant updatedAt
     }
@@ -500,14 +531,49 @@ classDiagram
       +Instant createdAt
       +Instant updatedAt
     }
-    class Component {
-      +UUID id
+    class Analysis {
       +String name
-      +String partNumber
-      +Instant installedAt
-      +Double expectedLifeHours
-      +Double degradationScore
-      +ComponentHealth health
+      +String method
+      +Double delta
+      +Int smoothingWindow
+      +Int traceCount
+      +Int driftCount
+      +AnalysisStatus status
+    }
+
+    Process "1" --> "0..*" EventLog : records
+    EventLog "1" --> "0..*" Operation : extracts
+    EventLog "1" --> "0..*" Event : contains
+    Operation "0..*" --> "0..1" Activity : maps to
+    Event "0..*" --> "1" Operation : of
+    Activity "1" --> "0..*" Event : corresponds to
+    Process "0..*" --> "0..*" Activity : contains
+    Process "0..*" --> "0..*" Machine : uses
+    Analysis "1" --> "1..*" EventLog : analyzes
+
+    style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Operation fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Machine fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+```
+
+**Vista 3 — Análise e intervenção** (cadeia linear: drift → recomendação → manutenção/inspeção). Um `Finding` pode abrir uma `Maintenance` (`0..*` → `0..1`); a aresta fica de fora do desenho para não esticar a herança.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Analysis {
+      +String name
+      +String method
+      +Double delta
+      +Int smoothingWindow
+      +Int traceCount
+      +Int driftCount
+      +AnalysisStatus status
     }
     class Drift {
       +UUID id
@@ -527,6 +593,9 @@ classDiagram
       +Instant recommendedEnd
       +Instant createdAt
       +Instant updatedAt
+    }
+    class Technician {
+      +String specialty
     }
     class Intervention {
       <<abstract>>
@@ -551,6 +620,57 @@ classDiagram
       +String description
       +Instant foundAt
     }
+
+    Analysis "1" --> "0..*" Drift : detects
+    Drift "1" --> "0..*" Recommendation : generates
+    Recommendation "1" --> "0..1" Intervention : becomes
+    Technician "0..1" --> "0..*" Intervention : performs
+    Intervention <|-- Maintenance
+    Intervention <|-- Inspection
+    Inspection "1" --> "0..*" Finding : produces
+
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Drift fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Recommendation fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Intervention fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    style Maintenance fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
+    style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
+```
+
+**Vista 4 — Ativos e peça** (monitoramento → máquina → componente → troca; intervenção na máquina)
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Monitoring
+    class Machine {
+      +UUID id
+      +String name
+      +String tag
+      +String kind
+      +MachineStatus status
+    }
+    class Component {
+      +UUID id
+      +String name
+      +String partNumber
+      +Instant installedAt
+      +Double expectedLifeHours
+      +Double degradationScore
+      +ComponentHealth health
+    }
+    class Intervention {
+      <<abstract>>
+      +UUID id
+      +String title
+      +InterventionStatus status
+    }
+    class Maintenance {
+      +MaintenanceType type
+    }
     class ComponentReplacement {
       +UUID id
       +String removedPart
@@ -558,77 +678,19 @@ classDiagram
       +Instant replacedAt
     }
 
-    User <|-- Operator
-    User <|-- Manager
-    User <|-- Technician
-    User "0..*" --> "1" Business : belongs to
-    Business "1" --> "0..*" Workspace : owns
-    Manager "1" --> "0..*" Workspace : maintains
-
-    Workspace <|-- Process
-    Workspace <|-- Monitoring
-    Workspace <|-- Analysis
-
-    Process "0..*" --> "0..*" Activity : contains
-    Process "0..*" --> "0..*" Machine : uses
-    Process "1" --> "0..*" EventLog : records
-    EventLog "1" --> "0..*" Operation : extracts
-    Operation "0..*" --> "0..1" Activity : maps to
-    EventLog "1" --> "0..*" Event : contains
-    Event "0..*" --> "1" Operation : of
-    Activity "1" --> "0..*" Event : corresponds to
-    Machine "0..1" --> "0..*" Event : occurs on
-    Operator "0..1" --> "0..*" Event : registers
-
-    Machine "1" --> "0..*" Component : contains
     Monitoring "0..*" --> "0..*" Machine : watches
-    Analysis "0..*" --> "0..*" Component : assesses
-
-    Analysis "1" --> "1..*" EventLog : analyzes
-    Analysis "1" --> "0..*" Drift : detects
-    Drift "1" --> "0..*" Recommendation : generates
-    Recommendation "1" --> "0..1" Intervention : becomes
-    Technician "0..1" --> "0..*" Intervention : performs
+    Machine "1" --> "0..*" Component : contains
     Machine "1" --> "0..*" Intervention : is performed on
     Intervention <|-- Maintenance
-    Intervention <|-- Inspection
     Maintenance "1" --> "0..*" ComponentReplacement : records
     Component "1" --> "0..*" ComponentReplacement : replaces
-    Inspection "1" --> "0..*" Finding : produces
-    Finding "0..*" --> "0..1" Maintenance : opens
 
-    %% cores pastel por objeto
-    %% Humano e empresa
-    style User fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
-    style Manager fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
-    style Operator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
-    style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
-    style Business fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
-    %% Workspace
-    style Workspace fill:#d4d9e1,stroke:#475569,stroke-width:2px,color:#111827
-    %% Process / log
-    style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
-    style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
-    style Operation fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
-    %% Activity / Event
-    style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
-    style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
-    %% Machine / Component
+    style Monitoring fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
     style Machine fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
     style Component fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
-    %% Monitoring (agrupamento de saúde)
-    style Monitoring fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
-    %% Analysis
-    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
-    style Drift fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
-    style Recommendation fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
-    %% Maintenance
     style Intervention fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
     style Maintenance fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
     style ComponentReplacement fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
-    %% Inspection
-    style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
-    style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
 ```
 
 **C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas entre os containers da §5.1)
