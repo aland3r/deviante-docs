@@ -394,7 +394,7 @@ O nível de código é detalhado por três diagramas UML: Classes e Componentes 
 
 **C4 — Nível 4 · UML de Classes** (modelo de domínio)
 
-Classes, atributos e relações do domínio do Deviante. As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`), as origens de eventos, por upload de log ou em fluxo contínuo (`EventSource`), e as intervenções feitas na máquina (`Intervention`).
+Classes, atributos e relações do domínio do Deviante. As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`), a origem dos eventos por upload (`EventSource` → `EventLog`) e as intervenções na máquina (`Intervention`). O papel *administrador* é um valor de `Role` em `User`, não uma subclasse no diagrama. Escopo da documentação cloud: *Phase 1: data history* (histórico via `EventLog`).
 
 ```mermaid
 classDiagram
@@ -405,8 +405,8 @@ classDiagram
       +UUID id
       +String email
       +String fullName
+      +Role role
     }
-    class Administrator
     class Manager
     class Operator {
       +String shift
@@ -460,10 +460,6 @@ classDiagram
       +Int operationCount
       +Instant uploadedAt
     }
-    class EventStream {
-      +String endpoint
-      +Instant lastEventAt
-    }
     class Event {
       +UUID id
       +String caseId
@@ -489,10 +485,6 @@ classDiagram
       +String name
       +String partNumber
       +Instant installedAt
-    }
-    class Sensor {
-      +UUID id
-      +String kind
     }
     class Parameter {
       +UUID id
@@ -548,7 +540,6 @@ classDiagram
       +Instant replacedAt
     }
 
-    User <|-- Administrator
     User <|-- Manager
     User <|-- Operator
     User <|-- Technician
@@ -563,7 +554,6 @@ classDiagram
     Process --> Activity : contains
     Process --> Machine : uses
     EventSource <|-- EventLog
-    EventSource <|-- EventStream
     Process <-- EventSource : records
     EventSource --> Event : contains
     Activity <-- Event : corresponds to
@@ -571,8 +561,7 @@ classDiagram
     Operator --> Event : registers
 
     Machine --> Component : contains
-    Component --> Sensor : has
-    Sensor --> Parameter : measures
+    Component --> Parameter : has
     Parameter --> Reading : records
     Monitoring --> Machine : observes
 
@@ -592,7 +581,6 @@ classDiagram
     %% cores pastel por objeto
     %% Humano e empresa
     style User fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
-    style Administrator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
     style Manager fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
     style Operator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
     style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
@@ -603,14 +591,12 @@ classDiagram
     style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style EventSource fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
-    style EventStream fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     %% Activity
     style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
     style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
     %% Equipment e Component
     style Machine fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
     style Component fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
-    style Sensor fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
     %% Monitoring
     style Monitoring fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
     style Parameter fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
