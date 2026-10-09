@@ -394,7 +394,7 @@ O nível de código é detalhado por três diagramas UML: Classes e Componentes 
 
 **C4 — Nível 4 · UML de Classes** (modelo de domínio)
 
-Classes, atributos e relações do domínio do Deviante. Atributos partem do que o código já persiste hoje e completam o mínimo da solução alvo (empresa, papéis, peça, inspeção). As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`) e as intervenções na máquina (`Intervention`). O histórico de processo entra por `EventLog` (upload). `Operation` é o rótulo extraído do log, mapeável a `Activity`. `Reading` é a medição pontual de um `Parameter` no monitoramento (vibração, temperatura, etc.). O papel *administrador* é um valor de `Role` em `User`, não uma subclasse no diagrama. Associações trazem cardinalidade. Escopo da documentação cloud: *Phase 1: data history*.
+Classes, atributos e relações do domínio do Deviante. Atributos partem do que o código já persiste hoje e do mínimo da solução alvo (empresa, papéis, peça, inspeção). As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`) e as intervenções (`Intervention`). Na Phase 1 o histórico entra só por **upload de `EventLog`**: colunas de condição encontradas no noun foraging (`temperature`, `vibration`, `noiseLevel`) vão no `Event` quando o log as traz — não há telemetria IoT em tempo real. `Component` carrega idade/degradação da peça. `Monitoring` é o agrupamento de máquinas sob acompanhamento de saúde (não um stream de sensores). `Operation` é o rótulo extraído do log, mapeável a `Activity`. O papel *administrador* é um valor de `Role` em `User`. Associações trazem cardinalidade.
 
 ```mermaid
 classDiagram
@@ -436,10 +436,7 @@ classDiagram
       +Instant updatedAt
     }
     class Process
-    class Monitoring {
-      +SourceType sourceType
-      +String sourceName
-    }
+    class Monitoring
     class Analysis {
       +String name
       +String method
@@ -483,6 +480,9 @@ classDiagram
       +Instant start
       +Instant complete
       +Decimal durationSeconds
+      +Double temperature
+      +Double vibration
+      +Double noiseLevel
     }
     class Machine {
       +UUID id
@@ -505,24 +505,9 @@ classDiagram
       +String name
       +String partNumber
       +Instant installedAt
-    }
-    class Parameter {
-      +UUID id
-      +String name
-      +String unit
-      +String description
-      +Double baseline
-      +Double warn
-      +Double crit
-      +Instant createdAt
-      +Instant updatedAt
-    }
-    class Reading {
-      +UUID id
-      +Instant observedAt
-      +Double value
-      +String quality
-      +Instant createdAt
+      +Double expectedLifeHours
+      +Double degradationScore
+      +ComponentHealth health
     }
     class Drift {
       +UUID id
@@ -596,9 +581,8 @@ classDiagram
     Operator "0..1" --> "0..*" Event : registers
 
     Machine "1" --> "0..*" Component : contains
-    Component "1" --> "0..*" Parameter : has
-    Parameter "1" --> "0..*" Reading : records
-    Monitoring "0..*" --> "0..*" Machine : observes
+    Monitoring "0..*" --> "0..*" Machine : watches
+    Analysis "0..*" --> "0..*" Component : assesses
 
     Analysis "1" --> "1..*" EventLog : analyzes
     Analysis "1" --> "0..*" Drift : detects
@@ -620,22 +604,20 @@ classDiagram
     style Operator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
     style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
     style Business fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
-    %% Workspace (base de Process, Monitoring e Analysis)
+    %% Workspace
     style Workspace fill:#d4d9e1,stroke:#475569,stroke-width:2px,color:#111827
-    %% Process
+    %% Process / log
     style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style Operation fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
-    %% Activity
+    %% Activity / Event
     style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
     style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
-    %% Equipment e Component
+    %% Machine / Component
     style Machine fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
     style Component fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
-    %% Monitoring
+    %% Monitoring (agrupamento de saúde)
     style Monitoring fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
-    style Parameter fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
-    style Reading fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
     %% Analysis
     style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
     style Drift fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
@@ -644,10 +626,6 @@ classDiagram
     style Intervention fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
     style Maintenance fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
     style ComponentReplacement fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
-    %% Inspection
-    style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
-    style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
-```e:#15803d,stroke-width:2px,color:#111827
     %% Inspection
     style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
     style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
