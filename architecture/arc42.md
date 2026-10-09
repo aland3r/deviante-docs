@@ -251,7 +251,7 @@ A tabela liga cada meta de qualidade (seção 1.2) à abordagem que a atende.
 
 Esta seção abre a caixa-preta do contexto da seção 3 (C4 nível 1) e mostra a decomposição estática do Deviante em três níveis, na mesma lógica de zoom do C4: o nível 1 mostra os containers, o nível 2 abre o Core API em componentes e o nível 3 detalha o código em UML. Cada nível traz o diagrama, a motivação da divisão e os blocos que ele contém.
 
-### 5.1 Nível 1 — Containers (C4 · Nível 2)
+### 5.1 Containers
 
 Caixa branca do Deviante. O Supabase Auth (login com Google) e o sistema de origem (MES/ERP) aparecem como externos.
 
@@ -339,7 +339,7 @@ C4Container
 | `IEventLogParsedHandler` | MS2 · Análises | Evento `EventLogParsed` | MS1 (publica) |
 | `IDriftDetectedHandler` | Core API | Evento `DriftDetected` | MS2 (publica) |
 
-### 5.2 Nível 2 — Componentes do Core API (C4 · Nível 3)
+### 5.2 Componentes do Core API
 
 Caixa branca do Core API.
 
@@ -388,15 +388,15 @@ C4Component
 | `domain` | Entidades e regras em Kotlin puro, detalhadas na §5.3 |
 | `infrastructure` | Repositórios com Exposed sobre o Postgres e consumo do evento `DriftDetected`; implementa as portas definidas em `application` |
 
-### 5.3 Nível 3 — Código (C4 · Nível 4)
+### 5.3 Código
 
-O nível de código é detalhado por três diagramas UML: Classes e Componentes aqui, e Sequência na seção 6.
+Classes e componentes aqui; sequência na seção 6.
 
-**C4 — Nível 4 · UML de Classes** (modelo de domínio)
+**Diagrama de classes**
 
-Classes, atributos e relações do domínio do Deviante, em **quatro vistas** largas (`direction LR`) para evitar linha por cima de caixa e espaços vazios enormes. Atributos partem do código e do mínimo da solução alvo. Na Phase 1 o histórico entra por **upload de `EventLog`**: `temperature` / `vibration` / `noiseLevel` no `Event` quando o log traz; `Component` carrega idade/degradação; `Monitoring` agrupa máquinas sob acompanhamento de saúde (não IoT). O papel *administrador* é valor de `Role` em `User`. Cardinalidades nas associações.
+Modelo de domínio em quatro vistas horizontais. Atributos vêm do código e do mínimo da solução. O histórico entra por upload de EventLog (temperature, vibration e noiseLevel no Event quando o log traz). Component carrega idade e degradação. Monitoring agrupa máquinas sob acompanhamento de saúde, sem IoT. O papel administrador é um valor de Role em User. Cardinalidades nas associações.
 
-**Vista 1 — Pessoas e painel** (`User` → `Business` → `Workspace`; `Manager` entre `Operator` e `Business`)
+**Pessoas e painel**
 
 ```mermaid
 classDiagram
@@ -437,9 +437,27 @@ classDiagram
       +Instant createdAt
       +Instant updatedAt
     }
-    class Process
-    class Monitoring
+    class Process {
+      +UUID id
+      +String name
+      +String companyName
+      +String description
+      +String sector
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Monitoring {
+      +UUID id
+      +String name
+      +String description
+      +String sourceType
+      +String sourceName
+      +String status
+      +Instant createdAt
+      +Instant updatedAt
+    }
     class Analysis {
+      +UUID id
       +String name
       +String method
       +Double delta
@@ -447,6 +465,8 @@ classDiagram
       +Int traceCount
       +Int driftCount
       +AnalysisStatus status
+      +Instant createdAt
+      +Instant updatedAt
     }
 
     User <|-- Operator
@@ -470,13 +490,21 @@ classDiagram
     style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
 ```
 
-**Vista 2 — Event log e processo** (upload Phase 1: log → operações/eventos → atividades e máquinas)
+**Event log e processo**
 
 ```mermaid
 classDiagram
     direction LR
 
-    class Process
+    class Process {
+      +UUID id
+      +String name
+      +String companyName
+      +String description
+      +String sector
+      +Instant createdAt
+      +Instant updatedAt
+    }
     class EventLog {
       +UUID id
       +String fileName
@@ -532,6 +560,7 @@ classDiagram
       +Instant updatedAt
     }
     class Analysis {
+      +UUID id
       +String name
       +String method
       +Double delta
@@ -539,6 +568,8 @@ classDiagram
       +Int traceCount
       +Int driftCount
       +AnalysisStatus status
+      +Instant createdAt
+      +Instant updatedAt
     }
 
     Process "1" --> "0..*" EventLog : records
@@ -560,13 +591,16 @@ classDiagram
     style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
 ```
 
-**Vista 3 — Análise e intervenção** (cadeia linear: drift → recomendação → manutenção/inspeção). Um `Finding` pode abrir uma `Maintenance` (`0..*` → `0..1`); a aresta fica de fora do desenho para não esticar a herança.
+**Análise e intervenção**
+
+Finding pode abrir uma Maintenance (0..* para 0..1); essa aresta fica fora do desenho para não esticar a herança.
 
 ```mermaid
 classDiagram
     direction LR
 
     class Analysis {
+      +UUID id
       +String name
       +String method
       +Double delta
@@ -574,6 +608,8 @@ classDiagram
       +Int traceCount
       +Int driftCount
       +AnalysisStatus status
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Drift {
       +UUID id
@@ -639,13 +675,22 @@ classDiagram
     style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
 ```
 
-**Vista 4 — Ativos e peça** (monitoramento → máquina → componente → troca; intervenção na máquina)
+**Ativos e peça**
 
 ```mermaid
 classDiagram
     direction LR
 
-    class Monitoring
+    class Monitoring {
+      +UUID id
+      +String name
+      +String description
+      +String sourceType
+      +String sourceName
+      +String status
+      +Instant createdAt
+      +Instant updatedAt
+    }
     class Machine {
       +UUID id
       +String name
@@ -693,25 +738,27 @@ classDiagram
     style ComponentReplacement fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
 ```
 
-**C4 — Nível 4 · UML de Componentes** (interfaces fornecidas e requeridas entre os containers da §5.1)
+**Diagrama de componentes**
+
+Interfaces entre os containers da seção 5.1.
 
 ```mermaid
 flowchart LR
-    subgraph BFF["«component» BFF"]
+    subgraph BFF["BFF"]
         bffAgg(["IAggregatedData"])
     end
-    subgraph CORE["«component» Core API"]
+    subgraph CORE["Core API"]
         coreRest(["IDomainCrud"])
         coreEvt(["IDriftDetectedHandler"])
     end
-    subgraph MS1["«component» MS1 Ingestão"]
+    subgraph MS1["MS1 Ingestão"]
         ms1Rest(["IEventLogs"])
     end
-    subgraph MS2["«component» MS2 Análises"]
+    subgraph MS2["MS2 Análises"]
         ms2Rest(["IAnalyses"])
         ms2Evt(["IEventLogParsedHandler"])
     end
-    subgraph FN["«component» Azure Function"]
+    subgraph FN["Azure Function"]
         fnHttp(["IDriftCalculation"])
     end
     BFF -.->|requer| coreRest
