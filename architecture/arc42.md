@@ -407,20 +407,18 @@ classDiagram
       +String fullName
       +Role role
     }
-    namespace actors {
-      class Operator {
-        +String shift
-      }
-      class Manager
-      class Business {
-        +UUID id
-        +String name
-        +String cnpj
-        +String sector
-      }
-      class Technician {
-        +String specialty
-      }
+    class Operator {
+      +String shift
+    }
+    class Manager
+    class Business {
+      +UUID id
+      +String name
+      +String cnpj
+      +String sector
+    }
+    class Technician {
+      +String specialty
     }
     class Workspace {
       <<abstract>>
@@ -544,14 +542,14 @@ classDiagram
 
     User <|-- Operator
     User <|-- Manager
-    User <|-- Technician
     User --> Business : belongs to
+    User <|-- Technician
     Business --> Workspace : owns
+    Manager --> Workspace : maintains
 
     Workspace <|-- Process
     Workspace <|-- Monitoring
     Workspace <|-- Analysis
-    Manager --> Workspace : maintains
 
     Process --> Activity : contains
     Process --> Machine : uses
