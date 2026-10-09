@@ -394,7 +394,7 @@ O nível de código é detalhado por três diagramas UML: Classes e Componentes 
 
 **C4 — Nível 4 · UML de Classes** (modelo de domínio)
 
-Classes, atributos e relações do domínio do Deviante. As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`), a origem dos eventos por upload (`EventSource` → `EventLog`) e as intervenções na máquina (`Intervention`). O papel *administrador* é um valor de `Role` em `User`, não uma subclasse no diagrama. Escopo da documentação cloud: *Phase 1: data history* (histórico via `EventLog`).
+Classes, atributos e relações do domínio do Deviante. Atributos partem do que o código já persiste hoje e completam o mínimo da solução alvo (empresa, papéis, peça, inspeção). As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`), a origem dos eventos por upload (`EventSource` → `EventLog`) e as intervenções na máquina (`Intervention`). `Operation` é o rótulo extraído do log, mapeável a `Activity`. O papel *administrador* é um valor de `Role` em `User`, não uma subclasse no diagrama. Associações trazem cardinalidade. Escopo da documentação cloud: *Phase 1: data history* (histórico via `EventLog`).
 
 ```mermaid
 classDiagram
@@ -406,16 +406,22 @@ classDiagram
       +String email
       +String fullName
       +Role role
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Operator {
       +String shift
     }
-    class Manager
+    class Manager {
+      +ManagerRole managerRole
+    }
     class Business {
       +UUID id
       +String name
       +String cnpj
       +String sector
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Technician {
       +String specialty
@@ -435,16 +441,20 @@ classDiagram
       +String sourceName
     }
     class Analysis {
+      +String name
       +String method
       +Double delta
       +Int smoothingWindow
       +Int traceCount
       +Int driftCount
+      +AnalysisStatus status
     }
     class Activity {
       +UUID id
       +String name
       +String description
+      +Instant createdAt
+      +Instant updatedAt
     }
     class EventSource {
       <<abstract>>
@@ -460,10 +470,17 @@ classDiagram
       +Int operationCount
       +Instant uploadedAt
     }
+    class Operation {
+      +UUID id
+      +String rawLabel
+      +Int occurrenceCount
+      +MappingStatus mappingStatus
+      +Instant createdAt
+      +Instant updatedAt
+    }
     class Event {
       +UUID id
       +String caseId
-      +String rawLabel
       +Int sequenceIndex
       +Instant start
       +Instant complete
@@ -475,10 +492,15 @@ classDiagram
       +String tag
       +String kind
       +String location
+      +String description
       +String manufacturer
       +String model
       +String serialNumber
       +MachineStatus status
+      +String assetUrl
+      +String assetFormat
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Component {
       +UUID id
@@ -491,18 +513,26 @@ classDiagram
       +String name
       +String unit
       +String description
+      +Double baseline
+      +Double warn
+      +Double crit
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Reading {
       +UUID id
       +Instant observedAt
       +Double value
       +String quality
+      +Instant createdAt
     }
     class Drift {
       +UUID id
       +Int traceIndex
+      +Int anomalyStartIndex
       +Double meanBefore
       +Double meanAfter
+      +Double magnitudePercent
     }
     class Recommendation {
       +UUID id
@@ -512,6 +542,8 @@ classDiagram
       +RecommendationStatus status
       +Instant recommendedStart
       +Instant recommendedEnd
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Intervention {
       <<abstract>>
@@ -521,6 +553,8 @@ classDiagram
       +Instant scheduledStart
       +Instant scheduledEnd
       +InterventionStatus status
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Maintenance {
       +MaintenanceType type
@@ -532,6 +566,7 @@ classDiagram
       +UUID id
       +Severity severity
       +String description
+      +Instant foundAt
     }
     class ComponentReplacement {
       +UUID id
@@ -542,41 +577,44 @@ classDiagram
 
     User <|-- Operator
     User <|-- Manager
-    User --> Business : belongs to
     User <|-- Technician
-    Business --> Workspace : owns
-    Manager --> Workspace : maintains
+    User "0..*" --> "1" Business : belongs to
+    Business "1" --> "0..*" Workspace : owns
+    Manager "1" --> "0..*" Workspace : maintains
 
     Workspace <|-- Process
     Workspace <|-- Monitoring
     Workspace <|-- Analysis
 
-    Process --> Activity : contains
-    Process --> Machine : uses
+    Process "0..*" --> "0..*" Activity : contains
+    Process "0..*" --> "0..*" Machine : uses
     EventSource <|-- EventLog
-    Process <-- EventSource : records
-    EventSource --> Event : contains
-    Activity <-- Event : corresponds to
-    Machine <-- Event : occurs on
-    Operator --> Event : registers
+    Process "1" --> "0..*" EventSource : records
+    EventLog "1" --> "0..*" Operation : extracts
+    Operation "0..*" --> "0..1" Activity : maps to
+    EventSource "1" --> "0..*" Event : contains
+    Event "0..*" --> "1" Operation : of
+    Activity "1" --> "0..*" Event : corresponds to
+    Machine "0..1" --> "0..*" Event : occurs on
+    Operator "0..1" --> "0..*" Event : registers
 
-    Machine --> Component : contains
-    Component --> Parameter : has
-    Parameter --> Reading : records
-    Monitoring --> Machine : observes
+    Machine "1" --> "0..*" Component : contains
+    Component "1" --> "0..*" Parameter : has
+    Parameter "1" --> "0..*" Reading : records
+    Monitoring "0..*" --> "0..*" Machine : observes
 
-    Analysis --> EventSource : analyzes
-    Analysis --> Drift : detects
-    Drift --> Recommendation : generates
-    Recommendation --> Intervention : becomes
-    Technician --> Intervention : performs
-    Machine <-- Intervention : is performed on
+    Analysis "1" --> "1..*" EventSource : analyzes
+    Analysis "1" --> "0..*" Drift : detects
+    Drift "1" --> "0..*" Recommendation : generates
+    Recommendation "1" --> "0..1" Intervention : becomes
+    Technician "0..1" --> "0..*" Intervention : performs
+    Machine "1" --> "0..*" Intervention : is performed on
     Intervention <|-- Maintenance
     Intervention <|-- Inspection
-    ComponentReplacement <-- Maintenance : records
-    Component <-- ComponentReplacement : replaces
-    Inspection --> Finding : produces
-    Maintenance <-- Finding : opens
+    Maintenance "1" --> "0..*" ComponentReplacement : records
+    Component "1" --> "0..*" ComponentReplacement : replaces
+    Inspection "1" --> "0..*" Finding : produces
+    Finding "0..*" --> "0..1" Maintenance : opens
 
     %% cores pastel por objeto
     %% Humano e empresa
@@ -591,6 +629,7 @@ classDiagram
     style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style EventSource fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Operation fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     %% Activity
     style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
     style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
@@ -609,6 +648,10 @@ classDiagram
     style Intervention fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
     style Maintenance fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
     style ComponentReplacement fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    %% Inspection
+    style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
+    style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
+```e:#15803d,stroke-width:2px,color:#111827
     %% Inspection
     style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
     style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
