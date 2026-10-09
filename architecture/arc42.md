@@ -394,7 +394,7 @@ O nível de código é detalhado por três diagramas UML: Classes e Componentes 
 
 **C4 — Nível 4 · UML de Classes** (modelo de domínio)
 
-Classes, atributos e relações do domínio do Deviante. Atributos partem do que o código já persiste hoje e completam o mínimo da solução alvo (empresa, papéis, peça, inspeção). As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`), a origem dos eventos por upload (`EventSource` → `EventLog`) e as intervenções na máquina (`Intervention`). `Operation` é o rótulo extraído do log, mapeável a `Activity`. O papel *administrador* é um valor de `Role` em `User`, não uma subclasse no diagrama. Associações trazem cardinalidade. Escopo da documentação cloud: *Phase 1: data history* (histórico via `EventLog`).
+Classes, atributos e relações do domínio do Deviante. Atributos partem do que o código já persiste hoje e completam o mínimo da solução alvo (empresa, papéis, peça, inspeção). As classes abstratas reúnem o que é comum: os perfis de usuário (`User`), os itens que o Gestor cria no painel (`Workspace`) e as intervenções na máquina (`Intervention`). O histórico de processo entra por `EventLog` (upload). `Operation` é o rótulo extraído do log, mapeável a `Activity`. `Reading` é a medição pontual de um `Parameter` no monitoramento (vibração, temperatura, etc.). O papel *administrador* é um valor de `Role` em `User`, não uma subclasse no diagrama. Associações trazem cardinalidade. Escopo da documentação cloud: *Phase 1: data history*.
 
 ```mermaid
 classDiagram
@@ -456,12 +456,8 @@ classDiagram
       +Instant createdAt
       +Instant updatedAt
     }
-    class EventSource {
-      <<abstract>>
-      +UUID id
-      +Instant createdAt
-    }
     class EventLog {
+      +UUID id
       +String fileName
       +LogFormat format
       +ParseStatus parseStatus
@@ -469,6 +465,8 @@ classDiagram
       +Int traceCount
       +Int operationCount
       +Instant uploadedAt
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Operation {
       +UUID id
@@ -588,11 +586,10 @@ classDiagram
 
     Process "0..*" --> "0..*" Activity : contains
     Process "0..*" --> "0..*" Machine : uses
-    EventSource <|-- EventLog
-    Process "1" --> "0..*" EventSource : records
+    Process "1" --> "0..*" EventLog : records
     EventLog "1" --> "0..*" Operation : extracts
     Operation "0..*" --> "0..1" Activity : maps to
-    EventSource "1" --> "0..*" Event : contains
+    EventLog "1" --> "0..*" Event : contains
     Event "0..*" --> "1" Operation : of
     Activity "1" --> "0..*" Event : corresponds to
     Machine "0..1" --> "0..*" Event : occurs on
@@ -603,7 +600,7 @@ classDiagram
     Parameter "1" --> "0..*" Reading : records
     Monitoring "0..*" --> "0..*" Machine : observes
 
-    Analysis "1" --> "1..*" EventSource : analyzes
+    Analysis "1" --> "1..*" EventLog : analyzes
     Analysis "1" --> "0..*" Drift : detects
     Drift "1" --> "0..*" Recommendation : generates
     Recommendation "1" --> "0..1" Intervention : becomes
@@ -627,7 +624,6 @@ classDiagram
     style Workspace fill:#d4d9e1,stroke:#475569,stroke-width:2px,color:#111827
     %% Process
     style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
-    style EventSource fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     style Operation fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
     %% Activity
