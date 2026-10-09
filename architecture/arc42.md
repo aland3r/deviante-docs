@@ -407,18 +407,20 @@ classDiagram
       +String fullName
       +Role role
     }
-    class Manager
-    class Operator {
-      +String shift
-    }
-    class Technician {
-      +String specialty
-    }
-    class Business {
-      +UUID id
-      +String name
-      +String cnpj
-      +String sector
+    namespace actors {
+      class Operator {
+        +String shift
+      }
+      class Manager
+      class Business {
+        +UUID id
+        +String name
+        +String cnpj
+        +String sector
+      }
+      class Technician {
+        +String specialty
+      }
     }
     class Workspace {
       <<abstract>>
@@ -540,8 +542,8 @@ classDiagram
       +Instant replacedAt
     }
 
-    User <|-- Manager
     User <|-- Operator
+    User <|-- Manager
     User <|-- Technician
     User --> Business : belongs to
     Business --> Workspace : owns
