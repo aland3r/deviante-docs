@@ -7,9 +7,9 @@
 7. Empresa entra no prejuízo
 8. Um dos representantes apresenta uma solução "Deviante"
 9. Gestor contrata seviço
-10. Sensores são instalados na máquina
-11. Gestor gera a análise de previsão de falha
-12. Análise informa o momento ideal de manutenção
+10. Gestor envia o event log da máquina, exportado do MES/ERP
+11. Gestor roda a análise de drift sobre o processo
+12. Análise aponta o desvio e o diagnóstico de saúde da máquina, com recomendação de manutenção
 13. Gestor agenda uma manutenção 
 14. Manutenção é realizada em tempo hábil
 15.  Gestor acompanha tudo pelo dashboard tomando um café, como se jogado relax na cadeira
