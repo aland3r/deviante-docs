@@ -1195,72 +1195,110 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 
 ## 10. Requisitos de Qualidade
 
-Esta seção detalha as metas de qualidade da seção 1.2 em cenários que podem ser testados. A árvore resume quais características da ISO/IEC 25010 importam e em quais cenários cada uma é verificada.
+Esta seção detalha as metas de qualidade da seção 1.2 em cenários mensuráveis e acrescenta as qualidades de prioridade menor que também orientam o desenho: desempenho, correção dos dados, idempotência e operabilidade.
 
 ### 10.1 Árvore de qualidade
 
-| Característica (ISO/IEC 25010) | Subcaracterística | Meta da §1.2 | Cenários |
-|---|---|---|---|
-| Adequação funcional | Correção | Sim | Q1 |
-| Eficiência de desempenho | Comportamento no tempo | Não | Q2 |
-| Confiabilidade | Tolerância a falhas | Sim | Q3 |
-| Manutenibilidade | Modificabilidade | Sim | Q4 |
-| Segurança | Confidencialidade, autenticidade | Sim | Q5 |
-| Flexibilidade | Instalabilidade | Sim | Q6 |
+A árvore agrupa os cenários pelas características da ISO/IEC 25010:2023. Os cenários Q1 a Q7 detalham as metas da seção 1.2; Q8 a Q12 cobrem as qualidades de prioridade menor.
+
+```mermaid
+mindmap
+  root((Qualidade))
+    Adequação funcional
+      Correção · Q1
+      Correção dos dados · Q10
+    Eficiência de desempenho
+      Comportamento no tempo · Q2 Q8 Q9
+    Confiabilidade
+      Tolerância a falhas · Q3 Q11
+    Manutenibilidade
+      Modificabilidade · Q4
+    Segurança
+      Autenticidade · Q5
+      Confidencialidade · Q7
+    Flexibilidade
+      Instalabilidade · Q6
+    Capacidade de interação
+      Operabilidade · Q12
+```
 
 ### 10.2 Cenários de qualidade
 
-| ID | Atributo | Cenário | Medida |
-|---|---|---|---|
-| Q1 | Correção | Rodar a análise em `DR_01.xes` … `DR_30.xes` | Drift a até 5 traces do ground truth em ≥ 90% dos logs |
-| Q2 | Desempenho | `GET /aggregated-data` com os quatro serviços no ar | Resposta em até 2 s |
-| Q3 | Tolerância a falhas | MS2 fora do ar | CRUD de processos segue funcionando; agregado vem sem análises |
-| Q4 | Modificabilidade | Novo formato de log | Uma classe nova no MS1, zero mudança nos demais |
-| Q5 | Segurança | Chamada sem JWT | 401 no API Gateway |
-| Q6 | Instalabilidade | Subir um serviço num ambiente novo | A mesma imagem do Docker Hub sobe só com variáveis de ambiente, sem rebuild |
+Cada cenário descreve o contexto, o estímulo que o dispara e a resposta esperada, com a métrica que diz se a qualidade foi atingida. Q1, Q3, Q5, Q7 e Q11 são cenários de uso ou de falha; Q4 e Q6 são cenários de mudança.
+
+| ID | Qualidade | Contexto | Estímulo | Resposta e métrica |
+|---|---|---|---|---|
+| Q1 | Correção (meta 1) | Logs sintéticos `DR_01.xes` … `DR_30.xes`, com drift injetado em ponto conhecido, e `ST_01.xes`, sem drift; sensibilidade padrão | O gestor executa a análise | Drift a até 5 traces do ponto injetado em pelo menos 90% dos logs `DR_*`; nenhum drift no `ST_01`; o mesmo resultado a cada execução com a mesma sensibilidade |
+| Q2 | Desempenho | Core, MS1, MS2 e Function no ar e já aquecidos | O gestor abre um processo (`GET /aggregated-data`) | Resposta completa em até 2 s em 95% das chamadas |
+| Q3 | Tolerância a falhas (meta 3) | MS2 ou Function fora do ar | O gestor abre um processo e edita uma máquina | O CRUD de processos e máquinas segue funcionando; o agregado chega sem as análises, marcadas como indisponíveis, dentro do timeout do BFF |
+| Q4 | Modificabilidade (meta 2) | Sistema em produção lendo CSV e XES | Entra um novo formato de log (ex.: JSON) | Um parser novo no MS1; nenhuma linha alterada em MS2, BFF ou Core; os testes de arquitetura continuam passando |
+| Q5 | Autenticidade (meta 4) | Qualquer rota pública | Chamada sem JWT ou com JWT expirado | 401 no API Gateway, sem a requisição chegar ao BFF |
+| Q6 | Instalabilidade (meta 5) | Um ambiente novo de nuvem | Implantar um serviço | A mesma imagem do Docker Hub sobe só com variáveis de ambiente, sem rebuild e sem reimplantar os outros serviços |
+| Q7 | Confidencialidade (meta 4) | Dois gestores com processos e máquinas cadastrados | O gestor A pede, pelo id, um recurso do gestor B | 404, sem nenhum dado do gestor B na resposta |
+| Q8 | Desempenho | Log real `Prod1Torno.csv` (13.053 eventos, 3.282 traces) | Upload pelo gestor | Parse e grafo concluídos e `EventLogParsed` publicado em menos de 30 s |
+| Q9 | Desempenho | Série de cerca de 3.300 traces, Function aquecida | O gestor executa a análise | Pontos de drift devolvidos em menos de 5 s em 95% das execuções |
+| Q10 | Correção dos dados | Event log carregado e com operações extraídas | Lote de mapeamento incompleto ou com operações de processos diferentes | Lote rejeitado inteiro; nenhuma atividade criada pela metade |
+| Q11 | Tolerância a falhas | Service Bus entrega com garantia de pelo menos uma vez | O evento `DriftDetected` chega duas vezes ao Core | Uma única recomendação criada para o drift |
+| Q12 | Operabilidade | Gestor no canvas do processo | Cria ou edita um processo, uma atividade ou uma máquina | A edição acontece no próprio canvas, sem tela de formulário separada |
 
 ---
 
 ## 11. Riscos e Dívida Técnica
 
-Esta seção lista, por prioridade, os riscos técnicos e as dívidas conhecidas, cada um com a forma de mitigação prevista.
+Esta seção lista, por prioridade, os riscos técnicos (o que pode dar errado) e as dívidas técnicas (o que já existe e terá de ser corrigido), cada um com o impacto e a mitigação prevista. Obrigações fixas, como regiões ou planos permitidos, são restrições e ficam na seção 2.
 
-| Prioridade | Tipo | Risco / dívida | Mitigação |
-|---|---|---|---|
-| 1 | Dívida | Hoje MS1 e MS2 são um só serviço (`mining/`) sobre Postgres | Separar em dois deploys e migrar dados para Mongo e Azure SQL |
-| 2 | Risco | Limites do free tier: Azure SQL com 1 DTU no MS2, Atlas M0 com 512 MB e sem backup automático no MS1, cold start da Function | Séries pequenas e consultas leves no MS2, cache no BFF, aquecer a Function antes da demo; acompanhar o uso do M0 e exportar com `mongodump` antes das entregas |
-| 3 | Risco | Latência entre três nuvens | Chamadas em paralelo no BFF |
-| 4 | Dívida | Código atual organizado por tipo, não por feature | Reorganizar em slices junto com os testes de arquitetura |
-| 5 | Dívida | Testes de arquitetura ainda não existem | Konsist, dependency-cruiser e import-linter (§8.5) |
-| 6 | Risco | O isolamento entre gestores é feito na aplicação, não no banco | Todo repositório do Core filtra por `manager_id` do JWT, com teste de arquitetura no Konsist (§8.5) |
-| 7 | Risco | A assinatura Azure for Students só libera algumas regiões (East US 2 bloqueada) | Recursos Azure em eastus, na mesma área do Fly.io (iad) e do Atlas (us-east-1) |
+| Prioridade | Tipo | Risco ou dívida | Impacto | Mitigação |
+|---|---|---|---|---|
+| 1 | Dívida | A implementação ainda é a da versão anterior: um único serviço Python (`mining/`) faz ingestão e análise sobre o Postgres, e ainda não existem BFF, API Gateway, Service Bus nem Function | A arquitetura das seções 5 a 7 não roda até a migração, com prazo em 12/11/2026 (RO2) para uma equipe de dois alunos (RO1) | Migrar em passos que funcionam sozinhos, cada um com deploy e testes: separar MS1 e MS2 com seus bancos, extrair o IPDD/ADWIN para a Function, criar o BFF atrás do API Gateway e, por fim, ligar o Service Bus |
+| 2 | Dívida | O banco e o código do Core ainda seguem o modelo antigo (gestor, equipamento, recomendação e agenda), não o modelo de domínio da §5.3 (empresa, workspace, componente, intervenção) | Diagramas e código divergem; parte dos requisitos (RF-04, RF-16, RF-17) não tem onde ser gravada | Migração do schema do Core junto com a reorganização em slices, um objeto ORCA por vez |
+| 3 | Risco | O isolamento entre gestores é feito na aplicação, não no banco (ADR 07) | Uma consulta sem filtro expõe dados de outro gestor | Todo repositório do Core filtra pelo gestor do JWT, com teste de arquitetura (§8.5) e o cenário Q7 (§10) |
+| 4 | Dívida | A API ainda não aplica os papéis administrador, gestor, operador e técnico (RF-02) | Qualquer usuário autenticado alcança operações de outro papel | Ler o papel do JWT e checá-lo em cada caso de uso da camada `application` |
+| 5 | Dívida | O Core conecta ao Postgres com o usuário administrativo `postgres` | Uma credencial vazada dá acesso a todo o banco | Role própria só com as tabelas do Core (§8.2), trocada no secret do deploy |
+| 6 | Risco | Limites dos planos gratuitos: Atlas M0 com 512 MB e sem backup automático, cota mensal de computação do Azure SQL gratuito, cold start no Fly.io e na Function | Lentidão ou indisponibilidade durante a demonstração; perda de dados do MS1 | Séries pequenas e consultas leves no MS2, cache no BFF, aquecer os serviços antes da demonstração e exportar o MS1 com `mongodump` antes de cada entrega |
+| 7 | Dívida | Código organizado por tipo, não por feature, e sem testes de arquitetura | As regras de Clean Architecture e Vertical Slice (RNF-20, RNF-21) não são verificadas | Reorganizar em slices e incluir Konsist, dependency-cruiser e import-linter no CI (§8.5) |
+| 8 | Risco | Consistência eventual dos eventos (ADR 05): mensagens duplicadas, atrasadas ou fora de ordem | Recomendações duplicadas ou análises que não aparecem no agregado | Consumidores idempotentes com chave no id do event log ou da análise (§8.4) e o cenário Q11 (§10) |
+| 9 | Risco | Dependência do código da pesquisa: uma mudança no código original altera os resultados | A análise deixa de reproduzir o método publicado | Código envolvido por um Adapter, sem cópia nem alteração (§8.3), versão fixada e o cenário Q1 (§10) como teste de regressão |
+| 10 | Risco | Dependência de seis provedores (Vercel, Fly.io, AWS, Azure, Supabase e MongoDB Atlas) | Latência entre nuvens e migração cara se um provedor mudar o plano gratuito | Regiões na costa leste dos EUA (§7), chamadas em paralelo no BFF, cada provedor acessado só pelo serviço dono e imagens Docker portáveis |
 
 ---
 
 ## 12. Glossário
 
-Termos de domínio e técnicos usados neste documento, para que o grupo, os professores e os parceiros usem as mesmas palavras.
+Termos de domínio e técnicos usados neste documento, em ordem alfabética, para que o grupo, os professores e os parceiros usem as mesmas palavras. Os seis objetos ORCA (Activity, Analysis, Machine, Maintenance, Monitoring e Process) estão detalhados na seção 8.1 e no modelo de classes da seção 5.3.
 
 | Termo | Definição |
 |---|---|
-| Event log | Registro de eventos de um processo: caso (trace), atividade e tempos de início e fim. |
-| Trace | Sequência de eventos de um mesmo caso. |
-| Sojourn time | Tempo que um caso passa numa atividade (fim − início). |
-| Drift | Mudança estatisticamente relevante no comportamento de uma série, aqui o sojourn time. |
-| IPDD | Interactive Process Drift Detection, framework de detecção de desvios do grupo de pesquisa IPDD da PUCPR. |
-| ADWIN | Adaptive Windowing: algoritmo que detecta mudança na média de uma série. |
-| DFG | Directly-Follows Graph: grafo de quais atividades seguem quais. |
-| RUL | Remaining Useful Life: vida útil restante estimada de um equipamento. |
-| BFF | Backend for Frontend: API feita sob medida para a interface. |
+| Activity (Atividade) | Objeto ORCA: etapa normalizada do processo, para a qual as operações do event log são mapeadas. |
+| ADR | Architecture Decision Record: registro de uma decisão de arquitetura com contexto, alternativa descartada, consequências e status (seção 9). |
+| ADWIN | Adaptive Windowing: algoritmo que detecta mudança na média de uma série de valores. |
+| Analysis (Análise) | Objeto ORCA: execução do IPDD/ADWIN sobre um ou mais event logs, com seus parâmetros e os drifts encontrados. |
 | API Gateway | Porta de entrada única das requisições externas; roteia, valida o JWT e limita a taxa. |
-| Service Bus | Barramento de mensagens da Azure que transporta os eventos entre os serviços. |
-| JWT | JSON Web Token: token assinado que identifica o usuário em cada chamada. |
-| MES/ERP | Sistemas de execução e de gestão da fábrica; são a origem do event log. |
+| arc42 | Template de documentação de arquitetura em 12 seções, usado neste documento. |
+| BFF | Backend for Frontend: API feita sob medida para a interface, que encaminha os CRUDs e agrega os dados de vários serviços. |
+| Business (Empresa) | Empresa cliente, identificada pelo CNPJ, à qual pertencem os usuários e os workspaces. |
+| C4 | Modelo de diagramas de arquitetura em quatro níveis de zoom: contexto, containers, componentes e código. |
+| Component (Componente) | Peça de uma máquina, com idade e índice de degradação; base do diagnóstico de saúde. |
+| Database per Service | Padrão em que cada serviço tem banco próprio, acessado só por ele. Aqui com persistência poliglota: cada banco é do tipo que combina com o dado do serviço. |
 | Delta (sensibilidade) | Parâmetro de confiança do ADWIN; quanto menor, mais evidência é exigida para apontar um drift. |
-| Process (Processo) | Objeto ORCA: processo de manufatura monitorado. Ver §8.1. |
-| Activity (Atividade) | Objeto ORCA: etapa normalizada do processo; os rótulos do event log são mapeados para ela. |
-| Analysis (Análise) | Objeto ORCA: execução do IPDD/ADWIN com parâmetros e pontos de drift. |
-| Monitoring (Monitoramento) | Objeto ORCA: agrupamento de máquinas acompanhadas por parâmetros e leituras. |
-| Machine (Máquina) | Objeto ORCA: equipamento do chão de fábrica; no código, `Equipment`. |
-| Maintenance (Manutenção) | Objeto ORCA: ação proativa (manutenção ou inspeção) recomendada e agendada antes da falha. |
-| OOUX / ORCA | Object-Oriented UX; ORCA = Objects, Relationships, CTAs, Attributes. |
+| DFG | Directly-Follows Graph: grafo de quais atividades seguem quais, com a frequência de cada passagem. |
+| Drift | Mudança estatisticamente relevante no comportamento de uma série, aqui o sojourn time de uma atividade. |
+| Event log | Registro de eventos de um processo, em CSV ou XES: caso (trace), operação e tempos de início e fim. |
+| Ground truth | Ponto de drift conhecido, injetado nos logs sintéticos, contra o qual a detecção é medida. |
+| Intervention (Intervenção) | Ação proativa sobre uma máquina, criada a partir de uma recomendação: manutenção ou inspeção. |
+| IPDD | Interactive Process Drift Detection: framework de detecção de desvios do grupo de pesquisa IPDD da PUCPR. |
+| JWT / JWKS | JSON Web Token: token assinado que identifica o usuário e o papel em cada chamada. JWKS é o conjunto de chaves públicas usado para validá-lo. |
+| Machine (Máquina) | Objeto ORCA: equipamento do chão de fábrica, composto de componentes. |
+| Maintenance (Manutenção) | Objeto ORCA: intervenção que corrige ou substitui componentes de uma máquina; a inspeção é a intervenção que só verifica. |
+| MES/ERP | Sistemas de execução e de gestão da fábrica; são a origem do event log. |
+| Microfrontend | Interface web dividida em partes implantáveis de forma independente, que consome só o BFF. |
+| Monitoring (Monitoramento) | Objeto ORCA: acompanhamento da saúde de um grupo de máquinas. |
+| OOUX / ORCA | Object-Oriented UX: método que modela a interface a partir dos objetos de negócio. ORCA = Objects, Relationships, CTAs, Attributes. |
+| Operation (Operação) | Rótulo de atividade como vem no event log, antes de ser mapeado para uma Activity. |
+| PM4Py | Biblioteca Python de mineração de processo, usada para ler o log e gerar o DFG. |
+| Process (Processo) | Objeto ORCA: processo de manufatura registrado e analisado. |
+| Recommendation (Recomendação) | Sugestão de manutenção ou inspeção gerada a partir de um drift; quando aceita, vira uma intervenção. |
+| RUL | Remaining Useful Life: vida útil restante estimada de um equipamento; fora do escopo desta versão (ADR 06). |
+| Service Bus | Barramento de mensagens da Azure que transporta os eventos entre os serviços. |
+| Sojourn time | Tempo que um caso passa numa atividade (fim − início). |
+| Trace | Sequência de eventos de um mesmo caso. |
+| Workspace | Área de trabalho de uma empresa, que pode ser um processo, um monitoramento ou uma análise. |
