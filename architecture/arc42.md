@@ -27,7 +27,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RF-07 | Operador cria, lista, atualiza e exclui atividades de processos | Core API |
 | RF-08 | Gestor cadastra atividades e registros de eventos a partir de logs CSV ou XES | MS1 · Ingestão + Core API |
 | RF-09 | Gerar e exibir o DFG (Directly-Follows Graph) do log carregado | MS1 · Ingestão (FastAPI + PM4Py, MongoDB Atlas) |
-| RF-10 | Mapear atividades do log em uma ou mais operações do processo, e editar e remover esse mapeamento | Core API |
+| RF-10 | Mapear cada operação do log em uma atividade do processo, e editar e remover esse mapeamento | Core API |
 | RF-11 | Gestor cria, lista, atualiza e exclui os monitoramentos da sua empresa | Core API |
 | RF-12 | Gestor cadastra, lista, atualiza e exclui máquinas, agrupa em monitoramentos e associa a processos, que as exibem no detalhe | Core API |
 | RF-13 | Carregar log CSV ou XES de uma máquina e registrar seus parâmetros no monitoramento | MS1 · Ingestão + Core API |
@@ -49,8 +49,8 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RNF-04 | Figma como fonte única de tokens e componentes de UI | Microfrontend |
 | RNF-05 | Microsserviços Python em FastAPI, consumidos via REST | MS1, MS2 |
 | RNF-06 | Microsserviços Python como Azure Functions (serverless) | Parcial: o IPDD/ADWIN é Function; MS1 e MS2 rodam no Fly.io (ADR 04) |
-| RNF-07 | Ingestão multiformato (CSV, XES, JSON) só por configuração | MS1 (parser por formato) |
-| RNF-08 | Isolamento de dados por gestor (filtro pelo JWT) e por serviço (um usuário de banco próprio por serviço; o Core com role própria, sem o usuário `postgres`) | Core API e usuários de banco de cada serviço (§8.2) |
+| RNF-07 | Ingestão multiformato: hoje CSV e XES; um novo formato entra com um parser novo no MS1, sem alterar os outros serviços | MS1 (parser por formato) |
+| RNF-08 | Isolamento de dados por empresa (filtro pela empresa do usuário do JWT) e por serviço (um usuário de banco próprio por serviço; o Core com role própria, sem o usuário `postgres`) | Core API e usuários de banco de cada serviço (§8.2) |
 | RNF-09 | Git e CI/CD com build, testes e deploy a cada alteração | GitHub Actions em cada repositório |
 | RNF-10 | Autenticação Supabase Auth com Google; JWT com usuário e papel | Supabase Auth, API Gateway, BFF, Core API |
 
@@ -69,7 +69,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RNF-20 | Clean Architecture (Domain, Application, Infrastructure, API) | Todos os serviços (§5.2) |
 | RNF-21 | Vertical Slice (uma pasta por feature) | Todos os serviços (§5.2) |
 | RNF-22 | Testes unitários e de arquitetura | §8.5 |
-| RNF-23 | Swagger no BFF, microsserviços e eventos | OpenAPI do NestJS e do FastAPI |
+| RNF-23 | Swagger no BFF, microsserviços e eventos | OpenAPI do NestJS e do FastAPI; AsyncAPI para os eventos `EventLogParsed` e `DriftDetected` |
 | RNF-24 | Imagens do BFF e dos microsserviços no Docker Hub | §7 |
 | RNF-25 | Aplicação em URLs da nuvem, não localhost | §7 |
 
@@ -81,19 +81,20 @@ As cinco metas abaixo são as qualidades que mais pesam para os stakeholders, em
 |---|---|---|---|
 | 1 | Correção analítica | Adequação funcional (correção) | Para os logs sintéticos `DR_*` o drift detectado cai a até 5 traces do ponto injetado (ground truth de `adwin_dataset.py`). |
 | 2 | Modificabilidade | Manutenibilidade (modificabilidade) | Um novo formato de log (ex.: JSON) entra com uma nova subclasse de parser, sem alterar MS2, BFF ou Core. |
-| 3 | Isolamento | Confiabilidade (tolerância a falhas) | Uma falha no MS2 ou na Function não derruba o CRUD de processos e máquinas; o BFF devolve o agregado parcial. |
-| 4 | Segurança | Segurança (confidencialidade, autenticidade) | Nenhum serviço é acessível sem JWT válido emitido pelo Supabase Auth; dados de um gestor não aparecem para outro. |
+| 3 | Tolerância a falhas | Confiabilidade (tolerância a falhas) | Uma falha no MS2 ou na Function não derruba o CRUD de processos e máquinas; o BFF devolve o agregado parcial. |
+| 4 | Segurança | Segurança (confidencialidade, autenticidade) | Nenhum serviço é acessível sem JWT válido emitido pelo Supabase Auth; dados de uma empresa não aparecem para outra. |
 | 5 | Implantabilidade | Flexibilidade (instalabilidade) | Cada serviço é uma imagem Docker publicada no Docker Hub e implantada de forma independente. |
 
 ### 1.3 Stakeholders
 
-Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os três primeiros são os usuários do sistema; os demais avaliam, orientam ou constroem o projeto.
+Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os quatro primeiros são os usuários do sistema; os demais avaliam, orientam ou constroem o projeto.
 
 | Papel / Nome | Contato | Expectativa |
 |---|---|---|
 | Operador do maquinário | Usuário do sistema | Informar as atividades da cadeia produtiva e registrar os dados. |
 | Gestor de manutenção | Usuário do sistema | Monitorar os dados, gerar análises a partir do processo registrado e acionar a manutenção a tempo. |
 | Técnico de manutenção | Usuário do sistema | Saber o que fazer, registrar a manutenção realizada e reabilitar a máquina no sistema. |
+| Administrador da plataforma | Usuário do sistema | Manter os processos de todas as empresas (RF-03). |
 | Analista / mentor | Grupo de pesquisa IPDD (PUCPR) | Validar as análises e ajustar a sensibilidade do IPDD/ADWIN. |
 | Denise M. V. Sato, autora do framework IPDD | [denise.vecino@pucpr.br](mailto:denise.vecino@pucpr.br) | Ver o método aplicado com fidelidade ao trabalho original. |
 | Luiz F. Picolo, pesquisador do grupo IPDD | [luiz.picolo@pucpr.edu.br](mailto:luiz.picolo@pucpr.edu.br) | Ver o detector reaproveitado sem alteração e com resultados reproduzíveis. |
@@ -149,7 +150,7 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | C1 | Documentação de arquitetura no template arc42 (12 seções), com diagramas C4 nos níveis de contexto, contêineres e componentes | Exigência de Cloud. |
 | C2 | Diagramas em Mermaid, versionados como texto | Renderizam a partir do próprio texto, sem ferramenta de desenho. |
 | C3 | Clean Architecture (`domain`, `application`, `infrastructure`, `api`) com uma pasta por feature (Vertical Slice) | Exigência de Cloud (RNF-20, RNF-21). |
-| C4 | APIs e eventos documentados em Swagger/OpenAPI | Exigência de Cloud (RNF-23). |
+| C4 | APIs documentadas em Swagger/OpenAPI e eventos em AsyncAPI | Exigência de Cloud (RNF-23). |
 | C5 | Figma como fonte única de tokens e componentes de interface | Decisão do grupo (RNF-04). |
 | C6 | Documentação em português; código, nomes de classes e eventos em inglês | Público da documentação é a banca da PUCPR; código segue o padrão das bibliotecas. |
 
@@ -157,7 +158,7 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 
 ## 3. Contexto e Escopo
 
-O Deviante é tratado aqui como uma caixa-preta. Dentro do escopo estão o registro do processo, a importação do event log, a análise de desvios e o registro das manutenções. Fora do escopo ficam o sistema de origem da fábrica (MES/ERP), que só exporta o log, e o provedor de identidade (Google). Os três usuários acessam o sistema pelo navegador.
+O Deviante é tratado aqui como uma caixa-preta. Dentro do escopo estão o registro do processo, a importação do event log, a análise de desvios e o registro das manutenções. Fora do escopo ficam o sistema de origem da fábrica (MES/ERP), que só exporta o log, e o provedor de identidade (Google). Operador, gestor e técnico acessam o sistema pelo navegador; o administrador, que mantém os processos de todas as empresas, usa as mesmas telas e não aparece separado no diagrama.
 
 ### 3.1 Contexto de negócio
 
@@ -241,8 +242,8 @@ A tabela liga cada meta de qualidade (seção 1.2) à abordagem que a atende.
 |---|---|---|
 | Correção analítica | Para os logs sintéticos `DR_*`, o drift detectado cai a até 5 traces do ponto injetado. | Reaproveitar o IPDD/ADWIN original por um Adapter (`IpddAdwinAdapter`), sem reescrita, e validar contra o ground truth de `adwin_dataset.py` (seções 8.3 e 10). |
 | Modificabilidade | Um novo formato de log (ex.: JSON) entra sem alterar MS2, BFF ou Core. | Um parser por formato isolado no MS1; eventos separam o MS1 de quem consome o log; Clean Architecture e Vertical Slice limitam o impacto da mudança (seções 5 e 8). |
-| Isolamento | Uma falha no MS2 ou na Function não derruba o CRUD de processos e máquinas; o BFF devolve o agregado parcial. | Database per Service, Function sem estado, eventos idempotentes no Service Bus e BFF com timeout por serviço (seções 5, 6 e 8). |
-| Segurança | Nenhum serviço responde sem JWT válido do Supabase Auth; dados de um gestor não aparecem para outro. | Login Google pelo Supabase Auth, JWT validado no API Gateway e no Core, filtro por gestor em todo repositório do Core e um usuário de banco por serviço (seção 8.2). |
+| Tolerância a falhas | Uma falha no MS2 ou na Function não derruba o CRUD de processos e máquinas; o BFF devolve o agregado parcial. | Database per Service, Function sem estado, eventos idempotentes no Service Bus e BFF com timeout por serviço (seções 5, 6 e 8). |
+| Segurança | Nenhum serviço responde sem JWT válido do Supabase Auth; dados de uma empresa não aparecem para outra. | Login Google pelo Supabase Auth, JWT validado no API Gateway e no Core, filtro por empresa em todo repositório do Core e um usuário de banco por serviço (seção 8.2). |
 | Implantabilidade | Cada serviço é uma imagem Docker no Docker Hub, implantada de forma independente. | Um repositório, uma imagem e um pipeline do GitHub Actions por serviço (seção 7). |
 
 ---
@@ -444,7 +445,6 @@ classDiagram
     class Process {
       +UUID id
       +String name
-      +String companyName
       +String description
       +String sector
       +Instant createdAt
@@ -503,7 +503,6 @@ classDiagram
     class Process {
       +UUID id
       +String name
-      +String companyName
       +String description
       +String sector
       +Instant createdAt
@@ -597,7 +596,7 @@ classDiagram
 
 **Análise e intervenção**
 
-Finding pode abrir uma Maintenance (0..\* para 0..1); essa aresta fica fora do desenho para não esticar a herança.
+Finding pode abrir uma Maintenance (0..\* para 0..1); essa aresta fica fora do desenho para não esticar a herança. Uma Analysis pode focar uma Machine (0..\* para 0..1); a máquina segue no evento até a Recommendation, que a aponta na vista Ativos e peça.
 
 ```mermaid
 classDiagram
@@ -720,6 +719,11 @@ classDiagram
     class Maintenance {
       +MaintenanceType type
     }
+    class Recommendation {
+      +UUID id
+      +String action
+      +RecommendationStatus status
+    }
     class ComponentReplacement {
       +UUID id
       +String removedPart
@@ -729,6 +733,7 @@ classDiagram
 
     Monitoring "0..*" --> "0..*" Machine : watches
     Machine "1" --> "0..*" Component : contains
+    Machine "0..1" --> "0..*" Recommendation : receives
     Machine "1" --> "0..*" Intervention : is performed on
     Intervention <|-- Maintenance
     Maintenance "1" --> "0..*" ComponentReplacement : records
@@ -739,6 +744,7 @@ classDiagram
     style Component fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
     style Intervention fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
     style Maintenance fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    style Recommendation fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
     style ComponentReplacement fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
 ```
 
@@ -806,15 +812,20 @@ sequenceDiagram
     else parse ok
     M1->>Q: EventLogParsed
     Q->>M2: EventLogParsed
+    M2->>M2: registra o log como disponível
+    end
+    G->>W: configura e executa a análise
+    W->>GW: POST /analyses/{id}/run (JWT)
+    GW->>B: POST /analyses/{id}/run
+    B->>M2: POST /analyses/{id}/run
     M2->>F: POST /ipdd-adwin (série, delta)
     F-->>M2: pontos de drift
-    M2->>Q: DriftDetected
+    M2->>Q: DriftDetected (drift, processo, máquina)
     Q->>C: DriftDetected
     C->>C: cria Recommendation
-    end
 ```
 
-**Análise.** O gestor envia o event log exportado do MES/ERP. A ingestão responde na hora e o resto da cadeia segue por eventos, até o Core criar a recomendação de manutenção. Se o arquivo for inválido, o MS1 marca o event log como falho e nenhum evento é publicado.
+**Análise.** O gestor envia o event log exportado do MES/ERP. A ingestão responde na hora e avisa o MS2 por evento quando o log fica disponível. Depois o gestor configura a análise (filtro de traces e sensibilidade, RF-14) e a executa; o resultado segue por evento até o Core criar a recomendação de manutenção. Se o arquivo for inválido, o MS1 marca o event log como falho e nenhum evento é publicado.
 
 ### 6.2 Abrir o processo (`GET /aggregated-data`)
 
@@ -1006,7 +1017,8 @@ erDiagram
     MONITORINGS ||--o{ MONITORING_MACHINES : acompanha
     MACHINES ||--o{ MONITORING_MACHINES : monitorada
     MACHINES ||--o{ COMPONENTS : contem
-    MACHINES ||--o{ RECOMMENDATIONS : recebe
+    PROCESSES ||--o{ RECOMMENDATIONS : recebe
+    MACHINES |o--o{ RECOMMENDATIONS : afeta
     RECOMMENDATIONS ||--o| INTERVENTIONS : vira
     MACHINES ||--o{ INTERVENTIONS : sofre
     USERS ||--o{ INTERVENTIONS : executa
@@ -1074,7 +1086,8 @@ erDiagram
     }
     RECOMMENDATIONS {
         uuid id PK
-        uuid machine_id FK
+        uuid process_id FK
+        uuid machine_id FK "opcional"
         string drift_ref
         string action
         string priority
@@ -1116,6 +1129,7 @@ erDiagram
         string business_ref
         string manager_ref
         string process_ref
+        string machine_ref "opcional"
         string name
         string method
         float delta
@@ -1147,7 +1161,7 @@ O login é feito no Supabase Auth com Google. O JWT é validado no API Gateway e
 
 **Autenticação separada dos dados (RNF-10).** O Supabase Auth emite o JWT com o identificador e o papel do usuário. O front só conhece a chave pública do Auth; as tabelas do Core são acessadas apenas pela Core API, no servidor, com credencial própria.
 
-**Isolamento por gestor e por serviço (RNF-08).** Toda consulta da Core API filtra pelo gestor identificado no JWT, e um teste de arquitetura garante o filtro (§8.5). Cada serviço acessa o banco com um usuário próprio e restrito aos seus dados: o Core com uma role própria no PostgreSQL, sem usar o usuário `postgres`, o MS1 com um usuário do Atlas só na sua database e o MS2 com um usuário só no seu schema do Azure SQL. Nenhum serviço lê os dados de outro. Atlas e Azure SQL aceitam conexões só dos IPs de saída dos serviços, nunca do navegador.
+**Isolamento por empresa e por serviço (RNF-08).** Toda consulta da Core API filtra pela empresa (`business_id`) do usuário identificado no JWT, e um teste de arquitetura garante o filtro (§8.5). Cada serviço acessa o banco com um usuário próprio e restrito aos seus dados: o Core com uma role própria no PostgreSQL, sem usar o usuário `postgres`, o MS1 com um usuário do Atlas só na sua database e o MS2 com um usuário só no seu schema do Azure SQL. Nenhum serviço lê os dados de outro. Atlas e Azure SQL aceitam conexões só dos IPs de saída dos serviços, nunca do navegador.
 
 **Azure sem segredo.** O deploy acessa a Azure por uma managed identity com papel Contributor só no resource group `rg-deviante`, com login OIDC do GitHub Actions, sem senha guardada.
 
@@ -1211,7 +1225,7 @@ Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa time
 
 | Serviço | Ferramenta | Regras |
 |---|---|---|
-| Core (Kotlin) | Konsist | `domain` não importa `infrastructure`, `api` nem Ktor; classes de uma slice não importam outra slice; toda consulta dos repositórios filtra por `manager_id` |
+| Core (Kotlin) | Konsist | `domain` não importa `infrastructure`, `api` nem Ktor; classes de uma slice não importam outra slice; toda consulta dos repositórios filtra por `business_id` |
 | BFF (Node) | dependency-cruiser | módulos de feature não se importam entre si; nenhum driver de banco no BFF |
 | MS1, MS2 (Python) | import-linter | contrato de camadas `api → application → domain`, `infrastructure → domain` |
 
@@ -1233,7 +1247,7 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | O deploy já funcionava no plano gratuito, com as mesmas imagens do Docker Hub | Contêineres na Azure ou na AWS | Três nuvens (Fly.io, Azure, AWS) e latência entre elas; todas na costa leste dos EUA (§7) | Aceita, 05/10/2026 |
 | 05 | Eventos entre serviços pelo Azure Service Bus (`EventLogParsed`, `DriftDetected`) | A comunicação por eventos é exigida (RT7), e o Service Bus fica na mesma assinatura e região da Function e do Azure SQL | Chamadas REST encadeadas entre os serviços | Consistência eventual; os consumidores precisam ser idempotentes (§8.4) | Aceita, 05/10/2026 |
 | 06 | Prognóstico de manutenção (RUL) fora do escopo desta versão | A entrega se concentra na detecção de drift e no diagnóstico de saúde (RF-16) | Calcular o RUL na Azure Function junto com o drift | Nenhum serviço calcula nem guarda RUL; se voltar ao escopo, entra como nova decisão | Aceita, 06/10/2026 |
-| 07 | Identidade no Supabase Auth com Google; papel e isolamento entre gestores aplicados na aplicação, sem RLS no banco | Só a Core API acessa as tabelas do Core, com credencial própria, e o JWT já traz usuário e papel (RNF-08, RNF-10) | Políticas RLS por gestor no Postgres; provedor de identidade próprio | Uma consulta sem filtro exporia dados de outro gestor; um teste de arquitetura cobra o filtro (§8.5) | Aceita, 05/10/2026 |
+| 07 | Identidade no Supabase Auth com Google; papel e isolamento entre empresas aplicados na aplicação, sem RLS no banco | Só a Core API acessa as tabelas do Core, com credencial própria, e o JWT já traz usuário e papel (RNF-08, RNF-10) | Políticas RLS por empresa no Postgres; provedor de identidade próprio | Uma consulta sem filtro exporia dados de outra empresa; um teste de arquitetura cobra o filtro (§8.5) | Aceita, 05/10/2026 |
 | 08 | Persistência poliglota: cada serviço usa o banco que combina com o seu dado (Postgres no Core, MongoDB no MS1, Azure SQL no MS2) | O domínio do Core é relacional, logs e traces são documentos e o Azure SQL do MS2 é exigência da disciplina (RT3, RT4) | Consolidar Core e MS1 no MongoDB Atlas | Três provedores de dados, cada um com sua credencial; entre bancos só trafegam ids | Aceita, 05/10/2026 |
 | 09 | Dados de máquina entram só por upload de event log, sem sensores em tempo real | O sistema de origem exporta o log em arquivo (§3), e o método da pesquisa foi validado sobre logs | Ingestão contínua de sensores (IoT) | O diagnóstico é tão atual quanto o último upload; um fluxo contínuo entraria como nova fonte de eventos no MS1 | Aceita, 08/10/2026 |
 
@@ -1280,7 +1294,7 @@ Cada cenário descreve o contexto, o estímulo que o dispara e a resposta espera
 | Q4 | Modificabilidade (meta 2) | Sistema em produção lendo CSV e XES | Entra um novo formato de log (ex.: JSON) | Um parser novo no MS1; nenhuma linha alterada em MS2, BFF ou Core; os testes de arquitetura continuam passando |
 | Q5 | Autenticidade (meta 4) | Qualquer rota pública | Chamada sem JWT ou com JWT expirado | 401 no API Gateway, sem a requisição chegar ao BFF |
 | Q6 | Instalabilidade (meta 5) | Um ambiente novo de nuvem | Implantar um serviço | A mesma imagem do Docker Hub sobe só com variáveis de ambiente, sem rebuild e sem reimplantar os outros serviços |
-| Q7 | Confidencialidade (meta 4) | Dois gestores com processos e máquinas cadastrados | O gestor A pede, pelo id, um recurso do gestor B | 404, sem nenhum dado do gestor B na resposta |
+| Q7 | Confidencialidade (meta 4) | Duas empresas com processos e máquinas cadastrados | Um gestor da empresa A pede, pelo id, um recurso da empresa B | 404, sem nenhum dado da empresa B na resposta |
 | Q8 | Desempenho | Log real `Prod1Torno.csv` (13.053 eventos, 3.282 traces) | Upload pelo gestor | Parse e grafo concluídos e `EventLogParsed` publicado em menos de 30 s |
 | Q9 | Desempenho | Série de cerca de 3.300 traces, Function aquecida | O gestor executa a análise | Pontos de drift devolvidos em menos de 5 s em 95% das execuções |
 | Q10 | Correção dos dados | Event log carregado e com operações extraídas | Lote de mapeamento incompleto ou com operações de processos diferentes | Lote rejeitado inteiro; nenhuma atividade criada pela metade |
@@ -1297,7 +1311,7 @@ Esta seção lista, por prioridade, os riscos técnicos (o que pode dar errado) 
 |---|---|---|---|---|
 | 1 | Dívida | A implementação ainda é a da versão anterior: um único serviço Python (`mining/`) faz ingestão e análise sobre o Postgres, e ainda não existem BFF, API Gateway, Service Bus nem Function | A arquitetura das seções 5 a 7 não roda até a migração, com prazo em 12/11/2026 (RO2) para uma equipe de dois alunos (RO1) | Migrar em passos que funcionam sozinhos, cada um com deploy e testes: separar MS1 e MS2 com seus bancos, extrair o IPDD/ADWIN para a Function, criar o BFF atrás do API Gateway e, por fim, ligar o Service Bus |
 | 2 | Dívida | O banco e o código do Core ainda seguem o modelo antigo (gestor, equipamento, recomendação e agenda), não o modelo de domínio da §5.3 (empresa, workspace, componente, intervenção) | Diagramas e código divergem; parte dos requisitos (RF-04, RF-16, RF-17) não tem onde ser gravada | Migração do schema do Core junto com a reorganização em slices, um objeto ORCA por vez |
-| 3 | Risco | O isolamento entre gestores é feito na aplicação, não no banco (ADR 07) | Uma consulta sem filtro expõe dados de outro gestor | Todo repositório do Core filtra pelo gestor do JWT, com teste de arquitetura (§8.5) e o cenário Q7 (§10) |
+| 3 | Risco | O isolamento entre empresas é feito na aplicação, não no banco (ADR 07) | Uma consulta sem filtro expõe dados de outra empresa | Todo repositório do Core filtra pela empresa do usuário do JWT, com teste de arquitetura (§8.5) e o cenário Q7 (§10) |
 | 4 | Dívida | A API ainda não aplica os papéis administrador, gestor, operador e técnico (RF-02) | Qualquer usuário autenticado alcança operações de outro papel | Ler o papel do JWT e checá-lo em cada caso de uso da camada `application` |
 | 5 | Dívida | O Core conecta ao Postgres com o usuário administrativo `postgres` | Uma credencial vazada dá acesso a todo o banco | Role própria só com as tabelas do Core (§8.2), trocada no secret do deploy |
 | 6 | Risco | Limites dos planos gratuitos: Atlas M0 com 512 MB e sem backup automático, cota mensal de computação do Azure SQL gratuito, cold start no Fly.io e na Function | Lentidão ou indisponibilidade durante a demonstração; perda de dados do MS1 | Séries pequenas e consultas leves no MS2, cache no BFF, aquecer os serviços antes da demonstração e exportar o MS1 com `mongodump` antes de cada entrega |
@@ -1320,16 +1334,22 @@ Termos de domínio e técnicos usados neste documento, em ordem alfabética, par
 | Analysis (Análise) | Objeto ORCA: execução do IPDD/ADWIN sobre um ou mais event logs, com seus parâmetros e os drifts encontrados. |
 | API Gateway | Porta de entrada única das requisições externas; roteia, valida o JWT e limita a taxa. |
 | arc42 | Template de documentação de arquitetura em 12 seções, usado neste documento. |
+| Azure Function | Função serverless da Azure, cobrada por execução e sem servidor a manter; aqui roda o cálculo IPDD/ADWIN, sem estado. |
 | BFF | Backend for Frontend: API feita sob medida para a interface, que encaminha os CRUDs e agrega os dados de vários serviços. |
 | Business (Empresa) | Empresa cliente, identificada pelo CNPJ, à qual pertencem os usuários e os workspaces. |
 | C4 | Modelo de diagramas de arquitetura em quatro níveis de zoom: contexto, containers, componentes e código. |
+| Clean Architecture | Organização do código em camadas (domain, application, infrastructure, api) em que as dependências apontam para o domínio. |
+| Cold start | Demora extra da primeira chamada a um serviço que estava parado (escalado a zero). |
 | Component (Componente) | Peça de uma máquina, com idade e índice de degradação; base do diagnóstico de saúde. |
+| Consistência eventual | Garantia de que os serviços ficam coerentes depois que os eventos são entregues, e não no mesmo instante. |
 | Database per Service | Padrão em que cada serviço tem banco próprio, acessado só por ele. Aqui com persistência poliglota: cada banco é do tipo que combina com o dado do serviço. |
 | Delta (sensibilidade) | Parâmetro de confiança do ADWIN; quanto menor, mais evidência é exigida para apontar um drift. |
 | DFG | Directly-Follows Graph: grafo de quais atividades seguem quais, com a frequência de cada passagem. |
 | Drift | Mudança estatisticamente relevante no comportamento de uma série, aqui o sojourn time de uma atividade. |
 | Event log | Registro de eventos de um processo, em CSV ou XES: caso (trace), operação e tempos de início e fim. |
+| Finding (Achado) | Problema encontrado numa inspeção, com severidade; pode abrir uma manutenção. |
 | Ground truth | Ponto de drift conhecido, injetado nos logs sintéticos, contra o qual a detecção é medida. |
+| Inspection (Inspeção) | Intervenção que só verifica a máquina e registra achados, sem corrigir. |
 | Intervention (Intervenção) | Ação proativa sobre uma máquina, criada a partir de uma recomendação: manutenção ou inspeção. |
 | IPDD | Interactive Process Drift Detection: framework de detecção de desvios do grupo de pesquisa IPDD da PUCPR. |
 | JWT / JWKS | JSON Web Token: token assinado que identifica o usuário e o papel em cada chamada. JWKS é o conjunto de chaves públicas usado para validá-lo. |
@@ -1347,4 +1367,5 @@ Termos de domínio e técnicos usados neste documento, em ordem alfabética, par
 | Service Bus | Barramento de mensagens da Azure que transporta os eventos entre os serviços. |
 | Sojourn time | Tempo que um caso passa numa atividade (fim − início). |
 | Trace | Sequência de eventos de um mesmo caso. |
+| Vertical Slice | Organização do código por feature, com uma pasta por caso de uso de ponta a ponta. |
 | Workspace | Área de trabalho de uma empresa, que pode ser um processo, um monitoramento ou uma análise. |
