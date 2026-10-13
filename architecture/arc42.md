@@ -60,17 +60,17 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 |---|---|---|
 | RNF-12 | SPA estruturada como microfrontend que consome só o BFF | Microfrontend |
 | RNF-13 | BFF em Node.js (Express ou NestJS) | BFF (NestJS) |
-| RNF-14 | Microservices com Database per Service | Core, MS1 e MS2, cada um com seu banco (persistência poliglota) |
-| RNF-15 | Microserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
-| RNF-16 | Microserviço 2 com Azure SQL (oferta gratuita) | MS2 |
+| RNF-14 | Microsserviços com Database per Service | Core, MS1 e MS2, cada um com seu banco (persistência poliglota) |
+| RNF-15 | Microsserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
+| RNF-16 | Microsserviço 2 com Azure SQL (oferta gratuita) | MS2 |
 | RNF-17 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger) |
 | RNF-18 | API Gateway na AWS | API Gateway |
 | RNF-19 | Arquitetura Orientada a Eventos | Azure Service Bus (`EventLogParsed`, `DriftDetected`) |
 | RNF-20 | Clean Architecture (Domain, Application, Infrastructure, API) | Todos os serviços (§5.2) |
 | RNF-21 | Vertical Slice (uma pasta por feature) | Todos os serviços (§5.2) |
 | RNF-22 | Testes unitários e de arquitetura | §8.5 |
-| RNF-23 | Swagger no BFF, microserviços e eventos | OpenAPI do NestJS e do FastAPI |
-| RNF-24 | Imagens do BFF e dos microserviços no Docker Hub | §7 |
+| RNF-23 | Swagger no BFF, microsserviços e eventos | OpenAPI do NestJS e do FastAPI |
+| RNF-24 | Imagens do BFF e dos microsserviços no Docker Hub | §7 |
 | RNF-25 | Aplicação em URLs da nuvem, não localhost | §7 |
 
 ### 1.2 Metas de Qualidade
@@ -81,7 +81,7 @@ As cinco metas abaixo são as qualidades que mais pesam para os stakeholders, em
 |---|---|---|---|
 | 1 | Correção analítica | Adequação funcional (correção) | Para os logs sintéticos `DR_*` o drift detectado cai a até 5 traces do ponto injetado (ground truth de `adwin_dataset.py`). |
 | 2 | Modificabilidade | Manutenibilidade (modificabilidade) | Um novo formato de log (ex.: JSON) entra com uma nova subclasse de parser, sem alterar MS2, BFF ou Core. |
-| 3 | Isolamento | Confiabilidade (tolerância a falhas) | Uma falha no MS2 ou na Function não derruba o CRUD de processos e equipamentos; o BFF devolve o agregado parcial. |
+| 3 | Isolamento | Confiabilidade (tolerância a falhas) | Uma falha no MS2 ou na Function não derruba o CRUD de processos e máquinas; o BFF devolve o agregado parcial. |
 | 4 | Segurança | Segurança (confidencialidade, autenticidade) | Nenhum serviço é acessível sem JWT válido emitido pelo Supabase Auth; dados de um gestor não aparecem para outro. |
 | 5 | Implantabilidade | Flexibilidade (instalabilidade) | Cada serviço é uma imagem Docker publicada no Docker Hub e implantada de forma independente. |
 
@@ -170,7 +170,7 @@ C4Context
     System(e1, " ", " ")
     Person(operador, "Operador", "Informa as atividades da cadeia produtiva e registra os dados.")
     System_Ext(google, "Google", "Provedor de identidade (OAuth 2.0 / OpenID Connect).")
-    Person(gestor, "Gestor", "Monitora os dados, gera analises e aciona a manutenção.")
+    Person(gestor, "Gestor", "Monitora os dados, gera análises e aciona a manutenção.")
     System(deviante, "Deviante", "Sistema de Suporte a Decisão na gestão de manutenção industrial.")
     System_Ext(mes, "Sistema de origem (MES/ERP)", "Sistema da fábrica que exporta o event log do processo.")
     System(e4, " ", " ")
@@ -179,7 +179,7 @@ C4Context
 
     Rel(operador, deviante, "Registra atividades e dados")
     Rel(gestor, deviante, "Analisa e aciona manutenção")
-    Rel(tecnico, deviante, "Registra manutenção e reabilita maquina")
+    Rel(tecnico, deviante, "Registra manutenção e reabilita máquina")
     Rel(mes, deviante, "Event log")
     Rel(deviante, google, "Autentica usuários")
 
@@ -195,9 +195,9 @@ C4Context
 
 | Parceiro | Entrada | Saída |
 |---|---|---|
-| Operador | Atividades da cadeia produtiva, event log, leituras | Processo registrado |
+| Operador | Atividades da cadeia produtiva, leituras | Processo registrado |
 | Gestor de manutenção | Mapeamentos, parâmetros de análise, acionamento da manutenção | Grafo, drifts, recomendações |
-| Técnico de manutenção | Manutenção realizada, reabilitação da máquina | Manutenções agendadas |
+| Técnico de manutenção | Manutenção realizada, reabilitação da máquina | Intervenções agendadas |
 | Sistema de origem (MES/ERP) | — | Event log XES/CSV (exportado pelo gestor) |
 | Google | — | Identidade (OAuth 2.0) |
 
@@ -231,7 +231,7 @@ No nível da arquitetura, o Deviante combina microsserviços com Database per Se
 
 ### 4.3 Tecnologia e operação
 
-Só serviços gratuitos: Vercel para a interface, Fly.io para a Core API, o MS1 e o MS2 (ADR 04), Azure para a Function, o Service Bus e o Azure SQL. Cada serviço vira uma imagem no Docker Hub e é publicado pelo GitHub Actions.
+Só serviços gratuitos: Vercel para a interface, Fly.io para o BFF, a Core API, o MS1 e o MS2 (ADR 04), Azure para a Function, o Service Bus e o Azure SQL. Cada serviço vira uma imagem no Docker Hub e é publicado pelo GitHub Actions.
 
 ### 4.4 Metas de qualidade e abordagens
 
@@ -241,8 +241,8 @@ A tabela liga cada meta de qualidade (seção 1.2) à abordagem que a atende.
 |---|---|---|
 | Correção analítica | Para os logs sintéticos `DR_*`, o drift detectado cai a até 5 traces do ponto injetado. | Reaproveitar o IPDD/ADWIN original por um Adapter (`IpddAdwinAdapter`), sem reescrita, e validar contra o ground truth de `adwin_dataset.py` (seções 8.3 e 10). |
 | Modificabilidade | Um novo formato de log (ex.: JSON) entra sem alterar MS2, BFF ou Core. | Um parser por formato isolado no MS1; eventos separam o MS1 de quem consome o log; Clean Architecture e Vertical Slice limitam o impacto da mudança (seções 5 e 8). |
-| Isolamento | Uma falha no MS2 ou na Function não derruba o CRUD de processos e equipamentos; o BFF devolve o agregado parcial. | Database per Service, Function sem estado, eventos idempotentes no Service Bus e BFF com timeout por serviço (seções 5, 6 e 8). |
-| Segurança | Nenhum serviço responde sem JWT válido do Supabase Auth; dados de um gestor não aparecem para outro. | Login Google pelo Supabase Auth, JWT validado no API Gateway e nos serviços, filtro por gestor em todo repositório do Core e um usuário de banco por serviço (seção 8.2). |
+| Isolamento | Uma falha no MS2 ou na Function não derruba o CRUD de processos e máquinas; o BFF devolve o agregado parcial. | Database per Service, Function sem estado, eventos idempotentes no Service Bus e BFF com timeout por serviço (seções 5, 6 e 8). |
+| Segurança | Nenhum serviço responde sem JWT válido do Supabase Auth; dados de um gestor não aparecem para outro. | Login Google pelo Supabase Auth, JWT validado no API Gateway e no Core, filtro por gestor em todo repositório do Core e um usuário de banco por serviço (seção 8.2). |
 | Implantabilidade | Cada serviço é uma imagem Docker no Docker Hub, implantada de forma independente. | Um repositório, uma imagem e um pipeline do GitHub Actions por serviço (seção 7). |
 
 ---
@@ -273,7 +273,7 @@ C4Container
         Container(web, "Microfrontend", "React + Vite, Vercel", "Telas do produto.")
         Container(gw, "API Gateway", "AWS", "Entrada única; valida o JWT.")
         Container(bff, "BFF", "Node.js + NestJS", "Encaminha os CRUDs e agrega os dados.")
-        Container(ms1, "MS1 · Ingestão", "FastAPI + pm4py", "Upload do event log e grafo.")
+        Container(ms1, "MS1 · Ingestão", "FastAPI + PM4Py", "Upload do event log e grafo.")
         Container(ms2, "MS2 · Análises", "FastAPI", "CRUD das análises de drift.")
         Container(fn, "IPDD/ADWIN", "Azure Function", "Calcula os pontos de drift, sem estado.")
         Container(core, "Core API", "Kotlin + Ktor", "Processos, máquinas e manutenção.")
@@ -296,12 +296,16 @@ C4Container
     Rel(bff, ms2, "REST")
     Rel(ms2, fn, "Calcula drift")
     Rel(ms1, bus, "EventLogParsed")
-    Rel(ms2, bus, "DriftDetected")
+    BiRel(ms2, bus, "Publica DriftDetected, recebe EventLogParsed")
+    Rel(bus, core, "DriftDetected")
     Rel(core, dbCore, "JDBC")
     Rel(ms1, dbMs1, "Driver")
     Rel(ms2, dbMs2, "Driver")
 
     UpdateRelStyle(ms2, fn, $offsetX="-5", $offsetY="-20")
+    UpdateRelStyle(ms1, bus, $offsetX="-60", $offsetY="40")
+    UpdateRelStyle(ms2, bus, $offsetX="40", $offsetY="60")
+    UpdateRelStyle(bus, core, $offsetX="-10", $offsetY="10")
     UpdateRelStyle(mes, web, $offsetX="60", $offsetY="-90")
 
     UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
@@ -312,7 +316,7 @@ C4Container
     UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
 ```
 
-**Motivação.** Cada serviço é dono de um grupo de objetos ORCA e do seu próprio banco, para que ingestão, análise e domínio evoluam e sejam implantados separadamente (meta de manutenibilidade, §4). Cada banco combina com o dado do serviço (persistência poliglota, ADR 08): o domínio do Core é relacional e fica no Postgres, os logs e traces do MS1 são documentos e ficam no MongoDB, e as análises do MS2 ficam no Azure SQL. O BFF concentra a agregação para que o Microfrontend faça uma única chamada por tela, e o cálculo IPDD/ADWIN fica isolado numa função sem estado, que pode ser trocada sem mexer nos serviços.
+**Motivação.** Cada serviço é dono de um grupo de objetos ORCA e do seu próprio banco, para que ingestão, análise e domínio evoluam e sejam implantados separadamente (meta de modificabilidade, §1.2). Cada banco combina com o dado do serviço (persistência poliglota, ADR 08): o domínio do Core é relacional e fica no Postgres, os logs e traces do MS1 são documentos e ficam no MongoDB, e as análises do MS2 ficam no Azure SQL. O BFF concentra a agregação para que o Microfrontend faça uma única chamada por tela, e o cálculo IPDD/ADWIN fica isolado numa função sem estado, que pode ser trocada sem mexer nos serviços.
 
 **Blocos contidos**
 
@@ -322,7 +326,7 @@ C4Container
 | API Gateway | Entrada única, roteamento, JWT, rate limit | AWS API Gateway (HTTP API) | — |
 | BFF | Proxy dos CRUDs; `GET /aggregated-data` junta Core, MS1, MS2 e Function num único JSON | Node.js + NestJS, Fly.io | — |
 | Core API | Empresas, usuários, processos, atividades, mapeamentos, máquinas e componentes, monitoramentos, recomendações e intervenções | Kotlin + Ktor, Fly.io | Supabase Postgres |
-| MS1 · Ingestão | Upload CSV/XES, parse, operações, traces e grafo (DFG) com pm4py; CRUD de event logs | Python + FastAPI + pm4py, Fly.io | MongoDB Atlas |
+| MS1 · Ingestão | Upload CSV/XES, parse, operações, traces e grafo (DFG) com PM4Py; CRUD de event logs (ADR 02) | Python + FastAPI + PM4Py, Fly.io | MongoDB Atlas |
 | MS2 · Análises | CRUD das análises de drift; monta a série de tempos e chama a Function | Python + FastAPI, Fly.io | Azure SQL |
 | Azure Function | IPDD/ADWIN: recebe a série, devolve os pontos de drift; sem estado | Python, HTTP Trigger | — |
 | Service Bus | Transporte de eventos entre serviços | Azure Service Bus | — |
@@ -394,7 +398,7 @@ Classes e componentes aqui; sequência na seção 6.
 
 **Diagrama de classes**
 
-Modelo de domínio em quatro vistas horizontais. Atributos vêm do código e do mínimo da solução. O histórico entra por upload de EventLog (temperature, vibration e noiseLevel no Event quando o log traz). Component carrega idade e degradação. Monitoring agrupa máquinas sob acompanhamento de saúde, sem IoT. O papel administrador é um valor de Role em User. Cardinalidades nas associações.
+Modelo de domínio em quatro vistas horizontais. Atributos vêm do código e do mínimo da solução. O histórico entra por upload de EventLog (temperature, vibration e noiseLevel no Event quando o log traz). Component carrega idade e degradação. Monitoring agrupa máquinas sob acompanhamento de saúde, sem IoT (ADR 09). O papel administrador é um valor de Role em User. Cardinalidades nas associações.
 
 **Pessoas e painel**
 
@@ -796,7 +800,7 @@ sequenceDiagram
     GW->>B: POST /event-logs
     B->>M1: POST /event-logs
     M1-->>B: 202 parse em andamento
-    M1->>M1: parse + DFG (pm4py)
+    M1->>M1: parse + DFG (PM4Py)
     alt arquivo inválido
         M1->>M1: marca o event log como falho
     else parse ok
@@ -1149,12 +1153,12 @@ O login é feito no Supabase Auth com Google. O JWT é validado no API Gateway e
 
 ### 8.3 Padrões de reuso
 
-Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, análise de drift, investigação). Manutenção preditiva (RUL, probabilidade de falha) fica fora da v1.
+Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, análise de drift, investigação). Manutenção preditiva (RUL, probabilidade de falha) fica fora da v1 (ADR 06).
 
 | Padrão | Família | Exemplos | Onde |
 |---|---|---|---|
 | Singleton | Criacional | `AnalysisEngine` (instância única do wrapper do detector, reaproveitada entre chamadas), `AppConfig` (registro único de configuração e parâmetros padrão da análise) | Function, Core |
-| Adapter | Estrutural | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN da pesquisa), `Pm4pyGraphAdapter` → `GraphMiner` (pm4py) | Function, MS1 |
+| Adapter | Estrutural | `IpddAdwinAdapter` → `DriftDetector` (código IPDD/ADWIN da pesquisa), `Pm4pyGraphAdapter` → `GraphMiner` (PM4Py) | Function, MS1 |
 | Observer | Comportamental | `DriftSubject` notifica `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` quando o ADWIN detecta um drift ou a análise conclui | Microfrontend |
 
 ```mermaid
@@ -1201,7 +1205,7 @@ O Adapter é o padrão que preserva a pesquisa: o código da pesquisa é envolvi
 
 ### 8.4 Tratamento de erros e resiliência
 
-Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa timeout por serviço e devolve agregado parcial. Eventos são idempotentes (chave = id do event log ou da análise).
+Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa timeout por serviço e devolve agregado parcial. Eventos são idempotentes (chave = id do event log no `EventLogParsed` e id do drift no `DriftDetected`).
 
 ### 8.5 Testes de arquitetura
 
@@ -1241,7 +1245,7 @@ Esta seção detalha as metas de qualidade da seção 1.2 em cenários mensuráv
 
 ### 10.1 Árvore de qualidade
 
-A árvore agrupa os cenários pelas características da ISO/IEC 25010:2023. Os cenários Q1 a Q7 detalham as metas da seção 1.2; Q8 a Q12 cobrem as qualidades de prioridade menor.
+A árvore agrupa os cenários pelas características da ISO/IEC 25010:2023. Os cenários Q1 e Q3 a Q7 detalham as metas da seção 1.2; Q2 e Q8 a Q12 cobrem as qualidades de prioridade menor.
 
 ```mermaid
 mindmap
@@ -1266,7 +1270,7 @@ mindmap
 
 ### 10.2 Cenários de qualidade
 
-Cada cenário descreve o contexto, o estímulo que o dispara e a resposta esperada, com a métrica que diz se a qualidade foi atingida. Q1, Q3, Q5, Q7 e Q11 são cenários de uso ou de falha; Q4 e Q6 são cenários de mudança.
+Cada cenário descreve o contexto, o estímulo que o dispara e a resposta esperada, com a métrica que diz se a qualidade foi atingida. Q4 e Q6 são cenários de mudança; os demais, de uso ou de falha.
 
 | ID | Qualidade | Contexto | Estímulo | Resposta e métrica |
 |---|---|---|---|---|
@@ -1298,7 +1302,7 @@ Esta seção lista, por prioridade, os riscos técnicos (o que pode dar errado) 
 | 5 | Dívida | O Core conecta ao Postgres com o usuário administrativo `postgres` | Uma credencial vazada dá acesso a todo o banco | Role própria só com as tabelas do Core (§8.2), trocada no secret do deploy |
 | 6 | Risco | Limites dos planos gratuitos: Atlas M0 com 512 MB e sem backup automático, cota mensal de computação do Azure SQL gratuito, cold start no Fly.io e na Function | Lentidão ou indisponibilidade durante a demonstração; perda de dados do MS1 | Séries pequenas e consultas leves no MS2, cache no BFF, aquecer os serviços antes da demonstração e exportar o MS1 com `mongodump` antes de cada entrega |
 | 7 | Dívida | Código organizado por tipo, não por feature, e sem testes de arquitetura | As regras de Clean Architecture e Vertical Slice (RNF-20, RNF-21) não são verificadas | Reorganizar em slices e incluir Konsist, dependency-cruiser e import-linter no CI (§8.5) |
-| 8 | Risco | Consistência eventual dos eventos (ADR 05): mensagens duplicadas, atrasadas ou fora de ordem | Recomendações duplicadas ou análises que não aparecem no agregado | Consumidores idempotentes com chave no id do event log ou da análise (§8.4) e o cenário Q11 (§10) |
+| 8 | Risco | Consistência eventual dos eventos (ADR 05): mensagens duplicadas, atrasadas ou fora de ordem | Recomendações duplicadas ou análises que não aparecem no agregado | Consumidores idempotentes com chave no id do event log ou do drift (§8.4) e o cenário Q11 (§10) |
 | 9 | Risco | Dependência do código da pesquisa: uma mudança no código original altera os resultados | A análise deixa de reproduzir o método publicado | Código envolvido por um Adapter, sem cópia nem alteração (§8.3), versão fixada e o cenário Q1 (§10) como teste de regressão |
 | 10 | Risco | Dependência de seis provedores (Vercel, Fly.io, AWS, Azure, Supabase e MongoDB Atlas) | Latência entre nuvens e migração cara se um provedor mudar o plano gratuito | Regiões na costa leste dos EUA (§7), chamadas em paralelo no BFF, cada provedor acessado só pelo serviço dono e imagens Docker portáveis |
 
@@ -1339,7 +1343,7 @@ Termos de domínio e técnicos usados neste documento, em ordem alfabética, par
 | PM4Py | Biblioteca Python de mineração de processo, usada para ler o log e gerar o DFG. |
 | Process (Processo) | Objeto ORCA: processo de manufatura registrado e analisado. |
 | Recommendation (Recomendação) | Sugestão de manutenção ou inspeção gerada a partir de um drift; quando aceita, vira uma intervenção. |
-| RUL | Remaining Useful Life: vida útil restante estimada de um equipamento; fora do escopo desta versão (ADR 06). |
+| RUL | Remaining Useful Life: vida útil restante estimada de uma máquina; fora do escopo desta versão (ADR 06). |
 | Service Bus | Barramento de mensagens da Azure que transporta os eventos entre os serviços. |
 | Sojourn time | Tempo que um caso passa numa atividade (fim − início). |
 | Trace | Sequência de eventos de um mesmo caso. |
