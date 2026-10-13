@@ -1177,17 +1177,19 @@ Cada serviço lê a configuração de variáveis de ambiente, e a mesma imagem r
 
 ## 9. Decisões de Arquitetura
 
-Esta seção registra as decisões de arquitetura importantes, caras de reverter ou arriscadas, que não estão fixadas pelas restrições da seção 2. As ideias gerais aparecem na seção 4; aqui fica o porquê de cada escolha e o que ela custa.
+Esta seção registra as decisões de arquitetura importantes, caras de reverter ou arriscadas, que não estão fixadas pelas restrições da seção 2. A seção 4 resume a estratégia; aqui fica o porquê de cada escolha, a alternativa descartada e o que ela custa. Cada linha é um registro de decisão (ADR) com o seu status e a data em que foi aceita.
 
-| ADR | Decisão | Motivo | Alternativa descartada | Consequência |
-|---|---|---|---|---|
-| 01 | IPDD/ADWIN roda como Azure Function e o MS2 só gerencia as análises | Reaproveitar o código da pesquisa sem estado; o enunciado conta MS2 (CRUD + Azure SQL) e Function separadamente | Rodar o detector dentro do MS2 | Uma chamada HTTP a mais por análise |
-| 02 | MS1 = ingestão + grafo com pm4py, em MongoDB | Log e traces têm forma de documento | Guardar o log em tabelas no Postgres, como hoje | Consultas relacionais sobre traces ficam no MS2/Core |
-| 03 | Core API em Kotlin continua como serviço de domínio no Supabase Postgres | Reaproveita o `deviante-api` e o Auth já em produção; o domínio (processos, atividades, equipamentos, monitoramento e manutenção) é relacional e usa chaves estrangeiras | Reescrever o domínio em Node ou Python; mover o Core para o MongoDB Atlas do MS1 | Três bancos para operar, um por serviço (ADR 08) |
-| 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | Deploy já funcionando, free tier | Contêineres na Azure ou na AWS | Tráfego entre nuvens (Fly, Azure, AWS) |
-| 05 | Eventos via Azure Service Bus | Desacoplar ingestão, análise e domínio (EDA) | Chamadas REST encadeadas entre os serviços | Consistência eventual |
-| 06 | Prognóstico de manutenção (RUL) fica fora do escopo desta versão | Foco no drift para esta entrega | Calcular o RUL na Azure Function junto com o drift | Nenhum serviço calcula nem guarda RUL; se voltar ao escopo, entra como nova decisão |
-| 08 | Persistência poliglota: cada serviço usa o banco que combina com o seu dado (Postgres no Core, MongoDB no MS1, Azure SQL no MS2) | O domínio do Core é relacional, logs e traces do MS1 são documentos e o Azure SQL do MS2 é exigência da disciplina; atende à integração com múltiplos bancos da Entrega 3 | Consolidar Core e MS1 no MongoDB Atlas | Três provedores de dados, cada um com sua credencial; entre bancos só trafegam ids |
+| ADR | Decisão | Contexto e motivo | Alternativa descartada | Consequências | Status |
+|---|---|---|---|---|---|
+| 01 | O cálculo IPDD/ADWIN roda numa Azure Function sem estado; o MS2 só gerencia as análises | O cálculo é puro e vem pronto da pesquisa (RT10). Isolado, ele pode ser trocado ou escalado sem mexer nos serviços, e a Function é exigida (RT5) | Rodar o detector dentro do MS2 | Uma chamada HTTP a mais por análise e cold start na primeira chamada (§11) | Aceita, 05/10/2026 |
+| 02 | O MS1 concentra tudo que lê o log bruto: upload, parse CSV/XES, operações, traces e o grafo (DFG) com PM4Py | Um novo formato de log deve mudar um único serviço (meta 2, §1.2) | Fazer o parse no Core e só o grafo em Python | Os demais serviços nunca leem o log; recebem ids e séries de tempo pelo evento `EventLogParsed` | Aceita, 05/10/2026 |
+| 03 | A Core API evolui o `deviante-api` existente (Kotlin + Ktor) como serviço de domínio | O Core é dono de cinco dos seis objetos ORCA e já tem login, CRUDs e deploy funcionando | Começar um serviço novo em Node ou Python | Herda a organização por tipo e o modelo antigo, que precisam migrar (§11) | Aceita, 05/10/2026 |
+| 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | O deploy já funcionava no plano gratuito, com as mesmas imagens do Docker Hub | Contêineres na Azure ou na AWS | Três nuvens (Fly.io, Azure, AWS) e latência entre elas; todas na costa leste dos EUA (§7) | Aceita, 05/10/2026 |
+| 05 | Eventos entre serviços pelo Azure Service Bus (`EventLogParsed`, `DriftDetected`) | A comunicação por eventos é exigida (RT7), e o Service Bus fica na mesma assinatura e região da Function e do Azure SQL | Chamadas REST encadeadas entre os serviços | Consistência eventual; os consumidores precisam ser idempotentes (§8.4) | Aceita, 05/10/2026 |
+| 06 | Prognóstico de manutenção (RUL) fora do escopo desta versão | A entrega se concentra na detecção de drift e no diagnóstico de saúde (RF-16) | Calcular o RUL na Azure Function junto com o drift | Nenhum serviço calcula nem guarda RUL; se voltar ao escopo, entra como nova decisão | Aceita, 06/10/2026 |
+| 07 | Identidade no Supabase Auth com Google; papel e isolamento entre gestores aplicados na aplicação, sem RLS no banco | Só a Core API acessa as tabelas do Core, com credencial própria, e o JWT já traz usuário e papel (RNF-08, RNF-10) | Políticas RLS por gestor no Postgres; provedor de identidade próprio | Uma consulta sem filtro exporia dados de outro gestor; um teste de arquitetura cobra o filtro (§8.5) | Aceita, 05/10/2026 |
+| 08 | Persistência poliglota: cada serviço usa o banco que combina com o seu dado (Postgres no Core, MongoDB no MS1, Azure SQL no MS2) | O domínio do Core é relacional, logs e traces são documentos e o Azure SQL do MS2 é exigência da disciplina (RT3, RT4) | Consolidar Core e MS1 no MongoDB Atlas | Três provedores de dados, cada um com sua credencial; entre bancos só trafegam ids | Aceita, 05/10/2026 |
+| 09 | Dados de máquina entram só por upload de event log, sem sensores em tempo real | O sistema de origem exporta o log em arquivo (§3), e o método da pesquisa foi validado sobre logs | Ingestão contínua de sensores (IoT) | O diagnóstico é tão atual quanto o último upload; um fluxo contínuo entraria como nova fonte de eventos no MS1 | Aceita, 08/10/2026 |
 
 ---
 
