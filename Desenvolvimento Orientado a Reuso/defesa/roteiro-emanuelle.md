@@ -2,7 +2,7 @@
 
 Prova de autoria em 16/10. Cada integrante demonstra 2 CRUDs com conexão ao banco e explica o caminho do código. Este roteiro cobre **Equipamento** (máquina) e **Agenda de manutenção**. Os dois rodam só no Core (React → Ktor → Supabase Postgres), sem Function nem microsserviços.
 
-**Como ler.** Cada trecho de código traz a localização exata: repositório, arquivo, linhas e um link fixo no commit (`deviante-api@1b5106c`, `deviante-web@203e38d`), que não muda mesmo que a `main` ande. Abaixo de cada trecho vem o que falar. Os blocos marcados **A DESENVOLVER** ainda não existem no código: trazem o código proposto e o lugar exato onde entra; depois do desenvolvimento, troque o bloco pelo link real.
+**Como ler.** Cada trecho de código traz a localização exata: repositório, arquivo, linhas e um link fixo no commit (`deviante-api@a8f08fd`, `deviante-web@5c86907`), que não muda mesmo que a `main` ande. Abaixo de cada trecho vem o que falar. Todo trecho é código que está rodando no sistema.
 
 ## 0. Mapa do sistema
 
@@ -17,18 +17,19 @@ Prova de autoria em 16/10. Cada integrante demonstra 2 CRUDs com conexão ao ban
 
 Menu do sistema, onde ficam as duas telas:
 
-📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 28–33 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/components/layout/AppLayout.jsx#L28-L33)
+📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 28–34 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/components/layout/AppLayout.jsx#L28-L34)
 
 ```jsx
           {[
             ['/dashboard', 'Projetos'],
             ['/operations', 'Operações'],
+            ['/activities', 'Atividades'],
             ['/equipment', 'Equipamentos'],
             ['/schedules', 'Agendamentos'],
           ].map(([to, label]) => (
 ```
 
-📍 `deviante-web/vercel.json` · linhas 1–6 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/vercel.json#L1-L6)
+📍 `deviante-web/vercel.json` · linhas 1–6 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/vercel.json#L1-L6)
 
 ```json
 {
@@ -70,13 +71,13 @@ sequenceDiagram
 
 ### 1.1 Front: o cliente HTTP
 
-📍 `deviante-web/src/lib/api.js` · linhas 27–27 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/lib/api.js#L27-L27)
+📍 `deviante-web/src/lib/api.js` · linhas 27–27 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/api.js#L27-L27)
 
 ```javascript
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 243–267 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/lib/api.js#L243-L267)
+📍 `deviante-web/src/lib/api.js` · linhas 243–267 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/api.js#L243-L267)
 
 ```javascript
 async function authHeader() {
@@ -110,7 +111,7 @@ Fala: "Toda chamada passa por `request()`. Ele pega o token da sessão do Supaba
 
 ### 1.2 Core: inicialização
 
-📍 `deviante-api/src/main/resources/application.yaml` · linhas 1–18 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/resources/application.yaml#L1-L18)
+📍 `deviante-api/src/main/resources/application.yaml` · linhas 1–18 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/resources/application.yaml#L1-L18)
 
 ```yaml
 ktor:
@@ -133,7 +134,7 @@ supabase:
   anonKey: ${SUPABASE_ANON_KEY:}
 ```
 
-📍 `deviante-api/src/main/kotlin/Http.kt` · linhas 8–24 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Http.kt#L8-L24)
+📍 `deviante-api/src/main/kotlin/Http.kt` · linhas 8–24 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Http.kt#L8-L24)
 
 ```kotlin
 fun Application.configureHttp() {
@@ -155,13 +156,14 @@ fun Application.configureHttp() {
 }
 ```
 
-📍 `deviante-api/src/main/kotlin/Database.kt` · linhas 9–27 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Database.kt#L9-L27)
+📍 `deviante-api/src/main/kotlin/Database.kt` · linhas 9–28 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Database.kt#L9-L28)
 
 ```kotlin
 fun Application.configureDatabase() {
-    val jdbcUrl = environment.config.property("database.jdbcUrl").getString()
-    val user = environment.config.property("database.user").getString()
-    val password = environment.config.property("database.password").getString()
+    AppConfig.init(environment.config)
+    val jdbcUrl = AppConfig.jdbcUrl
+    val user = AppConfig.dbUser
+    val password = AppConfig.dbPassword
 
     val hikariConfig = HikariConfig().apply {
         this.jdbcUrl = jdbcUrl
@@ -183,7 +185,7 @@ Fala: "O Ktor sobe os módulos nesta ordem: CORS, JSON, banco e rotas. O Hikari 
 
 ### 1.3 Core: autenticação e Manager
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 107–121 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L107-L121)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 109–123 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L109-L123)
 
 ```kotlin
 private suspend fun ApplicationCall.requireSupabaseUser(authClient: SupabaseAuthClient): SupabaseUser? {
@@ -203,7 +205,7 @@ private suspend fun ApplicationCall.requireSupabaseUser(authClient: SupabaseAuth
 }
 ```
 
-📍 `deviante-api/src/main/kotlin/SupabaseAuth.kt` · linhas 44–71 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/SupabaseAuth.kt#L44-L71)
+📍 `deviante-api/src/main/kotlin/SupabaseAuth.kt` · linhas 44–71 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/SupabaseAuth.kt#L44-L71)
 
 ```kotlin
     /** Verifies a Supabase access token by asking Supabase Auth who it belongs to. */
@@ -236,7 +238,7 @@ private suspend fun ApplicationCall.requireSupabaseUser(authClient: SupabaseAuth
     }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ManagerRepository.kt` · linhas 42–62 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/ManagerRepository.kt#L42-L62)
+📍 `deviante-api/src/main/kotlin/repository/ManagerRepository.kt` · linhas 53–73 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/ManagerRepository.kt#L53-L73)
 
 ```kotlin
     fun findOrCreateForSupabaseUser(supabaseUserId: UUID, email: String, fullNameHint: String): ManagerRecord =
@@ -264,7 +266,61 @@ private suspend fun ApplicationCall.requireSupabaseUser(authClient: SupabaseAuth
 
 Fala: "O Core pergunta ao Supabase Auth de quem é o token (401 se não houver ou se for inválido) e acha ou cria a linha do Manager. O `manager.id` é o que vai em `equipment.manager_id`."
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 1514–1518 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L1514-L1518)
+📍 `deviante-api/src/main/kotlin/repository/ManagerRepository.kt` · linhas 19–34 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/ManagerRepository.kt#L19-L34)
+
+```kotlin
+        // Contas de demonstração do login (RF-01/RF-02): um papel por conta.
+        private val DEMO_ROLES = mapOf(
+            "demo-administrador@deviante.alander.io" to "admin",
+            "demo-gestor@deviante.alander.io" to "manager",
+            "demo-operador@deviante.alander.io" to "operator",
+            "demo-tecnico@deviante.alander.io" to "technician",
+        )
+
+        internal fun roleForEmail(email: String): String {
+            val normalized = email.trim().lowercase()
+            return when {
+                normalized in OWNER_EMAILS -> "owner"
+                normalized in MENTOR_EMAILS -> "mentor"
+                else -> DEMO_ROLES[normalized] ?: "manager"
+            }
+        }
+```
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 125–140 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L125-L140)
+
+```kotlin
+/**
+ * Exclusões (processo, atividade, equipamento, agenda) são permitidas só ao
+ * administrador e ao gestor; operador, técnico e mentor recebem 403.
+ */
+private suspend fun ApplicationCall.requireDeleter(
+    authClient: SupabaseAuthClient,
+    managerRepository: ManagerRepository,
+): ManagerRecord? {
+    val user = requireSupabaseUser(authClient) ?: return null
+    val manager = managerRepository.findOrCreateForSupabaseUser(user.id, user.email, user.fullNameHint)
+    if (!manager.canDelete()) {
+        respond(HttpStatusCode.Forbidden, ErrorResponse("Somente o administrador ou o gestor pode excluir."))
+        return null
+    }
+    return manager
+}
+```
+
+📍 `deviante-web/src/lib/permissions.js` · linhas 1–5 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/permissions.js#L1-L5)
+
+```javascript
+// Excluir (processo, atividade, equipamento, agenda) é só do administrador e do
+// gestor. A API repete a regra (403); aqui ela só decide se o botão aparece.
+export const DELETE_ROLES = new Set(['owner', 'admin', 'manager'])
+
+export const canDelete = (user) => DELETE_ROLES.has(user?.role)
+```
+
+Fala: "Cada conta demo tem um papel. Excluir é só do administrador e do gestor: na tela o botão nem aparece para os outros (`canDelete`), e o Core repete a regra em toda rota de exclusão (`requireDeleter`, 403)."
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 1551–1555 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L1551-L1555)
 
 ```kotlin
 private fun runCatchingUuid(value: String): UUID? = try {
@@ -278,7 +334,7 @@ private fun runCatchingUuid(value: String): UUID? = try {
 
 ### 2.1 Tabela e DTOs
 
-📍 `deviante-api/src/main/kotlin/db/MonitoringTables.kt` · linhas 6–24 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/db/MonitoringTables.kt#L6-L24)
+📍 `deviante-api/src/main/kotlin/db/MonitoringTables.kt` · linhas 6–24 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/db/MonitoringTables.kt#L6-L24)
 
 ```kotlin
 object EquipmentTable : Table(name = "equipment") {
@@ -302,7 +358,7 @@ object EquipmentTable : Table(name = "equipment") {
 }
 ```
 
-📍 `deviante-api/src/main/kotlin/dto/MaintenanceDto.kt` · linhas 6–48 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/dto/MaintenanceDto.kt#L6-L48)
+📍 `deviante-api/src/main/kotlin/dto/MaintenanceDto.kt` · linhas 6–48 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/dto/MaintenanceDto.kt#L6-L48)
 
 ```kotlin
 @Serializable
@@ -352,7 +408,7 @@ data class EquipmentResponse(
 
 Fala: "Só `name` é obrigatório no `EquipmentRequest`. A resposta traz, além das colunas, os nomes dos processos e monitoramentos ligados. No banco, apagar um equipamento apaga em cascata as agendas, vínculos com processos e monitoramentos, parâmetros e recomendações (conferido no Supabase em 13/10)."
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 381–391 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L381-L391)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 381–391 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L381-L391)
 
 ```kotlin
     private fun assignEquipment(row: UpdateBuilder<*>, body: EquipmentRequest) {
@@ -368,7 +424,7 @@ Fala: "Só `name` é obrigatório no `EquipmentRequest`. A resposta traz, além 
     }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 399–399 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L399-L399)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 399–399 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L399-L399)
 
 ```kotlin
     private fun equipment(r: ResultRow) = EquipmentResponse(r[EquipmentTable.id].toString(), r[EquipmentTable.name], r[EquipmentTable.tag], r[EquipmentTable.kind], r[EquipmentTable.location], r[EquipmentTable.description], r[EquipmentTable.manufacturer], r[EquipmentTable.model], r[EquipmentTable.serialNumber], r[EquipmentTable.status], r[EquipmentTable.assetUrl], r[EquipmentTable.assetFormat], r[EquipmentTable.createdAt].iso(), r[EquipmentTable.updatedAt].iso())
@@ -378,31 +434,35 @@ Fala: "`assignEquipment` é reaproveitada no insert e no update: limpa espaços 
 
 ### 2.2 Create — tela `/equipment`, botão "Novo equipamento"
 
-📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 36–38 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/pages/EquipmentPage.jsx#L36-L38)
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 52–54 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L52-L54)
 
 ```jsx
   const actions = <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: 'var(--ok-strong)' }}><Plus size={12} />Novo equipamento</button>
   return <Surface title="Equipamentos" subtitle={`${rows.length} ativos cadastrados com histórico, análises e vínculos.`} icon={Cpu} actions={actions}>
-    {creating && <CreateEquipmentModal onClose={() => setCreating(false)} onCreate={async (data) => { await api.createEquipment(data); setCreating(false); load() }} />}
+    {creating && <CreateEquipmentModal onClose={() => setCreating(false)} onCreate={async (data) => { await api.createEquipment(toEquipmentRequest(data)); setCreating(false); load() }} />}
 ```
 
-📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 88–92 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/pages/EquipmentPage.jsx#L88-L92)
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 109–110 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L109-L110)
 
 ```jsx
-function CreateEquipmentModal({ onClose, onCreate }) {
-  const [values, setValues] = useState({ name: '', kind: 'generico', tag: '', location: '', manufacturer: '', model: '' }); const [busy, setBusy] = useState(false)
-  const field = (key, placeholder) => <input value={values[key]} onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} className="px-3 py-2 rounded-lg border border-border text-xs text-foreground" style={{ background: 'var(--surface-base)' }} />
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(3,6,12,.78)' }}><form onSubmit={async (event) => { event.preventDefault(); if (!values.name.trim()) return; setBusy(true); try { await onCreate(values) } finally { setBusy(false) } }} className="w-full rounded-xl border border-border" style={{ maxWidth: 480, background: 'var(--surface-raised)' }}><div className="flex justify-between px-4 py-3 border-b border-border"><div><h2 className="text-sm font-semibold text-foreground">Cadastrar equipamento</h2><p className="text-[11px] text-muted-foreground mt-1">Crie o ativo antes de associá-lo a processos ou monitoramentos.</p></div><button type="button" onClick={onClose}><X size={13} /></button></div><div className="grid gap-3 p-4 sm:grid-cols-2"><label className="flex flex-col gap-1 text-[10px] text-muted-foreground sm:col-span-2">Nome *{field('name', 'Ex.: Torno CNC Prod1')}</label><label className="flex flex-col gap-1 text-[10px] text-muted-foreground">Tipo<select value={values.kind} onChange={(event) => setValues((current) => ({ ...current, kind: event.target.value }))} className="px-3 py-2 rounded-lg border border-border text-xs text-foreground" style={{ background: 'var(--surface-base)' }}><option value="torno">Torno CNC</option><option value="fresadora">Fresadora</option><option value="compressor">Compressor</option><option value="esteira">Esteira</option><option value="generico">Genérico</option></select></label><label className="flex flex-col gap-1 text-[10px] text-muted-foreground">TAG{field('tag', 'Ex.: TRN-01')}</label><label className="flex flex-col gap-1 text-[10px] text-muted-foreground">Fabricante{field('manufacturer', 'Ex.: Romi')}</label><label className="flex flex-col gap-1 text-[10px] text-muted-foreground">Modelo{field('model', 'Ex.: GL 240')}</label><label className="flex flex-col gap-1 text-[10px] text-muted-foreground sm:col-span-2">Localização{field('location', 'Ex.: Célula 01')}</label></div><div className="flex justify-end gap-2 px-4 py-3 border-t border-border"><button type="button" onClick={onClose} className="px-3 py-2 text-xs text-muted-foreground">Cancelar</button><button disabled={busy || !values.name.trim()} className="px-3 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-50" style={{ background: 'var(--ok-strong)' }}>{busy ? 'Cadastrando…' : 'Cadastrar'}</button></div></form></div>
-}
+function CreateEquipmentModal({ initial = null, onClose, onCreate }) {
+  const [values, setValues] = useState({ name: initial?.name ?? '', kind: initial?.kind ?? 'generico', tag: initial?.tag ?? '', location: initial?.location ?? '', manufacturer: initial?.manufacturer ?? '', model: initial?.model ?? '' }); const [busy, setBusy] = useState(false)
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 488–488 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/lib/api.js#L488-L488)
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 11–12 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L11-L12)
+
+```jsx
+const EQUIPMENT_FIELDS = ['name', 'tag', 'kind', 'location', 'description', 'manufacturer', 'model', 'serialNumber', 'status', 'assetUrl', 'assetFormat']
+const toEquipmentRequest = (values) => Object.fromEntries(EQUIPMENT_FIELDS.filter((key) => values[key] !== undefined).map((key) => [key, values[key] ?? null]))
+```
+
+📍 `deviante-web/src/lib/api.js` · linhas 489–489 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/api.js#L489-L489)
 
 ```javascript
   createEquipment: (data) => request('/equipment', { method: 'POST', body: JSON.stringify(data) }),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 454–460 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L454-L460)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 479–485 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L479-L485)
 
 ```kotlin
                 post {
@@ -414,7 +474,7 @@ function CreateEquipmentModal({ onClose, onCreate }) {
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 100–107 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L100-L107)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 100–107 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L100-L107)
 
 ```kotlin
     fun createEquipment(managerId: UUID, body: EquipmentRequest): EquipmentResponse = transaction {
@@ -427,11 +487,11 @@ function CreateEquipmentModal({ onClose, onCreate }) {
     }
 ```
 
-Fala: "O modal só habilita 'Cadastrar' com nome preenchido. A rota valida de novo (400 'Nome do equipamento é obrigatório') e o repositório gera o UUID, grava o `manager_id` de quem está logado e devolve a linha recém-criada (201)."
+Fala: "O modal só habilita 'Cadastrar' com nome preenchido. `toEquipmentRequest` manda só os campos que a API aceita. A rota valida de novo (400 'Nome do equipamento é obrigatório') e o repositório gera o UUID, grava o `manager_id` de quem está logado e devolve a linha recém-criada (201)."
 
 ### 2.3 Read — tela `/equipment`
 
-📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 9–19 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/pages/EquipmentPage.jsx#L9-L19)
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 16–30 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L16-L30)
 
 ```jsx
 export default function EquipmentPage() {
@@ -443,17 +503,21 @@ export default function EquipmentPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const { user } = useAuth()
+  const allowDelete = canDelete(user)
   const load = () => api.listAllMachines().then((data) => setRows(Array.isArray(data) ? data : data?.items ?? [])).catch((err) => setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os equipamentos.')).finally(() => setLoading(false))
   useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 487–487 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/lib/api.js#L487-L487)
+📍 `deviante-web/src/lib/api.js` · linhas 488–488 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/api.js#L488-L488)
 
 ```javascript
   listAllMachines: () => request('/equipment'),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 449–453 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L449-L453)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 474–478 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L474-L478)
 
 ```kotlin
                 get {
@@ -463,7 +527,7 @@ export default function EquipmentPage() {
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 48–55 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L48-L55)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 48–55 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L48-L55)
 
 ```kotlin
     fun listEquipment(managerId: UUID): List<EquipmentResponse> = transaction {
@@ -480,7 +544,7 @@ Fala: "A lista filtra pelo `manager_id` de quem está logado, então cada gestor
 
 Read de um equipamento:
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 461–466 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L461-L466)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 486–491 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L486-L491)
 
 ```kotlin
                 get("/{id}") {
@@ -491,7 +555,7 @@ Read de um equipamento:
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 96–98 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L96-L98)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 96–98 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L96-L98)
 
 ```kotlin
     fun findEquipment(id: UUID): EquipmentResponse? = transaction {
@@ -499,9 +563,21 @@ Read de um equipamento:
     }
 ```
 
-### 2.4 Update — já existe na API
+### 2.4 Update — lápis na linha do equipamento
 
-📍 `deviante-web/src/lib/api.js` · linhas 469–471 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/lib/api.js#L469-L471)
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 80–80 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L80-L80)
+
+```jsx
+              <button type="button" onClick={() => setEditing(machine)} aria-label={`Editar ${machine.name}`} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"><Pencil size={12} /></button>
+```
+
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 55–55 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L55-L55)
+
+```jsx
+    {editing && <CreateEquipmentModal initial={editing} onClose={() => setEditing(null)} onCreate={async (data) => { await api.updateMachine(editing.id, toEquipmentRequest({ ...editing, ...data })); setEditing(null); load() }} />}
+```
+
+📍 `deviante-web/src/lib/api.js` · linhas 470–472 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/api.js#L470-L472)
 
 ```javascript
   updateMachine: (machineId, patch) => request(`/equipment/${machineId}`, {
@@ -509,7 +585,7 @@ Read de um equipamento:
   }),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 467–474 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L467-L474)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 492–499 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L492-L499)
 
 ```kotlin
                 put("/{id}") {
@@ -522,7 +598,7 @@ Read de um equipamento:
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 109–112 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L109-L112)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 109–112 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L109-L112)
 
 ```kotlin
     fun updateEquipment(id: UUID, body: EquipmentRequest): EquipmentResponse? = transaction {
@@ -531,81 +607,64 @@ Read de um equipamento:
     }
 ```
 
-Fala: "Se o `UPDATE` não alterou nenhuma linha, o repositório devolve `null` e a rota responde 404."
+Fala: "O lápis abre o mesmo modal do cadastro, preenchido (`initial`). Como o `PUT` grava todas as colunas, o front reenvia os valores atuais junto com os alterados (`{ ...editing, ...data }`). Se o `UPDATE` não alterou nenhuma linha, o repositório devolve `null` e a rota responde 404."
 
-### 2.5 Delete — já existe na API
+### 2.5 Delete — lixeira na linha (só administrador e gestor)
 
-📍 `deviante-web/src/lib/api.js` · linhas 472–472 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/lib/api.js#L472-L472)
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 81–81 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L81-L81)
+
+```jsx
+              {allowDelete && <button type="button" onClick={() => removeEquipment(machine)} aria-label={`Excluir ${machine.name}`} className="p-1.5 rounded hover:bg-red-950/40" style={{ color: 'var(--crit-soft)' }}><Trash2 size={12} /></button>}
+```
+
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 46–50 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/EquipmentPage.jsx#L46-L50)
+
+```jsx
+  async function removeEquipment(machine) {
+    if (!window.confirm(`Excluir o equipamento "${machine.name}"? Parâmetros, leituras, análises e agendamentos dele também serão apagados.`)) return
+    try { await api.deleteMachine(machine.id); setRows((current) => current.filter((row) => row.id !== machine.id)) }
+    catch (err) { setError(err instanceof ApiError ? err.message : 'Não foi possível excluir o equipamento.') }
+  }
+```
+
+📍 `deviante-web/src/lib/api.js` · linhas 473–473 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/api.js#L473-L473)
 
 ```javascript
   deleteMachine: (machineId) => request(`/equipment/${machineId}`, { method: 'DELETE' }),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 475–480 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L475-L480)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 500–505 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L500-L505)
 
 ```kotlin
                 delete("/{id}") {
-                    call.requireSupabaseUser(authClient) ?: return@delete
+                    call.requireDeleter(authClient, managerRepository) ?: return@delete
                     val id = call.parameters["id"]?.let(::runCatchingUuid)
                     if (id == null || !maintenanceRepository.deleteEquipment(id)) call.respond(HttpStatusCode.NotFound, ErrorResponse("Equipamento não encontrado."))
                     else call.respond(HttpStatusCode.NoContent)
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 114–114 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L114-L114)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 114–114 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L114-L114)
 
 ```kotlin
     fun deleteEquipment(id: UUID): Boolean = transaction { EquipmentTable.deleteWhere { EquipmentTable.id eq id } > 0 }
 ```
 
-### 2.6 A DESENVOLVER: editar e excluir na tela `/equipment`
+Fala: "A confirmação avisa que parâmetros, leituras, análises e agendas do equipamento vão junto, porque o banco apaga em cascata. O Core confere o papel antes (`requireDeleter`). Resposta 204, e a linha sai da tabela sem recarregar."
 
-Hoje `api.updateMachine` e `api.deleteMachine` existem, mas nenhuma tela os chama.
-
-📍 `deviante-web/src/pages/EquipmentPage.jsx`, novo estado depois da linha 17:
-
-```jsx
-  const [editing, setEditing] = useState(null)
-  async function removeMachine(machine) {
-    if (!window.confirm(`Excluir "${machine.name}"? As agendas dele também serão apagadas.`)) return
-    try { await api.deleteMachine(machine.id); load() } catch (err) { setError(err instanceof ApiError ? err.message : 'Não foi possível excluir.') }
-  }
-```
-
-📍 mesmo arquivo, depois da linha 38 (o modal de criar), o mesmo modal no modo edição:
-
-```jsx
-    {editing && <CreateEquipmentModal initial={editing} onClose={() => setEditing(null)} onCreate={async (data) => { await api.updateMachine(editing.id, data); setEditing(null); load() }} />}
-```
-
-📍 mesmo arquivo, linha 50: acrescentar `<Header>Ações</Header>` ao fim do cabeçalho; linha 61: nova célula no fim de cada linha:
-
-```jsx
-            <Cell><button onClick={() => setEditing(machine)}>Editar</button> · <button onClick={() => removeMachine(machine)}>Excluir</button></Cell>
-```
-
-📍 mesmo arquivo, linha 88–89: o modal passa a aceitar valores iniciais:
-
-```jsx
-function CreateEquipmentModal({ onClose, onCreate, initial }) {
-  const [values, setValues] = useState({ name: initial?.name ?? '', kind: initial?.kind ?? 'generico', tag: initial?.tag ?? '', location: initial?.location ?? '', manufacturer: initial?.manufacturer ?? '', model: initial?.model ?? '' }); const [busy, setBusy] = useState(false)
-```
-
-(no título do modal, trocar "Cadastrar equipamento" por `{initial ? 'Editar equipamento' : 'Cadastrar equipamento'}`).
-
-### 2.7 Roteiro de fala
+### 2.6 Roteiro de fala
 
 1. Logar e abrir `https://deviante.alander.io/equipment`.
 2. **Create:** cadastrar "Torno CNC Prod1", tipo torno, TAG TRN-01. Mostrar no DevTools o `POST /api/equipment` e o 201.
 3. **Read:** mostrar a lista e o `WHERE manager_id = ?` no repositório.
-4. **Update:** editar a localização (`PUT /api/equipment/{id}`).
-5. **Delete:** excluir um equipamento sem agenda (204). Explicar que, com agenda, o banco apaga a agenda junto (cascata).
+4. **Update:** clicar no lápis e editar a localização (`PUT /api/equipment/{id}`).
+5. **Delete:** clicar na lixeira de um equipamento sem agenda (204). Explicar que, com agenda, o banco apaga a agenda junto (cascata). Entrar como operador e mostrar que a lixeira não aparece.
 
 ## 3. CRUD de Agenda de manutenção (objeto ORCA MAINTENANCE)
 
 ### 3.1 Tabela e DTOs
 
-📍 `deviante-api/src/main/kotlin/db/MonitoringTables.kt` · linhas 142–157 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/db/MonitoringTables.kt#L142-L157)
+📍 `deviante-api/src/main/kotlin/db/MonitoringTables.kt` · linhas 142–157 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/db/MonitoringTables.kt#L142-L157)
 
 ```kotlin
 object MaintenanceSchedulesTable : Table(name = "maintenance_schedules") {
@@ -626,7 +685,7 @@ object MaintenanceSchedulesTable : Table(name = "maintenance_schedules") {
 }
 ```
 
-📍 `deviante-api/src/main/kotlin/dto/MaintenanceDto.kt` · linhas 211–236 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/dto/MaintenanceDto.kt#L211-L236)
+📍 `deviante-api/src/main/kotlin/dto/MaintenanceDto.kt` · linhas 211–236 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/dto/MaintenanceDto.kt#L211-L236)
 
 ```kotlin
 @Serializable
@@ -659,15 +718,15 @@ data class MaintenanceScheduleResponse(
 
 Fala: "Cada agenda pertence a um equipamento (`equipment_id`, obrigatório) e pode apontar para um processo (`process_id`, opcional), que é o CRUD do Alander. Se o processo for apagado, a agenda fica sem processo (`SET NULL`); se o equipamento for apagado, a agenda vai junto (`CASCADE`). As datas trafegam como texto ISO 8601."
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 405–405 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L405-L405)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 405–405 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L405-L405)
 
 ```kotlin
     private fun schedule(r: ResultRow) = MaintenanceScheduleResponse(r[MaintenanceSchedulesTable.id].toString(), r[MaintenanceSchedulesTable.equipmentId].toString(), r[MaintenanceSchedulesTable.processId]?.toString(), r[MaintenanceSchedulesTable.recommendationId]?.toString(), r[MaintenanceSchedulesTable.title], r[MaintenanceSchedulesTable.notes], r[MaintenanceSchedulesTable.scheduledStart].iso(), r[MaintenanceSchedulesTable.scheduledEnd]?.iso(), r[MaintenanceSchedulesTable.status], r[MaintenanceSchedulesTable.createdAt].iso(), r[MaintenanceSchedulesTable.updatedAt].iso())
 ```
 
-### 3.2 O que já existe
+### 3.2 Tela `/schedules` (menu "Agendamentos")
 
-📍 `deviante-web/src/lib/api.js` · linhas 489–502 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/lib/api.js#L489-L502)
+📍 `deviante-web/src/lib/api.js` · linhas 490–504 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/lib/api.js#L490-L504)
 
 ```javascript
   listSchedules: (params = {}) => {
@@ -684,23 +743,25 @@ Fala: "Cada agenda pertence a um equipamento (`equipment_id`, obrigatório) e po
   },
   createSchedule: (data) => request('/schedules', { method: 'POST', body: JSON.stringify(data) }),
   updateSchedule: (id, patch) => request(`/schedules/${id}`, { method: 'PUT', body: JSON.stringify(patch) }),
+  deleteSchedule: (id) => request(`/schedules/${id}`, { method: 'DELETE' }),
 ```
 
-Read (tela `/schedules`, lista, kanban e calendário):
+### 3.3 Read — lista, kanban e calendário
 
-📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 11–17 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/203e38d/src/pages/SchedulesPage.jsx#L11-L17)
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 13–20 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/SchedulesPage.jsx#L13-L20)
 
 ```jsx
 export default function SchedulesPage() {
   const [rows, setRows] = useState([]); const [view, setView] = useState('list'); const [error, setError] = useState(''); const [loading, setLoading] = useState(true)
   const [searchParams] = useSearchParams()
   const equipmentId = searchParams.get('equipmentId')
-  useEffect(() => { api.listSchedules({ equipmentId }).then((data) => setRows(Array.isArray(data) ? data : data?.items ?? [])).catch((err) => setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os agendamentos.')).finally(() => setLoading(false)) }, [equipmentId])
-  const actions = <div className="flex rounded-lg border border-border overflow-hidden">{VIEWS.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setView(id)} className="flex items-center gap-1.5 px-3 py-2 text-[11px]" style={{ border: 0, background: view === id ? 'var(--surface-inset)' : 'var(--surface-raised)', color: view === id ? 'var(--text-strong)' : 'var(--muted-foreground)' }}><Icon size={11} />{label}</button>)}</div>
-  return <Surface title="Agendamentos" subtitle="Manutenções planejadas e ocorrências por equipamento." icon={Wrench} actions={actions}>{loading ? <State>Carregando…</State> : error ? <State error>{error}</State> : view === 'kanban' ? <Kanban rows={rows} /> : view === 'calendar' ? <Calendar rows={rows} /> : <ScheduleList rows={rows} />}</Surface>
+  const [editing, setEditing] = useState(null) // null = fechado, {} = nova, linha = edição
+  const { user } = useAuth()
+  const load = () => api.listSchedules({ equipmentId }).then((data) => setRows(Array.isArray(data) ? data : data?.items ?? [])).catch((err) => setError(err instanceof ApiError ? err.message : 'Não foi possível carregar os agendamentos.')).finally(() => setLoading(false))
+  useEffect(() => { load() }, [equipmentId]) // eslint-disable-line react-hooks/exhaustive-deps
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 764–769 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L764-L769)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 789–794 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L789-L794)
 
 ```kotlin
                 get {
@@ -711,7 +772,7 @@ export default function SchedulesPage() {
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 345–353 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L345-L353)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 345–353 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L345-L353)
 
 ```kotlin
     fun listSchedules(equipmentId: UUID? = null): List<MaintenanceScheduleResponse> = transaction {
@@ -725,11 +786,44 @@ export default function SchedulesPage() {
     }
 ```
 
-Fala: "As três visões usam a mesma lista; só muda o agrupamento no front (por status no kanban, por mês no calendário). O filtro `?equipmentId=` vem da página do equipamento."
+Fala: "As três visões usam a mesma lista; só muda o agrupamento no front (por status no kanban, por mês no calendário). O filtro `?equipmentId=` vem da página do equipamento. Clicar num card abre o modal de edição."
 
-Create:
+### 3.4 Create e Update — botão "Nova manutenção" ou clique no card
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 770–775 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L770-L775)
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 22–26 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/SchedulesPage.jsx#L22-L26)
+
+```jsx
+  async function save(data) {
+    if (editing?.id) await api.updateSchedule(editing.id, data)
+    else await api.createSchedule(data)
+    setEditing(null); load()
+  }
+```
+
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 45–62 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/SchedulesPage.jsx#L45-L62)
+
+```jsx
+const toLocalInput = (iso) => { if (!iso) return ''; const date = new Date(iso); return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16) }
+const toIso = (local) => local ? new Date(local).toISOString() : null
+
+function ScheduleModal({ initial, onClose, onSave, onDelete }) {
+  const [equipment, setEquipment] = useState([])
+  const [values, setValues] = useState({
+    equipmentId: initial.equipmentId ?? '', title: initial.title ?? '', notes: initial.notes ?? '',
+    scheduledStart: toLocalInput(initial.scheduledStart), scheduledEnd: toLocalInput(initial.scheduledEnd), status: initial.status ?? 'planned',
+  })
+  const [busy, setBusy] = useState(false); const [error, setError] = useState('')
+  useEffect(() => { api.listAllMachines().then((data) => setEquipment(Array.isArray(data) ? data : data?.items ?? [])).catch(() => setEquipment([])) }, [])
+  const set = (key) => (event) => setValues((current) => ({ ...current, [key]: event.target.value }))
+  const valid = values.equipmentId && values.title.trim() && values.scheduledStart && (!values.scheduledEnd || values.scheduledEnd >= values.scheduledStart)
+  const run = async (action) => { setBusy(true); setError(''); try { await action() } catch (err) { setError(err instanceof ApiError ? err.message : 'Não foi possível salvar a manutenção.') } finally { setBusy(false) } }
+  const submit = (event) => { event.preventDefault(); if (!valid) return; run(() => onSave({
+    equipmentId: values.equipmentId, processId: initial.processId ?? null, recommendationId: initial.recommendationId ?? null,
+    title: values.title.trim(), notes: values.notes.trim(), scheduledStart: toIso(values.scheduledStart), scheduledEnd: toIso(values.scheduledEnd), status: values.status,
+  })) }
+```
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 795–800 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L795-L800)
 
 ```kotlin
                 post {
@@ -740,7 +834,7 @@ Create:
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 355–367 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L355-L367)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 355–367 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L355-L367)
 
 ```kotlin
     fun createSchedule(managerId: UUID, body: MaintenanceScheduleRequest): MaintenanceScheduleResponse? = transaction {
@@ -758,18 +852,25 @@ Create:
     }
 ```
 
-Fala: "A rota valida título, formato das datas e fim depois do início (400). O repositório confere se o equipamento existe; se não, devolve `null` e a rota responde 422."
-
-Update e Delete:
-
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 776–777 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/Routing.kt#L776-L777)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 801–813 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L801-L813)
 
 ```kotlin
-                put("/{id}") { call.requireSupabaseUser(authClient)?:return@put; val id=call.parameters["id"]?.let(::runCatchingUuid); val body=call.receive<MaintenanceScheduleRequest>(); val item=runCatching{id?.let{maintenanceRepository.updateSchedule(it,body)}}.getOrNull(); if(item==null) call.respond(HttpStatusCode.BadRequest,ErrorResponse("Agenda inválida ou não encontrada.")) else call.respond(item) }
-                delete("/{id}") { call.requireSupabaseUser(authClient)?:return@delete; val id=call.parameters["id"]?.let(::runCatchingUuid); if(id==null||!maintenanceRepository.deleteSchedule(id)) call.respond(HttpStatusCode.NotFound,ErrorResponse("Agenda não encontrada.")) else call.respond(HttpStatusCode.NoContent) }
+                put("/{id}") {
+                    call.requireSupabaseUser(authClient) ?: return@put
+                    val id = call.parameters["id"]?.let(::runCatchingUuid)
+                    val body = call.receive<MaintenanceScheduleRequest>()
+                    val start = runCatching { OffsetDateTime.parse(body.scheduledStart) }.getOrNull()
+                    val end = body.scheduledEnd?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
+                    if (id == null || body.title.isBlank() || start == null || (body.scheduledEnd != null && end == null) || (end != null && end < start)) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Agenda de manutenção inválida."))
+                        return@put
+                    }
+                    val item = runCatching { maintenanceRepository.updateSchedule(id, body) }.getOrNull()
+                    if (item == null) call.respond(HttpStatusCode.NotFound, ErrorResponse("Agenda não encontrada.")) else call.respond(item)
+                }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 369–379 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/1b5106c/src/main/kotlin/repository/MaintenanceRepository.kt#L369-L379)
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 369–377 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L369-L377)
 
 ```kotlin
     fun updateSchedule(id: UUID, body: MaintenanceScheduleRequest): MaintenanceScheduleResponse? = transaction {
@@ -781,105 +882,49 @@ Update e Delete:
         }
         if (changed == 0) null else findSchedule(id)
     }
+```
 
+Fala: "O mesmo modal cria (`POST`) ou edita (`PUT`). O campo de data do navegador não tem fuso, então `toIso` converte para ISO 8601 antes de enviar. O Core valida título, formato das datas e fim depois do início (400) tanto no `POST` quanto no `PUT`. No `POST`, o repositório confere se o equipamento existe; se não, a rota responde 422. O select de equipamento vem do CRUD de Equipamento: é a FK aparecendo na tela."
+
+### 3.5 Delete — botão "Excluir" no modal (só administrador e gestor)
+
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 27–31 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/SchedulesPage.jsx#L27-L31)
+
+```jsx
+  async function remove() {
+    if (!window.confirm(`Excluir a manutenção "${editing.title}"?`)) return
+    await api.deleteSchedule(editing.id)
+    setEditing(null); load()
+  }
+```
+
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 36–36 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5c86907/src/pages/SchedulesPage.jsx#L36-L36)
+
+```jsx
+    {editing && <ScheduleModal initial={editing} onClose={() => setEditing(null)} onSave={save} onDelete={editing.id && canDelete(user) ? remove : null} />}</Surface>
+```
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 814–814 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/Routing.kt#L814-L814)
+
+```kotlin
+                delete("/{id}") { call.requireDeleter(authClient, managerRepository)?:return@delete; val id=call.parameters["id"]?.let(::runCatchingUuid); if(id==null||!maintenanceRepository.deleteSchedule(id)) call.respond(HttpStatusCode.NotFound,ErrorResponse("Agenda não encontrada.")) else call.respond(HttpStatusCode.NoContent) }
+```
+
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 379–379 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/a8f08fd/src/main/kotlin/repository/MaintenanceRepository.kt#L379-L379)
+
+```kotlin
     fun deleteSchedule(id: UUID): Boolean = transaction { MaintenanceSchedulesTable.deleteWhere { MaintenanceSchedulesTable.id eq id } > 0 }
 ```
 
-### 3.3 A DESENVOLVER: validação no PUT
+Fala: "O botão só é passado ao modal quando a agenda já existe e o usuário pode excluir (`canDelete`). O Core confere o papel de novo e responde 204."
 
-Hoje o `PUT` não valida datas nem título (só o `POST` valida). 📍 `deviante-api/src/main/kotlin/Routing.kt`, linha 776, trocar a rota por:
+### 3.6 Roteiro de fala
 
-```kotlin
-put("/{id}") {
-    call.requireSupabaseUser(authClient) ?: return@put
-    val id = call.parameters["id"]?.let(::runCatchingUuid)
-    val body = call.receive<MaintenanceScheduleRequest>()
-    val start = runCatching { OffsetDateTime.parse(body.scheduledStart) }.getOrNull()
-    val end = body.scheduledEnd?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
-    if (id == null || body.title.isBlank() || start == null || (body.scheduledEnd != null && end == null) || (end != null && end < start)) {
-        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Agenda de manutenção inválida."))
-        return@put
-    }
-    val item = runCatching { maintenanceRepository.updateSchedule(id, body) }.getOrNull()
-    if (item == null) call.respond(HttpStatusCode.NotFound, ErrorResponse("Agenda não encontrada.")) else call.respond(item)
-}
-```
-
-### 3.4 A DESENVOLVER: criar, editar e excluir na tela `/schedules`
-
-📍 `deviante-web/src/lib/api.js`, depois de `updateSchedule` (linha 502):
-
-```javascript
-  deleteSchedule: (id) => request(`/schedules/${id}`, { method: 'DELETE' }),
-```
-
-📍 `deviante-web/src/pages/SchedulesPage.jsx`: na linha 12, novo estado `const [editing, setEditing] = useState(null)`; na linha 14, transformar a busca numa função `load` para recarregar depois de salvar; na linha 15, um botão "Nova manutenção" ao lado das visões; e o `Card` (linha 19) recebe `onClick={() => setEditing(row)}`. O modal novo, no fim do arquivo:
-
-```jsx
-function ScheduleModal({ initial, onClose, onSaved }) {
-  const [machines, setMachines] = useState([])
-  const [processes, setProcesses] = useState([])
-  const [values, setValues] = useState({
-    title: initial?.title ?? '', equipmentId: initial?.equipmentId ?? '', processId: initial?.processId ?? '',
-    scheduledStart: initial?.scheduledStart?.slice(0, 16) ?? '', scheduledEnd: initial?.scheduledEnd?.slice(0, 16) ?? '',
-    status: initial?.status ?? 'planned', notes: initial?.notes ?? '',
-  })
-  const [error, setError] = useState('')
-  useEffect(() => { api.listAllMachines().then(setMachines); api.listProcesses().then(setProcesses) }, [])
-  const set = (key) => (event) => setValues((current) => ({ ...current, [key]: event.target.value }))
-  const iso = (local) => (local ? new Date(local).toISOString() : null)
-
-  async function save(event) {
-    event.preventDefault()
-    const body = { ...values, processId: values.processId || null, scheduledStart: iso(values.scheduledStart), scheduledEnd: iso(values.scheduledEnd) }
-    try {
-      if (initial?.id) await api.updateSchedule(initial.id, body)   // Update
-      else await api.createSchedule(body)                          // Create
-      onSaved()
-    } catch (err) { setError(err instanceof ApiError ? err.message : 'Não foi possível salvar.') }
-  }
-  async function remove() {                                         // Delete
-    if (!window.confirm('Excluir esta manutenção?')) return
-    await api.deleteSchedule(initial.id); onSaved()
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(3,6,12,.78)' }}>
-      <form onSubmit={save} className="w-full rounded-xl border border-border p-4 grid gap-3" style={{ maxWidth: 480, background: 'var(--surface-raised)' }}>
-        <h2 className="text-sm font-semibold">{initial?.id ? 'Editar manutenção' : 'Nova manutenção'}</h2>
-        <input required value={values.title} onChange={set('title')} placeholder="Título" />
-        <select required value={values.equipmentId} onChange={set('equipmentId')}>
-          <option value="">Equipamento *</option>
-          {machines.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-        <select value={values.processId} onChange={set('processId')}>
-          <option value="">Sem processo</option>
-          {processes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <label>Início <input required type="datetime-local" value={values.scheduledStart} onChange={set('scheduledStart')} /></label>
-        <label>Fim <input type="datetime-local" value={values.scheduledEnd} onChange={set('scheduledEnd')} /></label>
-        <select value={values.status} onChange={set('status')}>{Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        <textarea value={values.notes} onChange={set('notes')} placeholder="Observações" />
-        {error && <State error>{error}</State>}
-        <div className="flex justify-between">
-          {initial?.id ? <button type="button" onClick={remove}>Excluir</button> : <span />}
-          <span><button type="button" onClick={onClose}>Cancelar</button> <button>Salvar</button></span>
-        </div>
-      </form>
-    </div>
-  )
-}
-```
-
-Fala sobre o modal: "o mesmo formulário faz Create e Update; o select de equipamento vem do CRUD de Equipamento e o de processo vem do CRUD de Processo, que é a relação entre as tabelas aparecendo na tela."
-
-### 3.5 Roteiro de fala
-
-1. Abrir `https://deviante.alander.io/schedules`. Clicar "Nova manutenção": "Troca de rolamento", Torno CNC Prod1, um processo, início amanhã (Create: `POST /api/schedules`, 201).
+1. Abrir `https://deviante.alander.io/schedules`. Clicar "Nova manutenção": "Troca de rolamento", Torno CNC Prod1, início amanhã (Create: `POST /api/schedules`, 201).
 2. Mostrar as três visões (lista, kanban, calendário): mesma API, agrupamentos diferentes.
 3. Abrir o card, mudar o status para "Em andamento" e salvar (Update: `PUT /api/schedules/{id}`). O card muda de coluna no kanban.
 4. Tentar salvar com fim antes do início: 400. Explicar o 422 quando o equipamento não existe.
-5. Excluir a manutenção (Delete: 204).
+5. Excluir a manutenção (Delete: 204). Entrar como operador e mostrar que o botão "Excluir" não aparece.
 6. Fechar: "no meu par de CRUDs são duas tabelas, `equipment` e `maintenance_schedules`, ligadas por FK; a agenda ainda aponta para `processes`, que é o CRUD do Alander".
 
 ## 4. Perguntas prováveis
@@ -891,7 +936,5 @@ Fala sobre o modal: "o mesmo formulário faz Create e Update; o select de equipa
 
 ## 5. Checagem antes de ensaiar
 
-- [ ] Editar e excluir em `EquipmentPage.jsx` publicados.
-- [ ] `ScheduleModal`, botão "Nova manutenção" e `api.deleteSchedule` publicados.
-- [ ] Validação no `PUT /api/schedules/{id}` publicada.
-- [ ] Trocar os blocos A DESENVOLVER pelos links reais depois do commit.
+- [ ] Deploy da API no Fly.io concluído (sem ele, os papéis por conta e a validação do `PUT` não estão no site).
+- [ ] Ensaiar com a conta demo do gestor (exclui) e a do operador (sem botão de excluir).
