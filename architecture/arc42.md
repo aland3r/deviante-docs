@@ -62,7 +62,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RNF-13 | BFF em Node.js (Express ou NestJS) | BFF (NestJS) |
 | RNF-14 | Microservices com Database per Service | Core, MS1 e MS2, cada um com seu banco (persistência poliglota) |
 | RNF-15 | Microserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
-| RNF-16 | Microserviço 2 com Azure SQL (Free, 1 DTU) | MS2 |
+| RNF-16 | Microserviço 2 com Azure SQL (oferta gratuita) | MS2 |
 | RNF-17 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger) |
 | RNF-18 | API Gateway na AWS | API Gateway |
 | RNF-19 | Arquitetura Orientada a Eventos | Azure Service Bus (`EventLogParsed`, `DriftDetected`) |
@@ -121,14 +121,14 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 | RT1 | Interface como microfrontend em React que consome só o BFF | Exigência de Cloud (RNF-12). React + Vite é decisão do grupo (RNF-03). |
 | RT2 | BFF em Node.js (NestJS), com o endpoint `GET /aggregated-data` | Exigência de Cloud (RNF-13, RF-19, RF-20). |
 | RT3 | Microsserviço 1 com MongoDB Atlas (Free Tier) | Exigência de Cloud (RNF-15). |
-| RT4 | Microsserviço 2 com Azure SQL (Free, 1 DTU) | Exigência de Cloud (RNF-16). 1 DTU limita consultas pesadas. |
+| RT4 | Microsserviço 2 com Azure SQL na oferta gratuita (serverless, 100 mil vCore-segundos e 32 GB por mês) | Exigência de Cloud (RNF-16). Ao esgotar a cota do mês, o banco pausa até o mês seguinte, o que limita consultas pesadas. |
 | RT5 | Azure Function com HTTP Trigger ou Message Trigger | Exigência de Cloud (RNF-17, RF-15). |
 | RT6 | API Gateway na AWS como porta de entrada | Exigência de Cloud (RNF-18). |
 | RT7 | Comunicação assíncrona por eventos entre serviços | Exigência de Cloud (RNF-19). |
 | RT8 | Back-end de domínio em Kotlin; microsserviços analíticos em Python com FastAPI | Decisão do grupo (RNF-01, RNF-05). PM4Py e o código IPDD/ADWIN só existem em Python. |
 | RT9 | Supabase para autenticação (Google) e PostgreSQL do Core | Decisão do grupo (RNF-02, RNF-10). O domínio do Core é relacional (ADR 03 e 08). |
 | RT10 | Código IPDD/ADWIN da pesquisa reaproveitado sem reescrita | Fidelidade científica: o método publicado precisa dar os mesmos resultados. |
-| RT11 | Só serviços gratuitos (free tiers) | Projeto acadêmico sem orçamento. Limites de memória, conexões e DTU condicionam o desenho. |
+| RT11 | Só serviços gratuitos (free tiers) | Projeto acadêmico sem orçamento. Limites de memória, conexões e cota de computação condicionam o desenho. |
 
 ### 2.2 Restrições organizacionais
 
@@ -321,7 +321,7 @@ C4Container
 | Microfrontend | SPA do produto e do site público | React + Vite, Vercel | — |
 | API Gateway | Entrada única, roteamento, JWT, rate limit | AWS API Gateway (HTTP API) | — |
 | BFF | Proxy dos CRUDs; `GET /aggregated-data` junta Core, MS1, MS2 e Function num único JSON | Node.js + NestJS, Fly.io | — |
-| Core API | Processos, atividades, mapeamentos, equipamentos, monitoramento, recomendações e agendas | Kotlin + Ktor, Fly.io | Supabase Postgres |
+| Core API | Empresas, usuários, processos, atividades, mapeamentos, máquinas e componentes, monitoramentos, recomendações e intervenções | Kotlin + Ktor, Fly.io | Supabase Postgres |
 | MS1 · Ingestão | Upload CSV/XES, parse, operações, traces e grafo (DFG) com pm4py; CRUD de event logs | Python + FastAPI + pm4py, Fly.io | MongoDB Atlas |
 | MS2 · Análises | CRUD das análises de drift; monta a série de tempos e chama a Function | Python + FastAPI, Fly.io | Azure SQL |
 | Azure Function | IPDD/ADWIN: recebe a série, devolve os pontos de drift; sem estado | Python, HTTP Trigger | — |
@@ -354,7 +354,7 @@ C4Component
 
     Container_Boundary(core, "Core API") {
         Component(api, "api", "Rotas Ktor", "Endpoints e validação do JWT.")
-        Component(app, "application", "Slices", "processes, activities, equipment, monitoring, maintenance.")
+        Component(app, "application", "Slices", "processes, activities, machines, monitoring, maintenance.")
         Component(infra, "infrastructure", "Exposed", "Repositórios e consumo de eventos.")
         Component(s1, " ", " ")
         Component(s2, " ", " ")
@@ -384,7 +384,7 @@ C4Component
 | Componente | Responsabilidade |
 |---|---|
 | `api` | Rotas Ktor, validação do JWT (JWKS) e conversão de requisição e resposta |
-| `application` | Casos de uso, uma slice por feature: `processes` (CreateProcess, UpdateProcess, DeleteProcess, ListProcesses), `activities` (ManageActivityCatalog, MapOperation, UnmapOperation), `equipment` (CreateEquipment, UpdateEquipment, DeleteEquipment, ManageParameters), `monitoring` (CreateMonitoring, LinkEquipment, RecordReading) e `maintenance` (RecommendMaintenance, ScheduleMaintenance, CompleteMaintenance) |
+| `application` | Casos de uso, uma slice por feature: `processes` (CreateProcess, UpdateProcess, DeleteProcess, ListProcesses), `activities` (ManageActivityCatalog, MapOperation, UnmapOperation), `machines` (CreateMachine, UpdateMachine, DeleteMachine, ManageComponents), `monitoring` (CreateMonitoring, LinkMachine) e `maintenance` (CreateRecommendation, ScheduleIntervention, CompleteIntervention) |
 | `domain` | Entidades e regras em Kotlin puro, detalhadas na §5.3 |
 | `infrastructure` | Repositórios com Exposed sobre o Postgres e consumo do evento `DriftDetected`; implementa as portas definidas em `application` |
 
@@ -593,7 +593,7 @@ classDiagram
 
 **Análise e intervenção**
 
-Finding pode abrir uma Maintenance (0..* para 0..1); essa aresta fica fora do desenho para não esticar a herança.
+Finding pode abrir uma Maintenance (0..\* para 0..1); essa aresta fica fora do desenho para não esticar a herança.
 
 ```mermaid
 classDiagram
@@ -806,7 +806,7 @@ sequenceDiagram
     F-->>M2: pontos de drift
     M2->>Q: DriftDetected
     Q->>C: DriftDetected
-    C->>C: cria MaintenanceRecommendation
+    C->>C: cria Recommendation
     end
 ```
 
@@ -828,7 +828,7 @@ sequenceDiagram
     G->>W: abre o processo
     W->>B: GET /aggregated-data?processId=...
     par em paralelo
-        B->>C: processo, equipamentos, recomendações
+        B->>C: processo, máquinas, recomendações
         B->>M1: grafo e traces
         B->>M2: análises e drifts
         B->>F: prévia com a sensibilidade escolhida
@@ -886,16 +886,16 @@ sequenceDiagram
     G->>W: abre a recomendação
     alt aceita
         W->>B: aceitar recomendação
-        B->>C: accept() e toSchedule()
-        C-->>B: MaintenanceSchedule agendada
+        B->>C: accept() e toIntervention()
+        C-->>B: Intervention agendada
     else rejeita
         W->>B: rejeitar recomendação
         B->>C: reject()
     end
     T->>W: registra a manutenção feita
-    W->>B: concluir agenda
+    W->>B: concluir intervenção
     B->>C: complete()
-    C->>C: equipamento volta a operar
+    C->>C: máquina volta a operar
 ```
 
 **Análise.** A recomendação criada em 6.1 só vira manutenção quando o gestor aceita. O técnico registra a execução, o que fecha o ciclo e reabilita a máquina.
@@ -972,52 +972,69 @@ Esta seção reúne as regras e soluções que valem para vários blocos ao mesm
 
 | Objeto ORCA | Classe / dado | Serviço dono | CTAs | Requisitos |
 |---|---|---|---|---|
-| Process | `Process` | Core API | criar, editar, excluir, ver detalhe | RF-03, RF-05, RF-06, RF-09, RF-12 |
-| Activity | `Activity` (+ `OperationMapping` dos rótulos do log) | Core API | mapear, editar e remover mapeamento | RF-07, RF-08, RF-10 |
-| Analysis | `DriftAnalysis`, `DriftPoint` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-14, RF-15 |
-| Monitoring | `Monitoring`, `MonitoringParameter`, `Reading` | Core API | criar, editar, excluir, agrupar máquinas | RF-11, RF-12, RF-13 |
-| Machine | `Equipment` | Core API | ver diagnóstico de saúde | RF-12, RF-16 |
-| Maintenance | `MaintenanceRecommendation` → `MaintenanceSchedule` | Core API | criar ação proativa, editar, excluir | RF-17, RF-18 |
+| Process | `Process` (um `Workspace`); `EventLog` no MS1 | Core API | criar, editar, excluir, ver detalhe, carregar event log | RF-03, RF-05, RF-06, RF-09, RF-12 |
+| Activity | `Activity`; `Operation` e `Event` no MS1 | Core API | mapear, editar e remover mapeamento | RF-07, RF-08, RF-10 |
+| Analysis | `Analysis` (um `Workspace`), `Drift` (+ cálculo na Function) | MS2 · Análises | criar, filtrar traces, executar, ajustar sensibilidade | RF-14, RF-15 |
+| Monitoring | `Monitoring` (um `Workspace`) | Core API | criar, editar, excluir, agrupar máquinas | RF-11, RF-12, RF-13 |
+| Machine | `Machine`, `Component` | Core API | ver diagnóstico de saúde e degradação dos componentes | RF-12, RF-16 |
+| Maintenance | `Recommendation` → `Intervention` (`Maintenance` ou `Inspection`), `Finding`, `ComponentReplacement` | Core API | criar ação proativa, editar, excluir, registrar execução | RF-17, RF-18 |
 
-O gestor (`Manager`) é o ator, não um objeto ORCA. O event log, os traces e o grafo (MS1) são dados de suporte de Process e Activity.
+Os usuários (`User`, com os papéis `Operator`, `Manager` e `Technician`) são atores, e a empresa (`Business`) é o contexto a que eles e os workspaces pertencem; nenhum dos dois é objeto ORCA. O event log, as operações, os eventos e o grafo (MS1) são dados de suporte de Process e Activity.
 
-Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Cada serviço acessa só o próprio banco, com um usuário seu; nenhum serviço lê os dados do outro.
+Cada serviço é dono dos seus dados; entre bancos só trafegam ids (`*_ref`). Cada serviço acessa só o próprio banco, com um usuário seu; nenhum serviço lê os dados do outro. As heranças da §5.3 viram tabelas assim: cada tipo de workspace tem a sua tabela (`processes` e `monitorings` no Core, `analyses` no MS2), os papéis de usuário ficam numa única tabela `users` com a coluna `role`, e manutenção e inspeção ficam em `interventions`, com a coluna `kind`.
 
 **Diagrama de Entidades e Relacionamentos — Core (Supabase Postgres)**
 
 ```mermaid
 erDiagram
-    MANAGERS ||--o{ PROCESSES : possui
-    MANAGERS ||--o{ EQUIPMENT : cadastra
-    MANAGERS ||--o{ MONITORINGS : cria
-    PROCESSES ||--o{ PROCESS_ACTIVITIES : usa
+    BUSINESSES ||--o{ USERS : emprega
+    BUSINESSES ||--o{ PROCESSES : possui
+    BUSINESSES ||--o{ MONITORINGS : possui
+    BUSINESSES ||--o{ MACHINES : possui
+    USERS ||--o{ PROCESSES : mantem
+    USERS ||--o{ MONITORINGS : mantem
+    PROCESSES ||--o{ PROCESS_ACTIVITIES : contem
     ACTIVITIES ||--o{ PROCESS_ACTIVITIES : compoe
     PROCESSES ||--o{ OPERATION_MAPPINGS : mapeia
     ACTIVITIES ||--o{ OPERATION_MAPPINGS : destino
-    PROCESSES ||--o{ PROCESS_EQUIPMENT : envolve
-    EQUIPMENT ||--o{ PROCESS_EQUIPMENT : participa
-    MONITORINGS ||--o{ MONITORING_EQUIPMENT : acompanha
-    EQUIPMENT ||--o{ MONITORING_EQUIPMENT : monitorado
-    MONITORINGS ||--o{ MONITORING_PARAMETERS : mede
-    MONITORING_PARAMETERS ||--o{ MONITORING_READINGS : registra
-    EQUIPMENT ||--o{ MAINTENANCE_RECOMMENDATIONS : recebe
-    MAINTENANCE_RECOMMENDATIONS ||--o| MAINTENANCE_SCHEDULES : vira
-    MANAGERS {
+    PROCESSES ||--o{ PROCESS_MACHINES : usa
+    MACHINES ||--o{ PROCESS_MACHINES : participa
+    MONITORINGS ||--o{ MONITORING_MACHINES : acompanha
+    MACHINES ||--o{ MONITORING_MACHINES : monitorada
+    MACHINES ||--o{ COMPONENTS : contem
+    MACHINES ||--o{ RECOMMENDATIONS : recebe
+    RECOMMENDATIONS ||--o| INTERVENTIONS : vira
+    MACHINES ||--o{ INTERVENTIONS : sofre
+    USERS ||--o{ INTERVENTIONS : executa
+    INTERVENTIONS ||--o{ FINDINGS : produz
+    INTERVENTIONS ||--o{ COMPONENT_REPLACEMENTS : registra
+    COMPONENTS ||--o{ COMPONENT_REPLACEMENTS : substituido
+    BUSINESSES {
         uuid id PK
-        uuid user_id
+        string name
+        string cnpj
+        string sector
+    }
+    USERS {
+        uuid id PK
+        uuid business_id FK
+        uuid auth_user_id
         string email
+        string full_name
         string role
     }
     PROCESSES {
         uuid id PK
+        uuid business_id FK
         uuid manager_id FK
         string name
-        string company_name
         string sector
+        string status
     }
     ACTIVITIES {
         uuid id PK
         string name
+        string description
     }
     OPERATION_MAPPINGS {
         uuid id PK
@@ -1027,45 +1044,60 @@ erDiagram
         string raw_label
         string status
     }
-    EQUIPMENT {
+    MACHINES {
         uuid id PK
-        uuid manager_id FK
+        uuid business_id FK
         string name
         string tag
+        string kind
         string status
+    }
+    COMPONENTS {
+        uuid id PK
+        uuid machine_id FK
+        string name
+        timestamp installed_at
+        float expected_life_hours
+        float degradation_score
+        string health
     }
     MONITORINGS {
         uuid id PK
+        uuid business_id FK
         uuid manager_id FK
         string name
         string status
     }
-    MONITORING_PARAMETERS {
+    RECOMMENDATIONS {
         uuid id PK
-        uuid monitoring_id FK
-        uuid equipment_id FK
-        string name
-        string unit
-    }
-    MONITORING_READINGS {
-        uuid id PK
-        uuid parameter_id FK
-        timestamp observed_at
-        float value
-    }
-    MAINTENANCE_RECOMMENDATIONS {
-        uuid id PK
-        uuid equipment_id FK
-        string analysis_ref
+        uuid machine_id FK
+        string drift_ref
+        string action
         string priority
         string status
     }
-    MAINTENANCE_SCHEDULES {
+    INTERVENTIONS {
         uuid id PK
         uuid recommendation_id FK
+        uuid machine_id FK
+        uuid technician_id FK
+        string kind
         string title
         timestamp scheduled_start
         string status
+    }
+    FINDINGS {
+        uuid id PK
+        uuid inspection_id FK
+        uuid maintenance_id FK
+        string severity
+        string description
+    }
+    COMPONENT_REPLACEMENTS {
+        uuid id PK
+        uuid maintenance_id FK
+        uuid component_id FK
+        timestamp replaced_at
     }
 ```
 
@@ -1073,27 +1105,37 @@ erDiagram
 
 ```mermaid
 erDiagram
-    DRIFT_ANALYSES ||--o{ DRIFT_POINTS : encontra
-    DRIFT_ANALYSES {
+    ANALYSES ||--o{ ANALYSIS_EVENT_LOGS : analisa
+    ANALYSES ||--o{ DRIFTS : detecta
+    ANALYSES {
         uuid id PK
+        string business_ref
+        string manager_ref
         string process_ref
-        string event_log_ref
-        string activity
+        string name
+        string method
         float delta
+        int smoothing_window
         int trace_count
         int drift_count
         string status
     }
-    DRIFT_POINTS {
+    ANALYSIS_EVENT_LOGS {
+        uuid analysis_id FK
+        string event_log_ref
+    }
+    DRIFTS {
         uuid id PK
         uuid analysis_id FK
         int trace_index
+        int anomaly_start_index
         float mean_before
         float mean_after
+        float magnitude_percent
     }
 ```
 
-**MS1 (MongoDB Atlas)** — coleções `event_logs`, `traces` (eventos embutidos), `operations` e `process_graphs` (nós e arestas do DFG com frequências).
+**MS1 (MongoDB Atlas)** — coleções `event_logs` (formato e status do parse), `traces` (eventos embutidos, com temperatura, vibração e ruído quando o log traz), `operations` (rótulos brutos e status do mapeamento) e `process_graphs` (nós e arestas do DFG com frequências).
 
 ### 8.2 Segurança
 
@@ -1120,10 +1162,10 @@ classDiagram
     direction LR
     class DriftDetector {
       <<interface>>
-      +detect(series, delta) List~DriftPoint~
+      +detect(series, delta) List~Drift~
     }
     class IpddAdwinAdapter {
-      +detect(series, delta) List~DriftPoint~
+      +detect(series, delta) List~Drift~
     }
     class ipdd_adwin {
       <<código da pesquisa>>
@@ -1132,7 +1174,7 @@ classDiagram
       <<singleton>>
       -instance$ AnalysisEngine
       +getInstance()$ AnalysisEngine
-      +run(series, delta) List~DriftPoint~
+      +run(series, delta) List~Drift~
     }
     class DriftSubject {
       -observers List~DriftObserver~
