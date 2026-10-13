@@ -2,7 +2,7 @@
 
 O enunciado pede "um exemplo de como planejaram a variabilidade". Na entrega anterior (Parte III) a ideia era: nem todo cliente recebe as mesmas opções, alguns recursos são para todos e algumas funções são feitas para um cliente específico. É isso que está implementado, de ponta a ponta (API e tela), com testes.
 
-**Como ler.** Os trechos com 📍 e link são o código atual, fixado no commit (`deviante-api@c648f62`, `deviante-web@c3fc7a3`).
+**Como ler.** Os trechos com 📍 e link são o código atual, fixado no commit (`deviante-api@bdd868c`, `deviante-web@d1cba0d`).
 
 ## 0. O modelo de variabilidade
 
@@ -14,16 +14,18 @@ O Deviante é um produto só, entregue em variantes. Cada empresa cliente recebe
 | Opcional (por plano) | Equipamentos e Agendamentos (módulo de manutenção) | Plano Manutenção |
 | Exclusiva (por cliente) | Exportar a agenda em CSV | Só os clientes que contrataram |
 
-As contas demo representam quatro empresas, cada uma com o nome de uma letra grega, e o nome da empresa aparece ao lado do nome do usuário no menu do topo:
+O login demo tem quatro empresas clientes, cada uma com o nome de uma letra grega. A Deviante não entra nessa lista: é a empresa de quem entra pelo Google.
 
 | Empresa | Plano | Exclusivas | O que muda na tela |
 |---|---|---|---|
-| Deviante | Manutenção | CSV | Tudo, com "Exportar CSV" |
 | Metalúrgica Alfa | Manutenção | CSV | Tudo, com "Exportar CSV" |
 | Metalúrgica Beta | Essencial | nenhuma | Sem "Equipamentos" e "Agendamentos" no menu |
 | Metalúrgica Gama | Manutenção | nenhuma | Agendamentos sem "Exportar CSV" |
+| Metalúrgica Delta | Essencial | nenhuma | Sem "Equipamentos" e "Agendamentos" no menu |
 
-No login, o "Modo Protótipo" tem setas que trocam a empresa; os quatro papéis (administrador, gestor, operador, técnico) entram em qualquer uma. O nome da empresa aparece ao lado do nome do usuário, no topo. Cada empresa tem as próprias instâncias de processo, análise, equipamento e agenda; o administrador vê as de todas, com o nome da empresa em cada processo.
+No login, o "Modo Protótipo" tem setas que trocam a empresa; os quatro papéis (administrador, gestor, operador, técnico) entram em qualquer uma. O nome da empresa aparece ao lado do nome do usuário, no topo. Cada empresa tem as próprias instâncias de processo, análise, máquina, monitoramento e agenda; o administrador vê as de todas, com o nome da empresa em cada processo.
+
+No banco, a empresa é uma tabela (`deviante.businesses`: nome, CNPJ, setor), e cada processo, análise, máquina (`equipment`), monitoramento e agenda guarda a empresa dona numa chave estrangeira (`business_id`, obrigatória). Os usuários (`managers`) também apontam para a empresa a que pertencem.
 
 A variante é escolhida por **configuração**, não por código: incluir um cliente ou trocar o plano dele é editar o `application.yaml`, sem recompilar. Essa é a técnica de LPS de variabilidade por configuração, com pontos de variação resolvidos em tempo de execução.
 
@@ -40,7 +42,7 @@ flowchart LR
 
 Funcionalidades, planos e a variante de cada cliente:
 
-📍 `deviante-api/src/main/kotlin/variability/ProductLine.kt` · linhas 16–55 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/variability/ProductLine.kt#L16-L55)
+📍 `deviante-api/src/main/kotlin/variability/ProductLine.kt` · linhas 16–55 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/variability/ProductLine.kt#L16-L55)
 
 ```kotlin
 enum class Feature(val key: String) {
@@ -87,77 +89,69 @@ data class ClientVariant(
 
 Fala: "Toda funcionalidade é um ponto de variação. Todo plano contém as comuns; o plano Manutenção soma o módulo opcional; e a variante do cliente soma ao plano as funções exclusivas dele."
 
-A variante de cada conta sai do `application.yaml`:
+O que cada empresa contratou sai do `application.yaml`:
 
-📍 `deviante-api/src/main/resources/application.yaml` · linhas 28–51 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/resources/application.yaml#L28-L51)
+📍 `deviante-api/src/main/resources/application.yaml` · linhas 28–49 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/resources/application.yaml#L28-L49)
 
 ```yaml
 productLine:
+  # Empresa de quem entra pelo Google; as demais são as do login demo.
+  # A empresa de cada usuário e a dona de cada registro ficam no banco
+  # (deviante.businesses e business_id); aqui fica o que cada uma contratou.
   defaultClient: "Deviante"
   defaultPlan: manutencao
   clients:
     - name: "Deviante"
       plan: manutencao
       exclusive: [schedule-export]
-      accounts:
-        - demo-administrador@deviante.alander.io
     - name: "Metalúrgica Alfa"
       plan: manutencao
       exclusive: [schedule-export]
-      accounts:
-        - demo-gestor@deviante.alander.io
     - name: "Metalúrgica Beta"
       plan: essencial
       exclusive: []
-      accounts:
-        - demo-operador@deviante.alander.io
     - name: "Metalúrgica Gama"
       plan: manutencao
       exclusive: []
-      accounts:
-        - demo-tecnico@deviante.alander.io
+    - name: "Metalúrgica Delta"
+      plan: essencial
+      exclusive: []
 ```
 
-📍 `deviante-api/src/main/kotlin/variability/ProductLine.kt` · linhas 57–96 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/variability/ProductLine.kt#L57-L96)
+📍 `deviante-api/src/main/kotlin/variability/ProductLine.kt` · linhas 57–90 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/variability/ProductLine.kt#L57-L90)
 
 ```kotlin
 class ProductLine(
     private val default: ClientVariant,
-    private val byAccount: Map<String, ClientVariant>,
-) {
-    fun variantFor(email: String): ClientVariant = byAccount[email.trim().lowercase()] ?: default
-
     /** Todas as variantes configuradas (uma por cliente), na ordem do application.yaml. */
-    val variants: List<ClientVariant> = (byAccount.values + default).distinctBy { it.client }
-
+    val variants: List<ClientVariant>,
+) {
+    /**
+     * Variante de uma empresa pelo nome. A empresa a que cada usuário pertence
+     * fica no banco (business_id); aqui fica só o que cada uma contratou.
+     */
     fun variantForClient(client: String): ClientVariant? =
         variants.firstOrNull { it.client.equals(client.trim(), ignoreCase = true) }
 
-    /** Contas que guardam os dados (processos, equipamentos) de um cliente. */
-    fun accountsOf(client: String): List<String> =
-        byAccount.filterValues { it.client.equals(client, ignoreCase = true) }.keys.toList()
+    fun variantOrDefault(client: String?): ClientVariant = client?.let(::variantForClient) ?: default
 
     companion object {
         /** Lê a seção `productLine` do application.yaml. */
         fun fromConfig(config: ApplicationConfig): ProductLine {
             val section = config.config("productLine")
-            val default = ClientVariant(
-                client = section.propertyOrNull("defaultClient")?.getString() ?: "Cliente padrão",
-                plan = Plan.fromKey(section.property("defaultPlan").getString()),
-            )
-            val byAccount = linkedMapOf<String, ClientVariant>()
-            section.configList("clients").forEach { client ->
-                val variant = ClientVariant(
+            val variants = section.configList("clients").map { client ->
+                ClientVariant(
                     client = client.property("name").getString(),
                     plan = Plan.fromKey(client.property("plan").getString()),
                     exclusive = (client.propertyOrNull("exclusive")?.getList() ?: emptyList())
                         .map(Feature::fromKey).toSet(),
                 )
-                client.property("accounts").getList().forEach { byAccount[it.trim().lowercase()] = variant }
             }
+            val defaultClient = section.propertyOrNull("defaultClient")?.getString() ?: "Cliente padrão"
             // A variante padrão usa o mesmo plano e as mesmas exclusivas do cliente de mesmo nome.
-            val resolvedDefault = byAccount.values.firstOrNull { it.client == default.client } ?: default
-            return ProductLine(resolvedDefault, byAccount)
+            val default = variants.firstOrNull { it.client == defaultClient }
+                ?: ClientVariant(defaultClient, Plan.fromKey(section.property("defaultPlan").getString()))
+            return ProductLine(default, variants)
         }
     }
 }
@@ -165,19 +159,19 @@ class ProductLine(
 
 E é carregada uma vez, pelo Singleton `AppConfig` (o mesmo do item 01):
 
-📍 `deviante-api/src/main/kotlin/AppConfig.kt` · linhas 38–40 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/AppConfig.kt#L38-L40)
+📍 `deviante-api/src/main/kotlin/AppConfig.kt` · linhas 38–40 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/AppConfig.kt#L38-L40)
 
 ```kotlin
         // Sem a seção productLine (ex.: testes), todo cliente recebe o plano completo.
         productLine = runCatching { ProductLine.fromConfig(config) }
-            .getOrElse { ProductLine(ClientVariant("Cliente padrão", Plan.MANUTENCAO), emptyMap()) }
+            .getOrElse { ProductLine(ClientVariant("Cliente padrão", Plan.MANUTENCAO), emptyList()) }
 ```
 
 ## 2. O ponto de variação na API
 
 Um plugin do Ktor instalado na rota deixa passar só quem tem a funcionalidade na variante; os outros recebem 403. Assim a regra não depende da tela:
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 181–208 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/Routing.kt#L181-L208)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 185–212 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L185-L212)
 
 ```kotlin
 /**
@@ -191,7 +185,7 @@ val FeatureGate = createRouteScopedPlugin("FeatureGate", ::FeatureGateConfig) {
     onCall { call ->
         val user = call.requireSupabaseUser(authClient) ?: return@onCall
         val manager = managerRepository.findOrCreateForSupabaseUser(user.id, user.email, user.fullNameHint)
-        val variant = call.effectiveVariant(manager.email)
+        val variant = call.effectiveVariant(manager)
         if (!variant.has(feature)) {
             call.respond(
                 HttpStatusCode.Forbidden,
@@ -212,14 +206,14 @@ private fun Route.requireFeature(feature: Feature, authClient: SupabaseAuthClien
 
 Onde ele é instalado: o módulo opcional inteiro e, dentro dele, a função exclusiva.
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 569–570 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/Routing.kt#L569-L570)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 573–574 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L573-L574)
 
 ```kotlin
             route("/equipment") {
                 requireFeature(Feature.EQUIPMENT, authClient, managerRepository)
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 885–896 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/Routing.kt#L885-L896)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 889–900 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L889-L900)
 
 ```kotlin
             route("/schedules") {
@@ -230,7 +224,7 @@ Onde ele é instalado: o módulo opcional inteiro e, dentro dele, a função exc
                     get {
                         val u = call.requireSupabaseUser(authClient) ?: return@get
                         val m = managerRepository.findOrCreateForSupabaseUser(u.id, u.email, u.fullNameHint)
-                        val rows = maintenanceRepository.listSchedules(null, call.companyScope(m, managerRepository).visibleManagers)
+                        val rows = maintenanceRepository.listSchedules(null, call.companyScope(m).visibleBusinesses)
                         call.respondText(schedulesToCsv(rows), ContentType.Text.CSV.withCharset(Charsets.UTF_8))
                     }
                 }
@@ -238,7 +232,7 @@ Onde ele é instalado: o módulo opcional inteiro e, dentro dele, a função exc
 
 O front descobre a variante em `/manager/me`, que agora devolve empresa, plano e funcionalidades:
 
-📍 `deviante-api/src/main/kotlin/dto/ManagerDto.kt` · linhas 24–32 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/dto/ManagerDto.kt#L24-L32)
+📍 `deviante-api/src/main/kotlin/dto/ManagerDto.kt` · linhas 24–32 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/dto/ManagerDto.kt#L24-L32)
 
 ```kotlin
 fun ManagerRecord.toResponse(variant: ClientVariant? = null) = ManagerResponse(
@@ -254,7 +248,7 @@ fun ManagerRecord.toResponse(variant: ClientVariant? = null) = ManagerResponse(
 
 ## 3. O ponto de variação na tela
 
-📍 `deviante-web/src/lib/features.js` · linhas 1–10 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/lib/features.js#L1-L10)
+📍 `deviante-web/src/lib/features.js` · linhas 1–10 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/features.js#L1-L10)
 
 ```javascript
 // Variabilidade da linha de produto (Reuso 03): o que cada cliente contratou
@@ -271,7 +265,7 @@ export const hasFeature = (user, feature) => !user?.features?.length || user.fea
 
 O perfil carregado guarda empresa, plano e funcionalidades:
 
-📍 `deviante-web/src/lib/auth.js` · linhas 102–110 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/lib/auth.js#L102-L110)
+📍 `deviante-web/src/lib/auth.js` · linhas 102–110 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/auth.js#L102-L110)
 
 ```javascript
 async function loadManagerProfile() {
@@ -287,7 +281,7 @@ async function loadManagerProfile() {
 
 O nome da empresa ao lado do nome do usuário (menu do topo, à direita):
 
-📍 `deviante-web/src/components/layout/UserMenu.jsx` · linhas 47–50 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/layout/UserMenu.jsx#L47-L50)
+📍 `deviante-web/src/components/layout/UserMenu.jsx` · linhas 47–50 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/layout/UserMenu.jsx#L47-L50)
 
 ```jsx
         <span className="truncate">{name}</span>
@@ -298,7 +292,7 @@ O nome da empresa ao lado do nome do usuário (menu do topo, à direita):
 
 O menu esconde o que o cliente não contratou:
 
-📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 33–39 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/layout/AppLayout.jsx#L33-L39)
+📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 33–39 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/layout/AppLayout.jsx#L33-L39)
 
 ```jsx
           {[
@@ -312,7 +306,7 @@ O menu esconde o que o cliente não contratou:
 
 E as rotas do módulo opcional redirecionam quem não o tem, mesmo digitando o endereço:
 
-📍 `deviante-web/src/components/auth/FeatureRoute.jsx` · linhas 1–9 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/auth/FeatureRoute.jsx#L1-L9)
+📍 `deviante-web/src/components/auth/FeatureRoute.jsx` · linhas 1–9 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/auth/FeatureRoute.jsx#L1-L9)
 
 ```jsx
 import { Navigate, Outlet } from 'react-router-dom'
@@ -326,7 +320,7 @@ export default function FeatureRoute({ feature }) {
 }
 ```
 
-📍 `deviante-web/src/App.jsx` · linhas 84–91 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/App.jsx#L84-L91)
+📍 `deviante-web/src/App.jsx` · linhas 84–91 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/App.jsx#L84-L91)
 
 ```jsx
               <Route element={<FeatureRoute feature={FEATURES.equipment} />}>
@@ -341,7 +335,7 @@ export default function FeatureRoute({ feature }) {
 
 A função exclusiva, o botão "Exportar CSV" em `/schedules`:
 
-📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 51–51 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/pages/SchedulesPage.jsx#L51-L51)
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 51–51 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/SchedulesPage.jsx#L51-L51)
 
 ```jsx
   const actions = <div className="flex items-center gap-2">{hasFeature(user, FEATURES.scheduleExport) && <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs text-foreground" style={{ background: 'var(--surface-raised)' }}><Download size={12} />Exportar CSV</button>}<button onClick={() => setEditing({ equipmentId })} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: 'var(--ok-strong)' }}><Plus size={12} />Nova manutenção</button><div className="flex rounded-lg border border-border overflow-hidden">{VIEWS.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setView(id)} className="flex items-center gap-1.5 px-3 py-2 text-[11px]" style={{ border: 0, background: view === id ? 'var(--surface-inset)' : 'var(--surface-raised)', color: view === id ? 'var(--text-strong)' : 'var(--muted-foreground)' }}><Icon size={11} />{label}</button>)}</div></div>
@@ -351,7 +345,7 @@ A função exclusiva, o botão "Exportar CSV" em `/schedules`:
 
 As setas do login escolhem a empresa:
 
-📍 `deviante-web/src/components/auth/LoginCard.jsx` · linhas 34–37 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/auth/LoginCard.jsx#L34-L37)
+📍 `deviante-web/src/components/auth/LoginCard.jsx` · linhas 34–37 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/auth/LoginCard.jsx#L34-L37)
 
 ```jsx
   // Variabilidade: as setas trocam a empresa (variante do produto) dos 4 papéis.
@@ -360,7 +354,7 @@ As setas do login escolhem a empresa:
   const stepCompany = (delta) => setCompanyIndex((i) => (i + delta + COMPANIES.length) % COMPANIES.length)
 ```
 
-📍 `deviante-web/src/components/auth/LoginCard.jsx` · linhas 131–140 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/auth/LoginCard.jsx#L131-L140)
+📍 `deviante-web/src/components/auth/LoginCard.jsx` · linhas 131–140 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/auth/LoginCard.jsx#L131-L140)
 
 ```jsx
               <div style={{ margin: '0 4px 8px', display: 'flex', alignItems: 'center', gap: 6, padding: '6px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
@@ -377,25 +371,30 @@ As setas do login escolhem a empresa:
 
 A escolha vai em todas as requisições, num cabeçalho:
 
-📍 `deviante-web/src/lib/demoCompany.js` · linhas 1–31 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/lib/demoCompany.js#L1-L31)
+📍 `deviante-web/src/lib/demoCompany.js` · linhas 1–36 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/demoCompany.js#L1-L36)
 
 ```javascript
 // Variabilidade (Reuso 03): no login de demonstração, as setas escolhem a
 // empresa cliente. Cada empresa é uma variante do produto, definida no
 // application.yaml da API (plano + funções exclusivas). A escolha vai em todas
 // as requisições no cabeçalho X-Deviante-Company; a API só aceita o cabeçalho
-// de contas demo e responde com os recursos e os dados daquela empresa.
+// de contas demo e responde com os recursos e os dados daquela empresa (cada
+// registro guarda no banco a empresa dona). A Deviante não entra aqui: é a
+// empresa de quem entra pelo Google.
 export const COMPANIES = [
-  { name: 'Deviante', plan: 'Manutenção', exclusive: ['CSV'] },
   { name: 'Metalúrgica Alfa', plan: 'Manutenção', exclusive: ['CSV'] },
   { name: 'Metalúrgica Beta', plan: 'Essencial', exclusive: [] },
   { name: 'Metalúrgica Gama', plan: 'Manutenção', exclusive: [] },
+  { name: 'Metalúrgica Delta', plan: 'Essencial', exclusive: [] },
 ]
 
 const KEY = 'deviante.demoCompany'
 
 export function getDemoCompany() {
-  try { return window.localStorage.getItem(KEY) } catch { return null }
+  let name = null
+  try { name = window.localStorage.getItem(KEY) } catch { /* sem armazenamento */ }
+  // Uma escolha antiga que saiu da lista (ex.: Deviante) não vale mais.
+  return COMPANIES.some((c) => c.name === name) ? name : null
 }
 
 export function setDemoCompany(name) {
@@ -413,63 +412,65 @@ export function companyHeader() {
 }
 ```
 
-Na API, o cabeçalho só vale para contas demo. Ele define a variante e o escopo dos dados: cada empresa vê só os registros das contas dela; administrador, proprietário e mentor veem todos.
+Na API, o cabeçalho só vale para contas demo; quem entra pelo Google age pela empresa gravada no próprio cadastro. A empresa define a variante e o escopo dos dados: cada um vê só os registros cujo `business_id` é o da empresa; administrador, proprietário e mentor veem todos. Registros novos gravam o `business_id` da empresa escolhida.
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 135–174 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/Routing.kt#L135-L174)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 136–177 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L136-L177)
 
 ```kotlin
 /** Cabeçalho com a empresa escolhida no login demo (setas do card). */
 const val COMPANY_HEADER = "X-Deviante-Company"
 
-/**
- * Variante do produto em nome da qual a requisição age. Contas demo podem
- * escolher a empresa no login; as demais recebem a do application.yaml.
- */
-internal fun ApplicationCall.effectiveVariant(email: String): ClientVariant {
-    val chosen = request.headers[COMPANY_HEADER]
-        ?.takeIf { ManagerRepository.isDemoAccount(email) }
-        ?.let { runCatching { java.net.URLDecoder.decode(it, Charsets.UTF_8) }.getOrNull() }
-    return chosen?.let(AppConfig.productLine::variantForClient) ?: AppConfig.productLine.variantFor(email)
-}
+internal val businessRepository = BusinessRepository()
 
 /**
- * Dados por empresa: cada cliente enxerga só os processos e equipamentos das
- * contas dele. Administrador, proprietário e mentor enxergam todos.
+ * Empresa em nome da qual a requisição age: contas demo escolhem no login
+ * (cabeçalho); as demais agem pela empresa gravada no seu cadastro.
  */
-class CompanyScope(val variant: ClientVariant, private val visible: Set<UUID>?, val ownerManagerId: UUID) {
-    val visibleManagers: Set<UUID>? get() = visible
-    fun sees(managerId: UUID): Boolean = visible == null || managerId in visible
+internal fun ApplicationCall.effectiveCompany(manager: ManagerRecord): String {
+    val chosen = request.headers[COMPANY_HEADER]
+        ?.takeIf { ManagerRepository.isDemoAccount(manager.email) }
+        ?.let { runCatching { java.net.URLDecoder.decode(it, Charsets.UTF_8) }.getOrNull() }
+        ?.takeIf { businessRepository.idByName(it) != null }
+    return chosen
+        ?: manager.businessId?.let { businessRepository.namesById()[it] }
+        ?: AppConfig.productLine.variantOrDefault(null).client
+}
+
+/** Variante do produto (plano + exclusivas do application.yaml) da empresa da requisição. */
+internal fun ApplicationCall.effectiveVariant(manager: ManagerRecord): ClientVariant =
+    AppConfig.productLine.variantOrDefault(effectiveCompany(manager))
+
+/**
+ * Dados por empresa: cada registro guarda no banco a empresa dona
+ * (business_id). O usuário enxerga só os da empresa em que entrou;
+ * administrador, proprietário e mentor enxergam todos.
+ */
+class CompanyScope(val variant: ClientVariant, val businessId: UUID, private val seesAll: Boolean) {
+    val visibleBusinesses: Set<UUID>? get() = if (seesAll) null else setOf(businessId)
+    fun sees(recordBusinessId: UUID?): Boolean = seesAll || recordBusinessId == businessId
 }
 
 private val SEES_ALL_ROLES = setOf("admin", "owner", "mentor")
 
-internal fun ApplicationCall.companyScope(manager: ManagerRecord, managerRepository: ManagerRepository): CompanyScope {
-    val variant = effectiveVariant(manager.email)
-    val accounts = AppConfig.productLine.accountsOf(variant.client)
-    val owners = managerRepository.idsForEmails(accounts)
-    // Registros novos ficam com a conta que guarda os dados da empresa escolhida.
-    val writer = if (manager.id in owners) manager.id
-    else accounts.firstOrNull()?.let { managerRepository.idsForEmails(listOf(it)).firstOrNull() } ?: manager.id
-    val visible = if (manager.role in SEES_ALL_ROLES) null else owners + manager.id
-    return CompanyScope(variant, visible, writer)
+internal fun ApplicationCall.companyScope(manager: ManagerRecord): CompanyScope {
+    val company = effectiveCompany(manager)
+    val businessId = businessRepository.idByName(company)
+        ?: manager.businessId
+        ?: error("Empresa $company não cadastrada em deviante.businesses")
+    return CompanyScope(effectiveVariant(manager), businessId, manager.role in SEES_ALL_ROLES)
 }
-
-/** Nome da empresa dona de cada manager, para o administrador ver de quem é cada processo. */
-private fun companyLabels(managerRepository: ManagerRepository): Map<UUID, String> =
-    managerRepository.emailsById().mapValues { (_, email) -> AppConfig.productLine.variantFor(email).client }
-
 ```
 
 A lista de processos aplica o escopo e rotula cada processo com a empresa dona:
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 296–301 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/Routing.kt#L296-L301)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 300–305 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L300-L305)
 
 ```kotlin
-                    val scope = call.companyScope(manager, managerRepository)
-                    val labels = companyLabels(managerRepository)
+                    val scope = call.companyScope(manager)
+                    val labels = businessRepository.namesById()
                     val processes = processRepository.listAll()
-                        .filter { scope.sees(it.managerId) }
-                        .map { it.toResponse(company = labels[it.managerId]) }
+                        .filter { scope.sees(it.businessId) }
+                        .map { it.toResponse(company = labels[it.businessId]) }
                     call.respond(processes)
 ```
 
@@ -477,16 +478,16 @@ A lista de processos aplica o escopo e rotula cada processo com a empresa dona:
 
 ## 5. Testes
 
-📍 `deviante-api/src/test/kotlin/ProductLineTest.kt` · linhas 25–43 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/test/kotlin/ProductLineTest.kt#L25-L43)
+📍 `deviante-api/src/test/kotlin/ProductLineTest.kt` · linhas 25–44 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/test/kotlin/ProductLineTest.kt#L25-L44)
 
 ```kotlin
     @Test
-    fun `each client receives its own variant`() {
-        val alfa = productLine.variantFor("demo-gestor@deviante.alander.io")
-        val beta = productLine.variantFor("demo-operador@deviante.alander.io")
-        val gama = productLine.variantFor("DEMO-TECNICO@deviante.alander.io ")
+    fun `each company receives its own variant`() {
+        val alfa = productLine.variantOrDefault("Metalúrgica Alfa")
+        val beta = productLine.variantOrDefault("metalúrgica beta ")
+        val gama = productLine.variantOrDefault("Metalúrgica Gama")
+        val delta = productLine.variantOrDefault("Metalúrgica Delta")
 
-        assertEquals("Metalúrgica Alfa", alfa.client)
         assertEquals(Plan.MANUTENCAO, alfa.plan)
         assertTrue(alfa.has(Feature.SCHEDULE_EXPORT))
 
@@ -495,9 +496,10 @@ A lista de processos aplica o escopo e rotula cada processo com a empresa dona:
         assertFalse(beta.has(Feature.EQUIPMENT))
         assertFalse(beta.has(Feature.SCHEDULES))
 
-        assertEquals("Metalúrgica Gama", gama.client)
         assertTrue(gama.has(Feature.SCHEDULES))
         assertFalse(gama.has(Feature.SCHEDULE_EXPORT))
+
+        assertEquals(Plan.ESSENCIAL, delta.plan)
     }
 ```
 
@@ -517,9 +519,9 @@ Fala de fechamento: "é um software só; o que muda de um cliente para outro é 
 
 ## 7. Perguntas prováveis
 
-- **Por que não um banco com os planos?** Para a v1 o número de clientes é pequeno e a configuração já separa variante de código. Levar a tabela para o banco muda só o `ProductLine.fromConfig`; o resto do sistema continua perguntando `variant.has(feature)`.
+- **Por que a empresa está no banco e o plano no yaml?** A empresa é dado: cada registro precisa dizer de quem é (chave estrangeira). O plano é a variante do produto, e mantê-lo em configuração é a técnica de LPS escolhida. Levar os planos para o banco mudaria só o `ProductLine.fromConfig`; o resto do sistema continua perguntando `variant.has(feature)`.
 - **Esconder na tela não basta?** Não: quem digita a URL ou chama a API direto ainda acessaria. Por isso a mesma regra está no `FeatureGate` (403) e na tela.
-- **Como o administrador vê tudo e os outros não?** A API calcula o escopo (`CompanyScope`) a cada requisição: para quem não é administrador, só os registros das contas da empresa escolhida; criar um processo grava na conta da empresa.
+- **Como o administrador vê tudo e os outros não?** A API calcula o escopo (`CompanyScope`) a cada requisição: para quem não é administrador, só os registros cujo `business_id` é o da empresa escolhida; criar um processo grava esse `business_id`.
 - **Isso é diferente da permissão de excluir?** É. Excluir depende do **papel** do usuário (administrador e gestor). A variabilidade depende do **cliente** (o que a empresa contratou). As duas convivem.
 
 ## 8. Checagem antes de ensaiar

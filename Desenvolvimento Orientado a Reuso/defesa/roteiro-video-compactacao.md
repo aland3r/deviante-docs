@@ -27,7 +27,7 @@ Mesmo contando o componente novo, o total cai de 12.295 para 10.720 caracteres. 
 
 ## O componente
 
-📍 `deviante-web/src/components/ui/FormModal.jsx` · linhas 1–56 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/ui/FormModal.jsx#L1-L56)
+📍 `deviante-web/src/components/ui/FormModal.jsx` · linhas 1–56 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/ui/FormModal.jsx#L1-L56)
 
 ```jsx
 import { X } from 'lucide-react'
@@ -92,7 +92,7 @@ export default function FormModal({
 
 Depois (Agenda de manutenção):
 
-📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 65–89 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/pages/SchedulesPage.jsx#L65-L89)
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 65–89 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/SchedulesPage.jsx#L65-L89)
 
 ```jsx
 function ScheduleModal({ initial, onClose, onSave, onDelete }) {
