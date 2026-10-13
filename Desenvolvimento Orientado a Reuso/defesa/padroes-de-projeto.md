@@ -10,7 +10,7 @@ O enunciado (item 01) pede 3 padrões focados em reuso. Seguimos a **Opção 02*
 
 Strategy foi descartado porque dependia de RUL e probabilidade de falha, fora do escopo da v1 (ADR 06).
 
-**Como ler.** Os trechos com 📍 e link são o código atual, fixado no commit (`deviante-api@7eee985`, `deviante-web@fa44226`). Todo trecho é código que está rodando no sistema, com testes automatizados para cada padrão.
+**Como ler.** Os trechos com 📍 e link são o código atual, fixado no commit (`deviante-api@c648f62`, `deviante-web@c3fc7a3`). Todo trecho é código que está rodando no sistema, com testes automatizados para cada padrão.
 
 ## 0. Onde os padrões rodam
 
@@ -57,7 +57,7 @@ sequenceDiagram
 
 ### 1.1 `AppConfig` (Core, Kotlin)
 
-📍 `deviante-api/src/main/kotlin/AppConfig.kt` · linhas 1–43 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/src/main/kotlin/AppConfig.kt#L1-L43)
+📍 `deviante-api/src/main/kotlin/AppConfig.kt` · linhas 1–43 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/AppConfig.kt#L1-L43)
 
 ```kotlin
 package com.deviante
@@ -109,7 +109,7 @@ Fala: "`object` em Kotlin é o Singleton da própria linguagem: uma instância s
 
 Os três módulos que antes liam a configuração cada um por conta própria agora reaproveitam a mesma instância:
 
-📍 `deviante-api/src/main/kotlin/Database.kt` · linhas 9–13 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/src/main/kotlin/Database.kt#L9-L13)
+📍 `deviante-api/src/main/kotlin/Database.kt` · linhas 9–13 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/Database.kt#L9-L13)
 
 ```kotlin
 fun Application.configureDatabase() {
@@ -119,7 +119,7 @@ fun Application.configureDatabase() {
     val password = AppConfig.dbPassword
 ```
 
-📍 `deviante-api/src/main/kotlin/SupabaseAuth.kt` · linhas 74–77 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/src/main/kotlin/SupabaseAuth.kt#L74-L77)
+📍 `deviante-api/src/main/kotlin/SupabaseAuth.kt` · linhas 74–77 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/SupabaseAuth.kt#L74-L77)
 
 ```kotlin
 fun Application.configureSupabaseAuthClient(): SupabaseAuthClient {
@@ -128,7 +128,7 @@ fun Application.configureSupabaseAuthClient(): SupabaseAuthClient {
 }
 ```
 
-📍 `deviante-api/src/main/kotlin/MiningClient.kt` · linhas 259–265 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/src/main/kotlin/MiningClient.kt#L259-L265)
+📍 `deviante-api/src/main/kotlin/MiningClient.kt` · linhas 259–265 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/MiningClient.kt#L259-L265)
 
 ```kotlin
 fun Application.configureMiningClient(): MiningClient {
@@ -140,7 +140,7 @@ fun Application.configureMiningClient(): MiningClient {
 }
 ```
 
-📍 `deviante-api/src/test/kotlin/AppConfigTest.kt` · linhas 1–23 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/src/test/kotlin/AppConfigTest.kt#L1-L23)
+📍 `deviante-api/src/test/kotlin/AppConfigTest.kt` · linhas 1–23 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/test/kotlin/AppConfigTest.kt#L1-L23)
 
 ```kotlin
 package com.deviante
@@ -172,7 +172,7 @@ class AppConfigTest {
 
 ### 1.2 `AnalysisEngine` (análise de drift, Python)
 
-📍 `deviante-api/mining/app/analysis_engine.py` · linhas 1–26 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/analysis_engine.py#L1-L26)
+📍 `deviante-api/mining/app/analysis_engine.py` · linhas 1–26 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/analysis_engine.py#L1-L26)
 
 ```python
 """Singleton (Reuso 03): uma única instância do motor de análise por processo
@@ -207,7 +207,7 @@ Fala: "Aqui o Singleton é escrito à mão, porque Python não tem `object`: o c
 
 O endpoint `/detect` passa a chamar o motor, e não mais a função da pesquisa direto:
 
-📍 `deviante-api/mining/app/main.py` · linhas 129–157 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/main.py#L129-L157)
+📍 `deviante-api/mining/app/main.py` · linhas 129–157 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/main.py#L129-L157)
 
 ```python
 @app.post("/detect", response_model=DetectResponse)
@@ -241,7 +241,7 @@ def detect(request: DetectRequest) -> DetectResponse:
     )
 ```
 
-📍 `deviante-api/mining/tests/test_analysis_engine.py` · linhas 1–20 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/tests/test_analysis_engine.py#L1-L20)
+📍 `deviante-api/mining/tests/test_analysis_engine.py` · linhas 1–20 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/tests/test_analysis_engine.py#L1-L20)
 
 ```python
 import pytest
@@ -276,7 +276,7 @@ def test_engine_talks_to_the_target_interface() -> None:
 
 O código da pesquisa (o "adaptado") tem esta interface, que não foi alterada:
 
-📍 `deviante-api/mining/app/ipdd_adwin.py` · linhas 39–54 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/ipdd_adwin.py#L39-L54)
+📍 `deviante-api/mining/app/ipdd_adwin.py` · linhas 39–54 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/ipdd_adwin.py#L39-L54)
 
 ```python
 @dataclass(frozen=True)
@@ -297,7 +297,7 @@ class AdaptiveDetection:
     drifts: list[AdaptiveDrift]
 ```
 
-📍 `deviante-api/mining/app/ipdd_adwin.py` · linhas 155–168 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/ipdd_adwin.py#L155-L168)
+📍 `deviante-api/mining/app/ipdd_adwin.py` · linhas 155–168 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/ipdd_adwin.py#L155-L168)
 
 ```python
 def detect_performance_drifts(
@@ -318,7 +318,7 @@ def detect_performance_drifts(
 
 A interface alvo e o adaptador:
 
-📍 `deviante-api/mining/app/drift_detector.py` · linhas 1–71 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/drift_detector.py#L1-L71)
+📍 `deviante-api/mining/app/drift_detector.py` · linhas 1–71 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/drift_detector.py#L1-L71)
 
 ```python
 """Adapter (Reuso 03): o código da pesquisa (IPDD/ADWIN, ``ipdd_adwin.py``)
@@ -396,7 +396,7 @@ class IpddAdwinAdapter(DriftDetector):
 
 Fala: "`DriftDetector` é a interface que o resto do sistema conhece. `IpddAdwinAdapter` implementa essa interface chamando `detect_performance_drifts` e convertendo `AdaptiveDetection`/`AdaptiveDrift` em `DriftAnalysis`/`DriftPoint`. O endpoint, que antes fazia essa conversão na mão, agora só repassa (`DriftPoint(**vars(drift))`, na linha 156 do `main.py`, acima)."
 
-📍 `deviante-api/mining/tests/test_drift_detector.py` · linhas 1–15 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/tests/test_drift_detector.py#L1-L15)
+📍 `deviante-api/mining/tests/test_drift_detector.py` · linhas 1–15 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/tests/test_drift_detector.py#L1-L15)
 
 ```python
 from app.drift_detector import DriftAnalysis, DriftPoint, IpddAdwinAdapter
@@ -418,7 +418,7 @@ def test_adapter_translates_research_output_to_deviante_format() -> None:
 
 O Core chama esse endpoint quando o usuário roda uma análise de processo:
 
-📍 `deviante-api/src/main/kotlin/MiningClient.kt` · linhas 202–211 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/src/main/kotlin/MiningClient.kt#L202-L211)
+📍 `deviante-api/src/main/kotlin/MiningClient.kt` · linhas 202–211 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/src/main/kotlin/MiningClient.kt#L202-L211)
 
 ```kotlin
     suspend fun detect(
@@ -437,7 +437,7 @@ O Core chama esse endpoint quando o usuário roda uma análise de processo:
 
 ### 2.2 `Pm4pyGraphAdapter` → `GraphMiner`
 
-📍 `deviante-api/mining/app/graph_miner.py` · linhas 1–55 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/graph_miner.py#L1-L55)
+📍 `deviante-api/mining/app/graph_miner.py` · linhas 1–55 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/graph_miner.py#L1-L55)
 
 ```python
 """Adapter (Reuso 03): a biblioteca pm4py descobre o grafo de sequência
@@ -501,20 +501,20 @@ Fala: "O pm4py devolve o grafo de sequência direta como dicionários de pares (
 
 Ele roda a cada log enviado, no endpoint `/parse`, logo depois do parser:
 
-📍 `deviante-api/mining/app/main.py` · linhas 237–238 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/main.py#L237-L238)
+📍 `deviante-api/mining/app/main.py` · linhas 237–238 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/main.py#L237-L238)
 
 ```python
     # Adapter: o grafo vem do pm4py, mas o endpoint só conhece GraphMiner.
     graph = Pm4pyGraphAdapter().mine(_event_frame(result.traces))
 ```
 
-📍 `deviante-api/mining/app/main.py` · linhas 275–275 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/main.py#L275-L275)
+📍 `deviante-api/mining/app/main.py` · linhas 275–275 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/main.py#L275-L275)
 
 ```python
             "graph": {"nodes": graph.nodes, "edges": graph.edges},
 ```
 
-📍 `deviante-api/mining/app/main.py` · linhas 280–295 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/app/main.py#L280-L295)
+📍 `deviante-api/mining/app/main.py` · linhas 280–295 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/app/main.py#L280-L295)
 
 ```python
 def _event_frame(traces) -> pd.DataFrame:
@@ -535,7 +535,7 @@ def _event_frame(traces) -> pd.DataFrame:
     return frame
 ```
 
-📍 `deviante-api/mining/tests/test_graph_miner.py` · linhas 1–47 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/7eee985/mining/tests/test_graph_miner.py#L1-L47)
+📍 `deviante-api/mining/tests/test_graph_miner.py` · linhas 1–47 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/c648f62/mining/tests/test_graph_miner.py#L1-L47)
 
 ```python
 import pandas as pd
@@ -599,7 +599,7 @@ São dois sujeitos independentes, que compartilham a mesma base `Subject`. Cada 
 
 ### 3.1 A base e o sujeito do drift
 
-📍 `deviante-web/src/lib/subject.js` · linhas 1–24 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/lib/subject.js#L1-L24)
+📍 `deviante-web/src/lib/subject.js` · linhas 1–24 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/lib/subject.js#L1-L24)
 
 ```javascript
 /**
@@ -628,7 +628,7 @@ export class Subject {
 }
 ```
 
-📍 `deviante-web/src/lib/driftSubject.js` · linhas 1–12 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/lib/driftSubject.js#L1-L12)
+📍 `deviante-web/src/lib/driftSubject.js` · linhas 1–12 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/lib/driftSubject.js#L1-L12)
 
 ```javascript
 import { Subject } from './subject'
@@ -649,7 +649,7 @@ Fala: "A base guarda os observadores num `Set`. `subscribe` devolve a função q
 
 ### 3.2 O publicador
 
-📍 `deviante-web/src/components/process-analysis/ProcessAnalysisView.jsx` · linhas 471–484 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/components/process-analysis/ProcessAnalysisView.jsx#L471-L484)
+📍 `deviante-web/src/components/process-analysis/ProcessAnalysisView.jsx` · linhas 471–484 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/process-analysis/ProcessAnalysisView.jsx#L471-L484)
 
 ```jsx
     try {
@@ -674,7 +674,7 @@ Fala: "Quando a análise volta da API, a tela publica um evento: `drift-detected
 
 Exemplo 1, `InvestigationPanel` (abre a investigação no drift mais recente) e `MonitoringContext` (guarda o estado de drift de cada processo para o app inteiro):
 
-📍 `deviante-web/src/components/process-analysis/InvestigationPanel.jsx` · linhas 1–30 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/components/process-analysis/InvestigationPanel.jsx#L1-L30)
+📍 `deviante-web/src/components/process-analysis/InvestigationPanel.jsx` · linhas 1–30 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/process-analysis/InvestigationPanel.jsx#L1-L30)
 
 ```jsx
 import { useEffect, useState } from 'react'
@@ -709,7 +709,7 @@ export default function InvestigationPanel({ processId, onInvestigate }) {
 }
 ```
 
-📍 `deviante-web/src/context/MonitoringContext.jsx` · linhas 1–25 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/context/MonitoringContext.jsx#L1-L25)
+📍 `deviante-web/src/context/MonitoringContext.jsx` · linhas 1–25 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/context/MonitoringContext.jsx#L1-L25)
 
 ```jsx
 import { createContext, useContext, useEffect, useState } from 'react'
@@ -739,13 +739,13 @@ export function useProcessDriftStatus(processId) {
 }
 ```
 
-📍 `deviante-web/src/App.jsx` · linhas 64–64 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/App.jsx#L64-L64)
+📍 `deviante-web/src/App.jsx` · linhas 64–64 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/App.jsx#L64-L64)
 
 ```jsx
       <MonitoringProvider>
 ```
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 197–202 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/pages/ProcessCanvasPage.jsx#L197-L202)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 197–202 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/pages/ProcessCanvasPage.jsx#L197-L202)
 
 ```jsx
         {driftStatus && (
@@ -758,7 +758,7 @@ export function useProcessDriftStatus(processId) {
 
 Exemplo 2, `AnalysisHud` (contagem de drifts e status no cabeçalho):
 
-📍 `deviante-web/src/components/process-analysis/AnalysisHud.jsx` · linhas 1–23 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/components/process-analysis/AnalysisHud.jsx#L1-L23)
+📍 `deviante-web/src/components/process-analysis/AnalysisHud.jsx` · linhas 1–23 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/process-analysis/AnalysisHud.jsx#L1-L23)
 
 ```jsx
 import { useEffect, useState } from 'react'
@@ -788,7 +788,7 @@ export default function AnalysisHud({ processId }) {
 
 Onde eles estão montados na tela da análise:
 
-📍 `deviante-web/src/components/process-analysis/ProcessAnalysisView.jsx` · linhas 637–640 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/components/process-analysis/ProcessAnalysisView.jsx#L637-L640)
+📍 `deviante-web/src/components/process-analysis/ProcessAnalysisView.jsx` · linhas 637–640 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/process-analysis/ProcessAnalysisView.jsx#L637-L640)
 
 ```jsx
         <AnalysisHud processId={processId} />
@@ -803,7 +803,7 @@ Onde eles estão montados na tela da análise:
 
 O segundo sujeito não tem relação com o drift: avisa quando a agenda muda.
 
-📍 `deviante-web/src/lib/maintenanceSubject.js` · linhas 1–12 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/lib/maintenanceSubject.js#L1-L12)
+📍 `deviante-web/src/lib/maintenanceSubject.js` · linhas 1–12 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/lib/maintenanceSubject.js#L1-L12)
 
 ```javascript
 import { Subject } from './subject'
@@ -822,7 +822,7 @@ export const maintenanceSubject = new MaintenanceSubject()
 
 O publicador é a tela da Agenda (`/schedules`). Ao salvar ou excluir, ela só notifica; não recarrega nada por conta própria:
 
-📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 27–37 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/pages/SchedulesPage.jsx#L27-L37)
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 27–37 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/pages/SchedulesPage.jsx#L27-L37)
 
 ```jsx
   async function save(data) {
@@ -840,7 +840,7 @@ O publicador é a tela da Agenda (`/schedules`). Ao salvar ou excluir, ela só n
 
 Observador 1, a própria lista, que recarrega quando recebe o aviso:
 
-📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 24–25 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/pages/SchedulesPage.jsx#L24-L25)
+📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 24–25 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/pages/SchedulesPage.jsx#L24-L25)
 
 ```jsx
   // A própria lista também é observadora: recarrega quando a agenda muda.
@@ -849,7 +849,7 @@ Observador 1, a própria lista, que recarrega quando recebe o aviso:
 
 Observador 2, o contador de manutenções planejadas ao lado de "Agendamentos" no menu:
 
-📍 `deviante-web/src/components/layout/PlannedMaintenanceBadge.jsx` · linhas 1–15 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/components/layout/PlannedMaintenanceBadge.jsx#L1-L15)
+📍 `deviante-web/src/components/layout/PlannedMaintenanceBadge.jsx` · linhas 1–15 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/layout/PlannedMaintenanceBadge.jsx#L1-L15)
 
 ```jsx
 import { useEffect, useState } from 'react'
@@ -869,7 +869,7 @@ export default function PlannedMaintenanceBadge() {
 }
 ```
 
-📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 41–41 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/fa44226/src/components/layout/AppLayout.jsx#L41-L41)
+📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 42–42 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/c3fc7a3/src/components/layout/AppLayout.jsx#L42-L42)
 
 ```jsx
               {label}{to === '/schedules' && <PlannedMaintenanceBadge />}
