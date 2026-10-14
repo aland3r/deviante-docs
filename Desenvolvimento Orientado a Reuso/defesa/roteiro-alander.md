@@ -749,7 +749,7 @@ Fala: "O menu de exclusão só aparece para administrador e gestor. A tela pede 
 ### 2.7 Demonstração
 
 1. Entrar na **Alfa** como **Gestor**. **Read:** mostrar os processos da Alfa no painel.
-2. **Create:** "Novo processo". No canvas, subir o `DR_MS_ST_20` da pasta de datasets da Alfa. Os 6 eventos chegam sugeridos com as atividades do catálogo; validar cada um e confirmar. O gráfico aparece.
+2. **Create:** "Novo processo". No canvas, subir o `Datasets/Alfa/DR_MS_ST_20.xes` (pasta `Datasets` do deviante-docs). Os 6 eventos chegam sugeridos com as atividades do catálogo; validar cada um e confirmar. O gráfico aparece.
 3. **Read:** voltar ao painel e abrir um processo da Alfa que já tem gráfico.
 4. **Update:** clicar no título do processo novo e renomear (`PATCH`, 200).
 5. **Delete:** excluir o processo novo, digitando o nome (204). Os 4 processos do artigo continuam lá.
@@ -1113,6 +1113,6 @@ Fala: "A tela inteira é só do administrador, e o Core confere o papel de novo 
 
 ## 5. Antes de ensaiar
 
-- [ ] Ter no computador o `DR_MS_ST_20` da pasta de datasets da Alfa para o upload.
+- [ ] Ter no computador o `Datasets/Alfa/DR_MS_ST_20.xes` (vem do deviante-docs pelo `atualizar-repos.ps1`).
 - [ ] Entrar com a seta na **Alfa** e conferir os 4 processos do artigo com gráfico pronto.
 - [ ] Ensaiar com o **Gestor** (Processo, sem Atividades no menu) e o **Administrador** (Atividades).
