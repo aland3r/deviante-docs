@@ -339,6 +339,54 @@ private fun runCatchingUuid(value: String): UUID? = try {
 
 ## 2. CRUD de Equipamento (objeto ORCA MACHINE)
 
+O diagrama começa com o usuário já autenticado (o token e o Manager são o caminho comum da seção 1) e segue a ordem da demonstração: Read, Create, Update e Delete.
+
+```mermaid
+sequenceDiagram
+    actor G as Gestor (Alfa)
+    participant N as Menu (AppLayout.jsx)
+    participant P as EquipmentPage.jsx
+    participant A as api.js
+    participant C as Core (Routing.kt)
+    participant R as MaintenanceRepository
+    participant DB as Postgres (equipment)
+    G->>N: clica em "Equipamentos"
+    N->>P: abre /equipment
+    Note over P,DB: Read
+    P->>A: listAllMachines()
+    A->>C: GET /api/equipment
+    C->>R: listEquipment(empresa)
+    R->>DB: SELECT ... WHERE business_id = empresa
+    DB-->>R: linhas
+    R-->>C: lista de EquipmentResponse
+    C-->>A: 200 JSON
+    A-->>P: tabela preenchida
+    Note over P,DB: Create
+    G->>P: "Novo equipamento" e preenche o modal
+    P->>A: createEquipment(dados)
+    A->>C: POST /api/equipment
+    C->>C: valida nome (400 se vazio)
+    C->>R: createEquipment(manager, empresa, dados)
+    R->>DB: INSERT (manager_id, business_id)
+    C-->>A: 201 equipamento criado
+    Note over P,DB: Update
+    G->>P: lápis na linha e edita
+    P->>A: updateMachine(id, dados)
+    A->>C: PUT /api/equipment/{id}
+    C->>R: updateEquipment(id, dados)
+    R->>DB: UPDATE ... WHERE id
+    C-->>A: 200 equipamento atualizado
+    Note over P,DB: Delete (só administrador e gestor)
+    G->>P: lixeira na linha e confirma
+    P->>A: deleteMachine(id)
+    A->>C: DELETE /api/equipment/{id}
+    C->>C: requireDeleter (403 para os outros papéis)
+    C->>R: deleteEquipment(id)
+    R->>DB: DELETE (agendas vão junto, CASCADE)
+    C-->>A: 204
+    A-->>P: linha sai da tabela
+```
+
 ### 2.1 Tabela e DTOs
 
 📍 `deviante-api/src/main/kotlin/db/MonitoringTables.kt` · linhas 6–25 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/db/MonitoringTables.kt#L6-L25)
@@ -440,76 +488,7 @@ Fala: "Só `name` é obrigatório no `EquipmentRequest`. A resposta traz, além 
 
 Fala: "`assignEquipment` é reaproveitada no insert e no update: limpa espaços e grava `null` no que veio vazio. `equipment(r)` transforma a linha em DTO."
 
-### 2.2 Create — tela `/equipment`, botão "Novo equipamento"
-
-📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 53–55 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/EquipmentPage.jsx#L53-L55)
-
-```jsx
-  const actions = <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: 'var(--ok-strong)' }}><Plus size={12} />Novo equipamento</button>
-  return <Surface title="Equipamentos" subtitle={`${rows.length} ativos cadastrados com histórico, análises e vínculos.`} icon={Cpu} actions={actions}>
-    {creating && <CreateEquipmentModal onClose={() => setCreating(false)} onCreate={async (data) => { await api.createEquipment(toEquipmentRequest(data)); setCreating(false); load() }} />}
-```
-
-📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 110–123 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/EquipmentPage.jsx#L110-L123)
-
-```jsx
-function CreateEquipmentModal({ initial = null, onClose, onCreate }) {
-  const [values, setValues] = useState({ name: initial?.name ?? '', kind: initial?.kind ?? 'generico', tag: initial?.tag ?? '', location: initial?.location ?? '', manufacturer: initial?.manufacturer ?? '', model: initial?.model ?? '' })
-  const [busy, setBusy] = useState(false)
-  const set = (key) => (event) => setValues((current) => ({ ...current, [key]: event.target.value }))
-  const submit = async () => { setBusy(true); try { await onCreate(values) } finally { setBusy(false) } }
-  return <FormModal title={initial ? 'Editar equipamento' : 'Cadastrar equipamento'} subtitle={initial ? 'Altere os dados de identificação do ativo.' : 'Crie o ativo antes de associá-lo a processos ou monitoramentos.'}
-    onClose={onClose} onSubmit={submit} busy={busy} canSubmit={Boolean(values.name.trim())} submitLabel={initial ? 'Salvar' : 'Cadastrar'}>
-    <Field label="Nome *" wide><TextInput value={values.name} onChange={set('name')} placeholder="Ex.: Torno CNC Prod1" /></Field>
-    <Field label="Tipo"><Select value={values.kind} onChange={set('kind')}><option value="torno">Torno CNC</option><option value="fresadora">Fresadora</option><option value="compressor">Compressor</option><option value="esteira">Esteira</option><option value="generico">Genérico</option></Select></Field>
-    <Field label="TAG"><TextInput value={values.tag} onChange={set('tag')} placeholder="Ex.: TRN-01" /></Field>
-    <Field label="Fabricante"><TextInput value={values.manufacturer} onChange={set('manufacturer')} placeholder="Ex.: Romi" /></Field>
-    <Field label="Modelo"><TextInput value={values.model} onChange={set('model')} placeholder="Ex.: GL 240" /></Field>
-    <Field label="Localização" wide><TextInput value={values.location} onChange={set('location')} placeholder="Ex.: Célula 01" /></Field>
-  </FormModal>
-```
-
-📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 12–13 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/EquipmentPage.jsx#L12-L13)
-
-```jsx
-const EQUIPMENT_FIELDS = ['name', 'tag', 'kind', 'location', 'description', 'manufacturer', 'model', 'serialNumber', 'status', 'assetUrl', 'assetFormat']
-const toEquipmentRequest = (values) => Object.fromEntries(EQUIPMENT_FIELDS.filter((key) => values[key] !== undefined).map((key) => [key, values[key] ?? null]))
-```
-
-📍 `deviante-web/src/lib/api.js` · linhas 500–500 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L500-L500)
-
-```javascript
-  createEquipment: (data) => request('/equipment', { method: 'POST', body: JSON.stringify(data) }),
-```
-
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 580–586 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L580-L586)
-
-```kotlin
-                post {
-                    val user = call.requireSupabaseUser(authClient) ?: return@post
-                    val manager = managerRepository.findOrCreateForSupabaseUser(user.id, user.email, user.fullNameHint)
-                    val body = call.receive<EquipmentRequest>()
-                    if (body.name.isBlank()) { call.respond(HttpStatusCode.BadRequest, ErrorResponse("Nome do equipamento é obrigatório.")); return@post }
-                    call.respond(HttpStatusCode.Created, maintenanceRepository.createEquipment(manager.id, call.companyScope(manager).businessId, body))
-                }
-```
-
-📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 102–109 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/MaintenanceRepository.kt#L102-L109)
-
-```kotlin
-    fun createEquipment(managerId: UUID, businessId: UUID, body: EquipmentRequest): EquipmentResponse = transaction {
-        val id = UUID.randomUUID(); val now = OffsetDateTime.now()
-        EquipmentTable.insert {
-            it[EquipmentTable.id] = id; it[EquipmentTable.managerId] = managerId; it[EquipmentTable.businessId] = businessId
-            assignEquipment(it, body); it[EquipmentTable.createdAt] = now; it[EquipmentTable.updatedAt] = now
-        }
-        findEquipment(id)!!
-    }
-```
-
-Fala: "O modal só habilita 'Cadastrar' com nome preenchido. `toEquipmentRequest` manda só os campos que a API aceita. A rota valida de novo (400 'Nome do equipamento é obrigatório') e o repositório gera o UUID, grava o `manager_id` de quem está logado e o `business_id` da empresa em que ele entrou, e devolve a linha recém-criada (201)."
-
-### 2.3 Read — tela `/equipment`
+### 2.2 Read — tela `/equipment`
 
 📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 17–31 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/EquipmentPage.jsx#L17-L31)
 
@@ -583,6 +562,75 @@ Read de um equipamento:
         EquipmentTable.selectAll().where { EquipmentTable.id eq id }.firstOrNull()?.let(::equipment)
     }
 ```
+
+### 2.3 Create — tela `/equipment`, botão "Novo equipamento"
+
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 53–55 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/EquipmentPage.jsx#L53-L55)
+
+```jsx
+  const actions = <button onClick={() => setCreating(true)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: 'var(--ok-strong)' }}><Plus size={12} />Novo equipamento</button>
+  return <Surface title="Equipamentos" subtitle={`${rows.length} ativos cadastrados com histórico, análises e vínculos.`} icon={Cpu} actions={actions}>
+    {creating && <CreateEquipmentModal onClose={() => setCreating(false)} onCreate={async (data) => { await api.createEquipment(toEquipmentRequest(data)); setCreating(false); load() }} />}
+```
+
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 110–123 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/EquipmentPage.jsx#L110-L123)
+
+```jsx
+function CreateEquipmentModal({ initial = null, onClose, onCreate }) {
+  const [values, setValues] = useState({ name: initial?.name ?? '', kind: initial?.kind ?? 'generico', tag: initial?.tag ?? '', location: initial?.location ?? '', manufacturer: initial?.manufacturer ?? '', model: initial?.model ?? '' })
+  const [busy, setBusy] = useState(false)
+  const set = (key) => (event) => setValues((current) => ({ ...current, [key]: event.target.value }))
+  const submit = async () => { setBusy(true); try { await onCreate(values) } finally { setBusy(false) } }
+  return <FormModal title={initial ? 'Editar equipamento' : 'Cadastrar equipamento'} subtitle={initial ? 'Altere os dados de identificação do ativo.' : 'Crie o ativo antes de associá-lo a processos ou monitoramentos.'}
+    onClose={onClose} onSubmit={submit} busy={busy} canSubmit={Boolean(values.name.trim())} submitLabel={initial ? 'Salvar' : 'Cadastrar'}>
+    <Field label="Nome *" wide><TextInput value={values.name} onChange={set('name')} placeholder="Ex.: Torno CNC Prod1" /></Field>
+    <Field label="Tipo"><Select value={values.kind} onChange={set('kind')}><option value="torno">Torno CNC</option><option value="fresadora">Fresadora</option><option value="compressor">Compressor</option><option value="esteira">Esteira</option><option value="generico">Genérico</option></Select></Field>
+    <Field label="TAG"><TextInput value={values.tag} onChange={set('tag')} placeholder="Ex.: TRN-01" /></Field>
+    <Field label="Fabricante"><TextInput value={values.manufacturer} onChange={set('manufacturer')} placeholder="Ex.: Romi" /></Field>
+    <Field label="Modelo"><TextInput value={values.model} onChange={set('model')} placeholder="Ex.: GL 240" /></Field>
+    <Field label="Localização" wide><TextInput value={values.location} onChange={set('location')} placeholder="Ex.: Célula 01" /></Field>
+  </FormModal>
+```
+
+📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 12–13 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/EquipmentPage.jsx#L12-L13)
+
+```jsx
+const EQUIPMENT_FIELDS = ['name', 'tag', 'kind', 'location', 'description', 'manufacturer', 'model', 'serialNumber', 'status', 'assetUrl', 'assetFormat']
+const toEquipmentRequest = (values) => Object.fromEntries(EQUIPMENT_FIELDS.filter((key) => values[key] !== undefined).map((key) => [key, values[key] ?? null]))
+```
+
+📍 `deviante-web/src/lib/api.js` · linhas 500–500 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L500-L500)
+
+```javascript
+  createEquipment: (data) => request('/equipment', { method: 'POST', body: JSON.stringify(data) }),
+```
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 580–586 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L580-L586)
+
+```kotlin
+                post {
+                    val user = call.requireSupabaseUser(authClient) ?: return@post
+                    val manager = managerRepository.findOrCreateForSupabaseUser(user.id, user.email, user.fullNameHint)
+                    val body = call.receive<EquipmentRequest>()
+                    if (body.name.isBlank()) { call.respond(HttpStatusCode.BadRequest, ErrorResponse("Nome do equipamento é obrigatório.")); return@post }
+                    call.respond(HttpStatusCode.Created, maintenanceRepository.createEquipment(manager.id, call.companyScope(manager).businessId, body))
+                }
+```
+
+📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 102–109 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/MaintenanceRepository.kt#L102-L109)
+
+```kotlin
+    fun createEquipment(managerId: UUID, businessId: UUID, body: EquipmentRequest): EquipmentResponse = transaction {
+        val id = UUID.randomUUID(); val now = OffsetDateTime.now()
+        EquipmentTable.insert {
+            it[EquipmentTable.id] = id; it[EquipmentTable.managerId] = managerId; it[EquipmentTable.businessId] = businessId
+            assignEquipment(it, body); it[EquipmentTable.createdAt] = now; it[EquipmentTable.updatedAt] = now
+        }
+        findEquipment(id)!!
+    }
+```
+
+Fala: "O modal só habilita 'Cadastrar' com nome preenchido. `toEquipmentRequest` manda só os campos que a API aceita. A rota valida de novo (400 'Nome do equipamento é obrigatório') e o repositório gera o UUID, grava o `manager_id` de quem está logado e o `business_id` da empresa em que ele entrou, e devolve a linha recém-criada (201)."
 
 ### 2.4 Update — lápis na linha do equipamento
 
@@ -676,12 +724,64 @@ Fala: "A confirmação avisa que parâmetros, leituras, análises e agendas do e
 ### 2.6 Roteiro de fala
 
 1. Em `https://deviante.alander.io`, no "Modo Protótipo", deixar a seta na **Alfa** e entrar como **Gestor**. No painel inicial, clicar em **Equipamentos** no menu.
-2. **Create:** cadastrar "Torno CNC Prod1", tipo torno, TAG TRN-01. Mostrar no DevTools o `POST /api/equipment` e o 201.
-3. **Read:** mostrar a lista e o filtro `business_id in (...)` no repositório.
+2. **Read:** mostrar a lista e o filtro `business_id in (...)` no repositório.
+3. **Create:** cadastrar "Torno CNC Prod1", tipo torno, TAG TRN-01. Mostrar no DevTools o `POST /api/equipment` e o 201.
 4. **Update:** clicar no lápis e editar a localização (`PUT /api/equipment/{id}`).
 5. **Delete:** clicar na lixeira de um equipamento sem agenda (204). Explicar que, com agenda, o banco apaga a agenda junto (cascata). Entrar como operador (também na Alfa) e mostrar que a lixeira não aparece.
 
 ## 3. CRUD de Agenda de manutenção (objeto ORCA MAINTENANCE)
+
+Continua na mesma sessão, já autenticado, saindo de Equipamentos para Agendamentos pelo menu. A ordem é a mesma: Read, Create, Update e Delete.
+
+```mermaid
+sequenceDiagram
+    actor G as Gestor (Alfa)
+    participant N as Menu (AppLayout.jsx)
+    participant P as SchedulesPage.jsx
+    participant S as maintenanceSubject
+    participant A as api.js
+    participant C as Core (Routing.kt)
+    participant R as MaintenanceRepository
+    participant DB as Postgres (maintenance_schedules)
+    G->>N: clica em "Agendamentos"
+    N->>P: abre /schedules
+    P->>S: subscribe(lista)
+    Note over P,DB: Read
+    P->>A: listSchedules()
+    A->>C: GET /api/schedules
+    C->>R: listSchedules(empresa)
+    R->>DB: SELECT ... WHERE business_id = empresa
+    C-->>A: 200 JSON
+    A-->>P: lista, kanban e calendário
+    Note over P,DB: Create
+    G->>P: "Nova manutenção" e preenche o modal
+    P->>A: createSchedule(dados)
+    A->>C: POST /api/schedules
+    C->>C: valida título e datas (400)
+    C->>R: createSchedule(manager, dados)
+    R->>DB: confere o equipamento (422 se não existe) e INSERT
+    C-->>A: 201
+    P->>S: notify(schedule-saved)
+    S-->>P: lista recarrega
+    Note over P,DB: Update
+    G->>P: clica no card e muda o status
+    P->>A: updateSchedule(id, dados)
+    A->>C: PUT /api/schedules/{id}
+    C->>R: updateSchedule(id, dados)
+    R->>DB: UPDATE ... WHERE id
+    C-->>A: 200
+    P->>S: notify(schedule-saved)
+    Note over P,DB: Delete (só administrador e gestor)
+    G->>P: "Excluir" no modal
+    P->>A: deleteSchedule(id)
+    A->>C: DELETE /api/schedules/{id}
+    C->>C: requireDeleter (403 para os outros papéis)
+    C->>R: deleteSchedule(id)
+    R->>DB: DELETE
+    C-->>A: 204
+    P->>S: notify(schedule-deleted)
+    S-->>P: card some da lista
+```
 
 ### 3.1 Tabela e DTOs
 
@@ -955,12 +1055,13 @@ Fala: "O botão só é passado ao modal quando a agenda já existe e o usuário 
 
 ### 3.6 Roteiro de fala
 
-1. Voltar como **Gestor** da Alfa e clicar em **Agendamentos** no menu. Clicar "Nova manutenção": "Troca de rolamento", Torno CNC Prod1, início amanhã (Create: `POST /api/schedules`, 201).
-2. Mostrar as três visões (lista, kanban, calendário): mesma API, agrupamentos diferentes.
-3. Abrir o card, mudar o status para "Em andamento" e salvar (Update: `PUT /api/schedules/{id}`). O card muda de coluna no kanban.
-4. Tentar salvar com fim antes do início: 400. Explicar o 422 quando o equipamento não existe.
-5. Excluir a manutenção (Delete: 204). Entrar como operador da Alfa e mostrar que o botão "Excluir" não aparece.
-6. Fechar: "no meu par de CRUDs são duas tabelas, `equipment` e `maintenance_schedules`, ligadas por FK; a agenda ainda aponta para `processes`, que é o CRUD do Alander".
+1. Voltar como **Gestor** da Alfa e clicar em **Agendamentos** no menu.
+2. **Read:** mostrar as três visões (lista, kanban, calendário): mesma API (`GET /api/schedules`), agrupamentos diferentes.
+3. **Create:** clicar "Nova manutenção": "Troca de rolamento", Torno CNC Prod1, início amanhã (`POST /api/schedules`, 201).
+4. **Update:** abrir o card, mudar o status para "Em andamento" e salvar (`PUT /api/schedules/{id}`). O card muda de coluna no kanban.
+5. Tentar salvar com fim antes do início: 400. Explicar o 422 quando o equipamento não existe.
+6. **Delete:** excluir a manutenção (204). Entrar como operador da Alfa e mostrar que o botão "Excluir" não aparece.
+7. Fechar: "no meu par de CRUDs são duas tabelas, `equipment` e `maintenance_schedules`, ligadas por FK; a agenda ainda aponta para `processes`, que é o CRUD do Alander".
 
 ## 4. Perguntas prováveis
 
