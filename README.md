@@ -86,7 +86,7 @@ deviante/docs/
 │   └── orca/               # 1–5: Object/Relationship/CTA/Attributes Discovery, Object Requirements
 ├── architecture/           # arc42 (diagramas C4/UML embutidos)
 │   ├── arc42.md            # documento arc42 (12 seções + Mermaid inline), gerado do Notion
-│   └── c4/                 # diagramas C4 avulsos (.mmd) e render do nível 1
+│   └── c4/                 # cópia avulsa (.mmd) dos diagramas do arc42 e render do nível 1
 ├── scripts/
 │   └── notion_to_md.py     # converte as páginas do Notion em arc42.md
 └── referencias bibliográficas/   # literatura + repositorios (S1–S6) — local only

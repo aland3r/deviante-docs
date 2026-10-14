@@ -1,0 +1,88 @@
+classDiagram
+    direction LR
+
+    class User {
+      <<abstract>>
+      +UUID id
+      +String email
+      +String fullName
+      +Role role
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Operator {
+      +String shift
+    }
+    class Manager {
+      +ManagerRole managerRole
+    }
+    class Business {
+      +UUID id
+      +String name
+      +String cnpj
+      +String sector
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Technician {
+      +String specialty
+    }
+    class Workspace {
+      <<abstract>>
+      +UUID id
+      +String name
+      +String description
+      +WorkspaceStatus status
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Process {
+      +UUID id
+      +String name
+      +String description
+      +String sector
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Monitoring {
+      +UUID id
+      +String name
+      +String description
+      +String sourceType
+      +String sourceName
+      +String status
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Analysis {
+      +UUID id
+      +String name
+      +String method
+      +Double delta
+      +Int smoothingWindow
+      +Int traceCount
+      +Int driftCount
+      +AnalysisStatus status
+      +Instant createdAt
+      +Instant updatedAt
+    }
+
+    User <|-- Operator
+    User <|-- Manager
+    User "0..*" --> "1" Business : belongs to
+    User <|-- Technician
+    Business "1" --> "0..*" Workspace : owns
+    Manager "1" --> "0..*" Workspace : maintains
+    Workspace <|-- Process
+    Workspace <|-- Monitoring
+    Workspace <|-- Analysis
+
+    style User fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Operator fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Manager fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Business fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Workspace fill:#d4d9e1,stroke:#475569,stroke-width:2px,color:#111827
+    style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Monitoring fill:#a8e3da,stroke:#0f766e,stroke-width:2px,color:#111827
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827

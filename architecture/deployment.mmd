@@ -1,24 +1,33 @@
-%% Diagrama de Implantacao (arc42 Secao 7) - mapeamento dos conteineres para a
-%% infraestrutura de execucao e os canais entre os nos.
 flowchart TB
-    subgraph client["Dispositivo do usuario"]
-        browser["Navegador"]
-    end
+    browser([Navegador])
     subgraph vercel["Vercel"]
-        web["Web App<br/>React + Vite<br/>deviante.alander.io"]
+        fe["Microfrontend"]
     end
-    subgraph fly["Fly.io"]
-        api["Aplicação Backend<br/>Kotlin + Ktor<br/>deviante-api.fly.dev"]
-        mining["Serviço de Mineração<br/>Python + FastAPI"]
+    subgraph aws["AWS"]
+        gw["API Gateway"]
     end
-    subgraph supa["Supabase (nuvem gerenciada)"]
-        authn["Autenticação Supabase<br/>Google OAuth / JWT"]
-        db[("Banco de Dados<br/>Postgres · schema deviante")]
+    subgraph fly["Fly.io · iad (imagens do Docker Hub)"]
+        bff["BFF"]
+        core["Core API"]
+        ms1["MS1 Ingestão"]
+        ms2["MS2 Análises"]
     end
-
-    browser -->|HTTPS| web
-    browser -->|OAuth| authn
-    web -->|REST /api/*| api
-    api -->|REST /parse, /detect| mining
-    api -->|JDBC / HikariCP| db
-    api -->|JWKS| authn
+    subgraph azure["Microsoft Azure · eastus · rg-deviante"]
+        fn["Function App de análise<br/>ipdd-adwin · maintenance-prediction"]
+        sql[("Azure SQL")]
+        bus{{"Service Bus"}}
+    end
+    subgraph saas["SaaS"]
+        supa[("Supabase Postgres + Auth")]
+        mongo[("MongoDB Atlas pjbl · us-east-1")]
+    end
+    browser -->|HTTPS| fe
+    fe -->|HTTPS| gw --> bff
+    bff --> core & ms1 & ms2
+    bff -->|HTTP, prévia| fn
+    ms2 -->|HTTP, previsão| fn
+    fe -.->|login| supa
+    core --> supa
+    ms1 --> mongo
+    ms2 --> sql
+    ms1 & ms2 & core & fn <--> bus

@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor U as Usuário
+    participant W as Microfrontend
+    participant S as Supabase Auth
+    participant G as Google
+    participant GW as API Gateway
+    participant B as BFF
+    participant C as Core API
+    U->>W: entrar com Google
+    W->>S: signInWithOAuth
+    S->>G: OAuth 2.0 / OpenID Connect
+    G-->>S: identidade
+    S-->>W: sessão com JWT
+    W->>GW: requisição com Authorization: Bearer JWT
+    GW->>GW: valida o JWT
+    alt token inválido ou vencido
+        GW-->>W: 401
+    else token válido
+        GW->>B: repassa a requisição e o token
+        B->>C: chamada com o token
+        C->>C: valida o JWT (JWKS)
+        C-->>B: resposta
+        B-->>W: resposta
+    end

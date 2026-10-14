@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor G as Gestor
+    actor T as Técnico
+    participant W as Microfrontend
+    participant B as BFF
+    participant C as Core API
+    G->>W: abre a recomendação
+    alt aceita
+        W->>B: aceitar recomendação
+        B->>C: accept() e toIntervention()
+        C-->>B: Intervention agendada
+    else rejeita
+        W->>B: rejeitar recomendação
+        B->>C: reject()
+    end
+    T->>W: registra a manutenção feita
+    W->>B: concluir intervenção
+    B->>C: complete()
+    C->>C: máquina volta a operar

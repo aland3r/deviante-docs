@@ -1,0 +1,30 @@
+erDiagram
+    ANALYSES ||--o{ ANALYSIS_EVENT_LOGS : analisa
+    ANALYSES ||--o{ DRIFTS : detecta
+    ANALYSES {
+        uuid id PK
+        string business_ref
+        string manager_ref
+        string process_ref
+        string machine_ref "opcional"
+        string name
+        string method
+        float delta
+        int smoothing_window
+        int trace_count
+        int drift_count
+        string status
+    }
+    ANALYSIS_EVENT_LOGS {
+        uuid analysis_id FK
+        string event_log_ref
+    }
+    DRIFTS {
+        uuid id PK
+        uuid analysis_id FK
+        int trace_index
+        int anomaly_start_index
+        float mean_before
+        float mean_after
+        float magnitude_percent
+    }

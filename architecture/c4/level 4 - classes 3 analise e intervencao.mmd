@@ -1,0 +1,77 @@
+classDiagram
+    direction LR
+
+    class Analysis {
+      +UUID id
+      +String name
+      +String method
+      +Double delta
+      +Int smoothingWindow
+      +Int traceCount
+      +Int driftCount
+      +AnalysisStatus status
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Drift {
+      +UUID id
+      +Int traceIndex
+      +Int anomalyStartIndex
+      +Double meanBefore
+      +Double meanAfter
+      +Double magnitudePercent
+    }
+    class Recommendation {
+      +UUID id
+      +String action
+      +String rationale
+      +Priority priority
+      +RecommendationStatus status
+      +Instant recommendedStart
+      +Instant recommendedEnd
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Technician {
+      +String specialty
+    }
+    class Intervention {
+      <<abstract>>
+      +UUID id
+      +String title
+      +String notes
+      +Instant scheduledStart
+      +Instant scheduledEnd
+      +InterventionStatus status
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Maintenance {
+      +MaintenanceType type
+    }
+    class Inspection {
+      +String checklist
+    }
+    class Finding {
+      +UUID id
+      +Severity severity
+      +String description
+      +Instant foundAt
+    }
+
+    Analysis "1" --> "0..*" Drift : detects
+    Drift "1" --> "0..*" Recommendation : generates
+    Recommendation "1" --> "0..1" Intervention : becomes
+    Technician "0..1" --> "0..*" Intervention : performs
+    Intervention <|-- Maintenance
+    Intervention <|-- Inspection
+    Inspection "1" --> "0..*" Finding : produces
+
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Drift fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Recommendation fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Technician fill:#f5c2d7,stroke:#be185d,stroke-width:2px,color:#111827
+    style Intervention fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    style Maintenance fill:#bfe8c9,stroke:#15803d,stroke-width:2px,color:#111827
+    style Inspection fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827
+    style Finding fill:#dbe9a8,stroke:#4d7c0f,stroke-width:2px,color:#111827

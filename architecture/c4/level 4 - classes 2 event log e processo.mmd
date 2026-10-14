@@ -1,0 +1,95 @@
+classDiagram
+    direction LR
+
+    class Process {
+      +UUID id
+      +String name
+      +String description
+      +String sector
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class EventLog {
+      +UUID id
+      +String fileName
+      +LogFormat format
+      +ParseStatus parseStatus
+      +String parseError
+      +Int traceCount
+      +Int operationCount
+      +Instant uploadedAt
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Operation {
+      +UUID id
+      +String rawLabel
+      +Int occurrenceCount
+      +MappingStatus mappingStatus
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Activity {
+      +UUID id
+      +String name
+      +String description
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Event {
+      +UUID id
+      +String caseId
+      +Int sequenceIndex
+      +Instant start
+      +Instant complete
+      +Decimal durationSeconds
+      +Double temperature
+      +Double vibration
+      +Double noiseLevel
+    }
+    class Machine {
+      +UUID id
+      +String name
+      +String tag
+      +String kind
+      +String location
+      +String description
+      +String manufacturer
+      +String model
+      +String serialNumber
+      +MachineStatus status
+      +String assetUrl
+      +String assetFormat
+      +Instant createdAt
+      +Instant updatedAt
+    }
+    class Analysis {
+      +UUID id
+      +String name
+      +String method
+      +Double delta
+      +Int smoothingWindow
+      +Int traceCount
+      +Int driftCount
+      +AnalysisStatus status
+      +Instant createdAt
+      +Instant updatedAt
+    }
+
+    Process "1" --> "0..*" EventLog : records
+    EventLog "1" --> "0..*" Operation : extracts
+    EventLog "1" --> "0..*" Event : contains
+    Operation "0..*" --> "0..1" Activity : maps to
+    Event "0..*" --> "1" Operation : of
+    Activity "1" --> "0..*" Event : corresponds to
+    Process "0..*" --> "0..*" Activity : contains
+    Process "0..*" --> "0..*" Machine : uses
+    Analysis "1" --> "1..*" EventLog : analyzes
+
+    style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style EventLog fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Operation fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Machine fill:#b9daf2,stroke:#0369a1,stroke-width:2px,color:#111827
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827

@@ -1,27 +1,31 @@
-flowchart TB
-    bff["<b>BFF</b><br/>[Container: NestJS]"]
-    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>JWKS"]
-    bus{{"<b>Service Bus</b><br/>[Container: Azure]"}}
-    db[("<b>Postgres</b><br/>[Container: Supabase]")]
+%%{init: {"wrap": true, "c4": {"width": 200, "wrap": true}}}%%
+C4Component
 
-    subgraph core["Core API · Kotlin/Ktor [Container]"]
-        api["<b>api</b><br/>[Component: rotas Ktor]<br/>endpoints e validação de JWT"]
-        app["<b>application</b><br/>[Component: slices]<br/>processes · activities · equipment<br/>monitoring · maintenance"]
-        domain["<b>domain</b><br/>[Component: Kotlin puro]<br/>entidades e regras"]
-        infra["<b>infrastructure</b><br/>[Component: Exposed]<br/>repositórios e eventos"]
-    end
+    Container(bff, "BFF", "Node.js + NestJS", "Encaminha as chamadas da interface.")
+    System_Ext(auth, "Supabase Auth", "Publica as chaves (JWKS) do JWT.")
+    ContainerQueue(bus, "Service Bus", "Azure, tier Basic", "Entrega o evento DriftDetected.")
+    ContainerDb(db, "Postgres", "Supabase", "Dados do Core.")
 
-    bff -->|REST| api
-    api -.->|valida JWT| auth
-    api --> app --> domain
-    infra -.->|implementa portas| app
-    infra -->|JDBC| db
-    bus -.->|DriftDetected| infra
+    Container_Boundary(core, "Core API") {
+        Component(api, "api", "Rotas Ktor", "Endpoints e validação do JWT.")
+        Component(app, "application", "Slices", "processes, activities, machines, monitoring, maintenance.")
+        Component(infra, "infrastructure", "Exposed", "Repositórios e consumo de eventos.")
+        Component(s1, " ", " ")
+        Component(s2, " ", " ")
+        Component(domain, "domain", "Kotlin puro", "Entidades e regras de negócio.")
+    }
 
-    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
-    classDef component fill:#85BBF0,stroke:#78A8D8,color:#000
-    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
-    class bff,bus,db container
-    class api,app,domain,infra component
-    class auth external
-    style core fill:none,stroke:#666,stroke-dasharray:5 5
+    Rel(bff, api, "REST")
+    Rel(api, auth, "Valida JWT")
+    Rel(api, app, "Chama")
+    Rel(app, domain, "Usa")
+    Rel(infra, app, "Implementa as portas")
+    Rel(infra, db, "JDBC")
+    Rel(bus, infra, "DriftDetected")
+
+    UpdateRelStyle(infra, app, $offsetX="-75", $offsetY="-30")
+
+    UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s2, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+
+    UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")

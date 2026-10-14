@@ -1,163 +1,115 @@
-%% Diagrama Entidade-Relacionamento - reflete o banco real em producao
-%% (Supabase projeto ydjtrcjxhtmygytmebrk, schema deviante).
 erDiagram
-    users ||--o| managers : "e"
-    managers ||--o{ processes : "mantem"
-    managers ||--o{ equipment : "possui"
-    managers ||--o{ monitorings : "cria"
-
-    processes ||--o{ event_logs : "recebe"
-    processes ||--o{ analyses : "origina"
-    processes }o--o{ activities : "process_activities"
-    processes }o--o{ equipment : "process_equipment"
-
-    event_logs ||--o{ operations : "extrai"
-    event_logs ||--o{ traces : "contem"
-    event_logs |o--o{ analyses : "usada por"
-    activities |o--o{ operations : "normaliza"
-
-    traces ||--o{ trace_events : "compoe"
-    operations ||--o{ trace_events : "ocorre em"
-
-    equipment ||--o{ maintenance_recommendations : "recebe"
-    equipment ||--o{ maintenance_schedules : "agenda"
-    monitorings }o--o{ equipment : "monitoring_equipment"
-    monitorings ||--o{ monitoring_parameters : "define"
-    monitoring_parameters ||--o{ monitoring_readings : "coleta"
-    equipment ||--o{ equipment_analysis_runs : "analisa"
-    equipment_analysis_runs |o--o{ maintenance_recommendations : "gera"
-
-    users {
-      uuid id PK
-      varchar email UK
+    BUSINESSES ||--o{ USERS : emprega
+    BUSINESSES ||--o{ PROCESSES : possui
+    BUSINESSES ||--o{ MONITORINGS : possui
+    BUSINESSES ||--o{ MACHINES : possui
+    USERS ||--o{ PROCESSES : mantem
+    USERS ||--o{ MONITORINGS : mantem
+    PROCESSES ||--o{ PROCESS_ACTIVITIES : contem
+    ACTIVITIES ||--o{ PROCESS_ACTIVITIES : compoe
+    PROCESSES ||--o{ OPERATION_MAPPINGS : mapeia
+    ACTIVITIES ||--o{ OPERATION_MAPPINGS : destino
+    PROCESSES ||--o{ PROCESS_MACHINES : usa
+    MACHINES ||--o{ PROCESS_MACHINES : participa
+    MONITORINGS ||--o{ MONITORING_MACHINES : acompanha
+    MACHINES ||--o{ MONITORING_MACHINES : monitorada
+    MACHINES ||--o{ COMPONENTS : contem
+    PROCESSES ||--o{ RECOMMENDATIONS : recebe
+    MACHINES |o--o{ RECOMMENDATIONS : afeta
+    RECOMMENDATIONS ||--o| INTERVENTIONS : vira
+    MACHINES ||--o{ INTERVENTIONS : sofre
+    USERS ||--o{ INTERVENTIONS : executa
+    INTERVENTIONS ||--o{ FINDINGS : produz
+    INTERVENTIONS ||--o{ COMPONENT_REPLACEMENTS : registra
+    COMPONENTS ||--o{ COMPONENT_REPLACEMENTS : substituido
+    BUSINESSES {
+        uuid id PK
+        string name
+        string cnpj
+        string sector
     }
-    managers {
-      uuid id PK
-      uuid user_id FK
-      varchar full_name
-      varchar email
-      varchar role
+    USERS {
+        uuid id PK
+        uuid business_id FK
+        uuid auth_user_id
+        string email
+        string full_name
+        string role
     }
-    processes {
-      uuid id PK
-      uuid manager_id FK
-      varchar name
-      varchar company_name
-      varchar sector
+    PROCESSES {
+        uuid id PK
+        uuid business_id FK
+        uuid manager_id FK
+        string name
+        string sector
+        string status
     }
-    activities {
-      uuid id PK
-      varchar name
-      text description
+    ACTIVITIES {
+        uuid id PK
+        string name
+        string description
     }
-    process_activities {
-      uuid process_id PK_FK
-      uuid activity_id PK_FK
+    OPERATION_MAPPINGS {
+        uuid id PK
+        uuid process_id FK
+        uuid activity_id FK
+        string operation_ref
+        string raw_label
+        string status
     }
-    event_logs {
-      uuid id PK
-      uuid process_id FK
-      varchar file_name
-      varchar format
-      varchar parse_status
-      int operation_count
-      int trace_count
+    MACHINES {
+        uuid id PK
+        uuid business_id FK
+        string name
+        string tag
+        string kind
+        string status
     }
-    operations {
-      uuid id PK
-      uuid event_log_id FK
-      varchar raw_label
-      int occurrence_count
-      uuid activity_id FK
-      varchar mapping_status
+    COMPONENTS {
+        uuid id PK
+        uuid machine_id FK
+        string name
+        timestamp installed_at
+        float expected_life_hours
+        float degradation_score
+        string health
     }
-    traces {
-      uuid id PK
-      uuid event_log_id FK
-      varchar case_id
-      int event_count
-      timestamptz started_at
-      timestamptz ended_at
-      numeric duration_seconds
+    MONITORINGS {
+        uuid id PK
+        uuid business_id FK
+        uuid manager_id FK
+        string name
+        string status
     }
-    trace_events {
-      uuid id PK
-      uuid trace_id FK
-      uuid operation_id FK
-      int sequence_index
-      timestamptz occurred_at
-      numeric duration_seconds
+    RECOMMENDATIONS {
+        uuid id PK
+        uuid process_id FK
+        uuid machine_id FK "opcional"
+        string drift_ref
+        string action
+        string priority
+        string status
     }
-    analyses {
-      uuid id PK
-      uuid process_id FK
-      uuid event_log_id FK
-      varchar name
-      varchar method
-      float8 delta
-      int drift_count
-      text result_json
+    INTERVENTIONS {
+        uuid id PK
+        uuid recommendation_id FK
+        uuid machine_id FK
+        uuid technician_id FK
+        string kind
+        string title
+        timestamp scheduled_start
+        string status
     }
-    equipment {
-      uuid id PK
-      uuid manager_id FK
-      varchar name
-      varchar tag
-      varchar status
+    FINDINGS {
+        uuid id PK
+        uuid inspection_id FK
+        uuid maintenance_id FK
+        string severity
+        string description
     }
-    process_equipment {
-      uuid process_id PK_FK
-      uuid equipment_id PK_FK
-    }
-    monitorings {
-      uuid id PK
-      uuid manager_id FK
-      varchar name
-      varchar source_type
-      varchar status
-    }
-    monitoring_equipment {
-      uuid monitoring_id PK_FK
-      uuid equipment_id PK_FK
-    }
-    monitoring_parameters {
-      uuid id PK
-      uuid monitoring_id FK
-      uuid equipment_id FK
-      varchar name
-      varchar unit
-    }
-    monitoring_readings {
-      uuid id PK
-      uuid parameter_id FK
-      timestamptz observed_at
-      float8 value
-    }
-    equipment_analysis_runs {
-      uuid id PK
-      uuid equipment_id FK
-      uuid monitoring_id FK
-      uuid parameter_id FK
-      float8 rul_value
-      float8 failure_probability
-      text result_json
-    }
-    maintenance_recommendations {
-      uuid id PK
-      uuid equipment_id FK
-      uuid analysis_run_id FK
-      uuid manager_id FK
-      text action
-      varchar priority
-      varchar status
-    }
-    maintenance_schedules {
-      uuid id PK
-      uuid equipment_id FK
-      uuid process_id FK
-      uuid recommendation_id FK
-      uuid manager_id FK
-      varchar title
-      timestamptz scheduled_start
-      varchar status
+    COMPONENT_REPLACEMENTS {
+        uuid id PK
+        uuid maintenance_id FK
+        uuid component_id FK
+        timestamp replaced_at
     }

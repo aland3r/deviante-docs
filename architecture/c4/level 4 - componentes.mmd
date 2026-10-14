@@ -1,35 +1,30 @@
-%% C4 Nivel 4 (Codigo) - UML de COMPONENTES
-%% Componentes da API com interfaces providas/requeridas (notacao lollipop).
-%% Atores externos (Web, Mineracao, Auth, Banco) nas bordas.
 flowchart LR
-    web["&laquo;external&raquo;<br/>Web App"]
-    auth["&laquo;external&raquo;<br/>Autenticação Supabase"]
-    mining["&laquo;external&raquo;<br/>Serviço de Mineração"]
-    db[("&laquo;external&raquo;<br/>Banco de Dados")]
-
-    iRest(("REST /api/*"))
-    iJwks(("JWKS"))
-    iParse(("/parse"))
-    iDetect(("/detect"))
-    iJdbc(("JDBC"))
-
-    web --- iRest
-    iRest --> routes
-
-    subgraph API["&laquo;subsystem&raquo; Aplicação Backend - Kotlin/Ktor"]
-        routes["&laquo;component&raquo;<br/>Rotas / Controllers"]
-        authPlugin["&laquo;component&raquo;<br/>Auth Plugin"]
-        domain["&laquo;component&raquo;<br/>Servicos de Dominio<br/>(Process, Activity, Mapping,<br/>Analysis, Monitoring)"]
-        clients["&laquo;component&raquo;<br/>Clientes de Mineracao<br/>(Parser, Detector)"]
-        repo["&laquo;component&raquo;<br/>Repositories (Exposed)"]
-
-        routes --> authPlugin
-        routes --> domain
-        domain --> clients
-        domain --> repo
+    subgraph BFF["BFF"]
+        bffAgg(["IAggregatedData"])
     end
-
-    authPlugin --- iJwks --> auth
-    clients --- iParse --> mining
-    clients --- iDetect --> mining
-    repo --- iJdbc --> db
+    subgraph CORE["Core API"]
+        coreRest(["IDomainCrud"])
+        coreEvt(["IDriftDetectedHandler"])
+    end
+    subgraph MS1["MS1 Ingestão"]
+        ms1Rest(["IEventLogs"])
+    end
+    subgraph MS2["MS2 Análises"]
+        ms2Rest(["IAnalyses"])
+        ms2Evt(["IEventLogParsedHandler"])
+        ms2Done(["IAnalysisCompletedHandler"])
+    end
+    subgraph FN["Azure Function"]
+        fnHttp(["IDriftCalculation"])
+        fnEvt(["IAnalysisRequestedHandler"])
+        fnPred(["IMaintenancePrediction"])
+    end
+    BFF -.->|requer| coreRest
+    BFF -.->|requer| ms1Rest
+    BFF -.->|requer| ms2Rest
+    BFF -.->|requer| fnHttp
+    MS2 -.->|publica para| fnEvt
+    MS2 -.->|requer| fnPred
+    FN -.->|publica para| ms2Done
+    MS1 -.->|publica para| ms2Evt
+    MS2 -.->|publica para| coreEvt

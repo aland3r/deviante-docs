@@ -1,41 +1,61 @@
-flowchart TB
-    operador(["<b>Operador</b><br/>[Pessoa]"])
-    gestor(["<b>Gestor de Manutenção</b><br/>[Pessoa]"])
-    tecnico(["<b>Técnico de Manutenção</b><br/>[Pessoa]"])
-    auth["<b>Autenticação Supabase</b><br/>[Sistema externo]<br/>Google OAuth / JWT"]
+%%{init: {"wrap": true, "c4": {"width": 200, "wrap": true}}}%%
+C4Container
 
-    subgraph dv["Deviante [Sistema]"]
-        web["<b>Microfrontend</b><br/>[React + Vite · Vercel]"]
-        gw["<b>API Gateway</b><br/>[AWS]"]
-        bff["<b>BFF</b><br/>[Node.js + NestJS]"]
-        core["<b>Core API</b><br/>[Kotlin + Ktor]<br/>processos e manutenção"]
-        ms1["<b>MS1 · Ingestão</b><br/>[FastAPI + pm4py]<br/>upload e grafo"]
-        ms2["<b>MS2 · Análises</b><br/>[FastAPI]<br/>CRUD de análises"]
-        fn["<b>IPDD/ADWIN</b><br/>[Azure Function]"]
-        bus{{"<b>Service Bus</b><br/>[Azure · eventos]"}}
-        dbCore[("<b>Postgres</b><br/>[Supabase]")]
-        dbMs1[("<b>MongoDB</b><br/>[Atlas]")]
-        dbMs2[("<b>Azure SQL</b>")]
-    end
+    Person(operador, "Operador", "Registra atividades e dados.")
+    Person(gestor, "Gestor", "Analisa e aciona manutenção.")
+    Person(tecnico, "Técnico", "Registra a manutenção.")
+    System_Ext(auth, "Supabase Auth", "Login com Google e emissão do JWT.")
+    System(s1, " ", " ")
+    System(s2, " ", " ")
+    System(s3, " ", " ")
+    System_Ext(mes, "MES/ERP", "Sistema da fábrica que exporta o event log.")
 
-    operador & gestor & tecnico -->|HTTPS| web
-    web -.->|login| auth
-    web -->|REST| gw --> bff
-    bff --> core & ms1 & ms2
-    bff -->|agregado| fn
-    ms2 -->|calcula drift| fn
-    core --> dbCore
-    ms1 --> dbMs1
-    ms2 --> dbMs2
-    ms1 -.->|EventLogParsed| bus
-    bus -.-> ms2
-    ms2 -.->|DriftDetected| bus
-    bus -.-> core
+    System_Boundary(dv, "Deviante") {
+        Container(s4, " ", " ")
+        Container(web, "Microfrontend", "React + Vite, Vercel", "Telas do produto.")
+        Container(gw, "API Gateway", "AWS", "Entrada única; valida o JWT.")
+        ContainerDb(dbMs1, "MongoDB", "Atlas", "Event logs, traces e grafos.")
+        Container(ms1, "MS1 · Ingestão", "FastAPI + PM4Py", "Upload do event log e grafo.")
+        Container(bff, "BFF", "Node.js + NestJS", "Encaminha os CRUDs e agrega os dados.")
+        Container(fn, "Function App de análise", "Azure Functions, Python", "ipdd-adwin (drift) e maintenance-prediction (falha e RUL, experimental).")
+        ContainerQueue(bus, "Service Bus", "Azure, tier Basic", "Quatro filas, uma por evento, cada uma com um consumidor.")
+        Container(core, "Core API", "Kotlin + Ktor", "Processos, máquinas e manutenção.")
+        ContainerDb(dbMs2, "Azure SQL", "Azure", "Análises e drifts.")
+        Container(ms2, "MS2 · Análises", "FastAPI", "CRUD das análises de drift.")
+        ContainerDb(dbCore, "Postgres", "Supabase", "Dados do Core.")
+    }
 
-    classDef person fill:#08427B,stroke:#073B6F,color:#fff
-    classDef container fill:#438DD5,stroke:#3C7FC0,color:#fff
-    classDef external fill:#999999,stroke:#8A8A8A,color:#fff
-    class operador,gestor,tecnico person
-    class web,gw,bff,core,ms1,ms2,fn,bus,dbCore,dbMs1,dbMs2 container
-    class auth external
-    style dv fill:none,stroke:#666,stroke-dasharray:5 5
+    Rel(operador, web, "Usa")
+    Rel(gestor, web, "Usa")
+    Rel(tecnico, web, "Usa")
+    Rel(web, auth, "Login")
+    Rel(mes, web, "Event log por upload")
+    Rel(web, gw, "REST")
+    Rel(gw, bff, "REST")
+    Rel(bff, fn, "Prévia (HTTP)")
+    Rel(bff, core, "REST")
+    Rel(bff, ms1, "REST")
+    Rel(bff, ms2, "REST")
+    Rel(ms2, fn, "Previsão (HTTP)")
+    Rel(ms1, bus, "EventLogParsed")
+    BiRel(ms2, bus, "Publica e consome eventos")
+    BiRel(bus, fn, "Gatilho de fila")
+    Rel(bus, core, "DriftDetected")
+    Rel(core, dbCore, "JDBC")
+    Rel(ms1, dbMs1, "Driver")
+    Rel(ms2, dbMs2, "Driver")
+
+    UpdateRelStyle(bus, fn, $offsetX="-30", $offsetY="22")
+    UpdateRelStyle(ms2, bus, $offsetX="-75", $offsetY="-20")
+    UpdateRelStyle(ms1, bus, $offsetX="5", $offsetY="25")
+    UpdateRelStyle(bff, fn, $offsetX="-150", $offsetY="25")
+    UpdateRelStyle(bus, core, $offsetX="-5", $offsetY="-22")
+    UpdateRelStyle(bff, ms2, $offsetX="30", $offsetY="40")
+    UpdateRelStyle(mes, web, $offsetX="60", $offsetY="-90")
+
+    UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s2, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s3, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s4, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+
+    UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")

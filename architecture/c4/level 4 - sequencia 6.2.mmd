@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor G as Gestor
+    participant W as Microfrontend
+    participant B as BFF
+    participant C as Core API
+    participant M1 as MS1 Ingestão
+    participant M2 as MS2 Análises
+    participant F as Azure Function
+    G->>W: abre o processo
+    W->>B: GET /aggregated-data?processId=...
+    par em paralelo
+        B->>C: processo, máquinas, recomendações
+        B->>M1: grafo e traces
+        B->>M2: análises e drifts
+        B->>F: prévia com a sensibilidade escolhida
+    end
+    B-->>W: JSON único
+    Note over B: se um serviço falhar, o campo vem nulo<br/>e o restante é devolvido
