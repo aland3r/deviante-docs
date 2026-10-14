@@ -687,7 +687,7 @@ Fala: "O menu de exclusão só aparece para administrador e gestor. A tela pede 
 ### 2.7 Demonstração
 
 1. Entrar na **Alfa** como **Gestor**. **Read:** mostrar os processos da Alfa no painel.
-2. **Create:** "Novo processo". No canvas, subir o log de exemplo e confirmar o mapeamento; o gráfico aparece.
+2. **Create:** "Novo processo". No canvas, subir o `Prod1Torno.csv` e confirmar o mapeamento; o gráfico aparece.
 3. **Read:** voltar ao painel e abrir um processo da Alfa que já tem gráfico.
 4. **Update:** clicar no título do processo novo e renomear (`PATCH`, 200).
 5. **Delete:** excluir o processo novo, digitando o nome (204). Sair, entrar como **Operador** da Alfa e mostrar que "Excluir processo" não aparece.
@@ -1040,6 +1040,6 @@ Fala: "A lixeira só aparece para quem pode excluir, e o Core confere o papel de
 
 ## 5. Antes de ensaiar
 
-- [ ] Ter no computador um log de exemplo (`.xes` ou `.csv`) para o upload.
+- [ ] Ter no computador o `Prod1Torno.csv` (log real de um torno), que a Alfa ainda não tem, para o upload.
 - [ ] Entrar com a seta na **Alfa** e conferir que há um processo com gráfico pronto.
 - [ ] Ensaiar com o **Gestor** (exclui) e o **Operador** (sem botão de excluir).
