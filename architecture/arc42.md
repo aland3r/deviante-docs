@@ -1274,7 +1274,7 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 | ADR | Decisão | Contexto e motivo | Alternativa descartada | Consequências | Status |
 |---|---|---|---|---|---|
 | 01 | O cálculo IPDD/ADWIN roda numa Azure Function sem estado; o MS2 só gerencia as análises | O cálculo é puro e vem pronto da pesquisa (RT10). Isolado, ele pode ser trocado ou escalado sem mexer nos serviços, e a Function é exigida (RT5) | Rodar o detector dentro do MS2 | Uma ida e volta pela fila a mais por análise (ADR 10) e cold start na primeira chamada (§11) | Aceita, 05/10/2026 |
-| 02 | O MS1 concentra tudo que lê o log bruto: upload, parse CSV/XES, operações, traces e o grafo (DFG) com PM4Py | Um novo formato de log deve mudar um único serviço (meta 2, §1.2) | Fazer o parse no Core e só o grafo em Python | Os demais serviços nunca leem o log; recebem ids e séries de tempo pelo evento `EventLogParsed` | Aceita, 05/10/2026 |
+| 02 | O MS1 concentra tudo que lê o log bruto: upload, parse CSV/XES, operações, traces e o grafo (DFG) com PM4Py | Um novo formato de log deve mudar um único serviço (meta 2, §1.2) | Fazer o parse no Core e só o grafo em Python | Os demais serviços nunca leem o log; o `EventLogParsed` só avisa que o log está disponível, e o MS2 monta a série quando a análise é executada | Aceita, 05/10/2026 |
 | 03 | A Core API evolui o `deviante-api` existente (Kotlin + Ktor) como serviço de domínio | O Core é dono de cinco dos seis objetos ORCA e já tem login, CRUDs e deploy funcionando | Começar um serviço novo em Node ou Python | Herda a organização por tipo e o modelo antigo, que precisam migrar (§11) | Aceita, 05/10/2026 |
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | O deploy já funcionava no plano gratuito, com as mesmas imagens do Docker Hub | Contêineres na Azure ou na AWS | Três nuvens (Fly.io, Azure, AWS) e latência entre elas; todas na costa leste dos EUA (§7) | Aceita, 05/10/2026 |
 | 05 | Eventos entre serviços pelo Azure Service Bus, tier Basic, uma fila por evento (`EventLogParsed`, `AnalysisRequested`, `AnalysisCompleted`, `DriftDetected`) | A comunicação por eventos é exigida (RT7), e o Service Bus fica na mesma assinatura e região da Function e do Azure SQL | Chamadas REST encadeadas entre os serviços | Consistência eventual; os consumidores precisam ser idempotentes (§8.4); sem tópicos no tier Basic, cada evento tem um único consumidor | Aceita, 05/10/2026; filas revistas em 14/10/2026 |
@@ -1330,7 +1330,7 @@ Cada cenário descreve o contexto, o estímulo que o dispara e a resposta espera
 | Q6 | Instalabilidade (meta 5) | Um ambiente novo de nuvem | Implantar um serviço | A mesma imagem do Docker Hub sobe só com variáveis de ambiente, sem rebuild e sem reimplantar os outros serviços |
 | Q7 | Confidencialidade (meta 4) | Duas empresas com processos e máquinas cadastrados | Um gestor da empresa A pede, pelo id, um recurso da empresa B | 404, sem nenhum dado da empresa B na resposta |
 | Q8 | Desempenho | Log real `Prod1Torno.csv` (13.053 eventos, 3.282 traces) | Upload pelo gestor | Parse e grafo concluídos e `EventLogParsed` publicado em menos de 30 s |
-| Q9 | Desempenho | Série de cerca de 3.300 traces, Function aquecida | O gestor executa a análise | Pontos de drift devolvidos em menos de 5 s em 95% das execuções |
+| Q9 | Desempenho | Série de cerca de 3.300 traces, Function aquecida | O gestor executa a análise | Análise marcada como concluída, com os drifts gravados, em menos de 5 s após a execução em 95% das vezes (inclui a ida e volta pelas filas) |
 | Q10 | Correção dos dados | Event log carregado e com operações extraídas | Lote de mapeamento incompleto ou com operações de processos diferentes | Lote rejeitado inteiro; nenhuma atividade criada pela metade |
 | Q11 | Tolerância a falhas | Service Bus entrega com garantia de pelo menos uma vez | O evento `DriftDetected` chega duas vezes ao Core | Uma única recomendação criada para o drift |
 | Q12 | Operabilidade | Gestor no canvas do processo | Cria ou edita um processo, uma atividade ou uma máquina | A edição acontece no próprio canvas, sem tela de formulário separada |
@@ -1343,16 +1343,18 @@ Esta seção lista, por prioridade, os riscos técnicos (o que pode dar errado) 
 
 | Prioridade | Tipo | Risco ou dívida | Impacto | Mitigação |
 |---|---|---|---|---|
-| 1 | Dívida | A implementação ainda é a da versão anterior: um único serviço Python (`mining/`) faz ingestão e análise sobre o Postgres, e ainda não existem BFF, API Gateway, Service Bus nem Function | A arquitetura das seções 5 a 7 não roda até a migração, com prazo em 12/11/2026 (RO2) para uma equipe de dois alunos (RO1) | Migrar em passos que funcionam sozinhos, cada um com deploy e testes: separar MS1 e MS2 com seus bancos, extrair o IPDD/ADWIN para a Function, criar o BFF atrás do API Gateway e, por fim, ligar o Service Bus |
+| 1 | Dívida | A implementação ainda é a da versão anterior: um único serviço Python (`mining/`) faz ingestão e análise sobre o Postgres, e ainda não existem BFF, API Gateway, Service Bus nem o Function App de análise | A arquitetura das seções 5 a 7 não roda até a migração, com prazo em 12/11/2026 (RO2) para uma equipe de dois alunos (RO1) | Migrar em passos que funcionam sozinhos, cada um com deploy e testes: separar MS1 e MS2 com seus bancos, extrair o IPDD/ADWIN e a previsão para o Function App, criar o BFF atrás do API Gateway e, por fim, ligar o Service Bus |
 | 2 | Dívida | O banco e o código do Core ainda seguem o modelo antigo (gestor, equipamento, recomendação e agenda), não o modelo de domínio da §5.3 (empresa, workspace, componente, intervenção) | Diagramas e código divergem; parte dos requisitos (RF-04, RF-16, RF-17) não tem onde ser gravada | Migração do schema do Core junto com a reorganização em slices, um objeto ORCA por vez |
 | 3 | Risco | O isolamento entre empresas é feito na aplicação, não no banco (ADR 07) | Uma consulta sem filtro expõe dados de outra empresa | Todo repositório do Core filtra pela empresa do usuário do JWT, com teste de arquitetura (§8.5) e o cenário Q7 (§10) |
 | 4 | Dívida | A API ainda não aplica os papéis administrador, gestor, operador e técnico (RF-02) | Qualquer usuário autenticado alcança operações de outro papel | Ler o papel do JWT e checá-lo em cada caso de uso da camada `application` |
 | 5 | Dívida | O Core conecta ao Postgres com o usuário administrativo `postgres` | Uma credencial vazada dá acesso a todo o banco | Role própria só com as tabelas do Core (§8.2), trocada no secret do deploy |
 | 6 | Risco | Limites dos planos gratuitos: Atlas M0 com 512 MB e sem backup automático, cota mensal de computação do Azure SQL gratuito, cold start no Fly.io e na Function | Lentidão ou indisponibilidade durante a demonstração; perda de dados do MS1 | Séries pequenas e consultas leves no MS2, cache no BFF, aquecer os serviços antes da demonstração e exportar o MS1 com `mongodump` antes de cada entrega |
 | 7 | Dívida | Código organizado por tipo, não por feature, e sem testes de arquitetura | As regras de Clean Architecture e Vertical Slice (RNF-20, RNF-21) não são verificadas | Reorganizar em slices e incluir Konsist, dependency-cruiser e import-linter no CI (§8.5) |
-| 8 | Risco | Consistência eventual dos eventos (ADR 05): mensagens duplicadas, atrasadas ou fora de ordem | Recomendações duplicadas ou análises que não aparecem no agregado | Consumidores idempotentes com chave no id do event log ou do drift (§8.4) e o cenário Q11 (§10) |
+| 8 | Risco | Consistência eventual dos eventos (ADR 05): mensagens duplicadas, atrasadas ou fora de ordem | Recomendações duplicadas ou análises que não aparecem no agregado | Consumidores idempotentes com chave no id do event log, da análise ou do drift (§8.4) e o cenário Q11 (§10) |
 | 9 | Risco | Dependência do código da pesquisa: uma mudança no código original altera os resultados | A análise deixa de reproduzir o método publicado | Código envolvido por um Adapter, sem cópia nem alteração (§8.3), versão fixada e o cenário Q1 (§10) como teste de regressão |
 | 10 | Risco | Dependência de seis provedores (Vercel, Fly.io, AWS, Azure, Supabase e MongoDB Atlas) | Latência entre nuvens e migração cara se um provedor mudar o plano gratuito | Regiões na costa leste dos EUA (§7), chamadas em paralelo no BFF, cada provedor acessado só pelo serviço dono e imagens Docker portáveis |
+| 11 | Risco | Análise presa “em andamento”: a Function falha ou o `AnalysisCompleted` não chega ao MS2 (ADR 10) | O gestor espera um resultado que nunca aparece e não sabe se deve executar de novo | Mensagens que falham repetidamente vão para a fila de mensagens mortas do Service Bus; o MS2 marca como falha a análise sem resposta após um prazo, e o gestor pode executá-la de novo |
+| 12 | Risco | A previsão de falha e RUL é experimental: Random Forest treinado a cada chamada, sem modelo validado nem salvo (ADR 06, ADR 11) | Valores instáveis entre execuções ou lidos como resultado definitivo | Só em análises de máquina com dados suficientes, sempre marcada como experimental na interface e sem nenhuma regra de negócio dependendo só dela |
 
 ---
 
@@ -1367,8 +1369,9 @@ Termos de domínio e técnicos usados neste documento, em ordem alfabética, par
 | ADWIN | Adaptive Windowing: algoritmo que detecta mudança na média de uma série de valores. |
 | Analysis (Análise) | Objeto ORCA: execução do IPDD/ADWIN sobre um ou mais event logs, com seus parâmetros e os drifts encontrados. |
 | API Gateway | Porta de entrada única das requisições externas; roteia, valida o JWT e limita a taxa. |
+| AsyncAPI | Especificação para documentar eventos e filas, equivalente ao OpenAPI para APIs HTTP. |
 | arc42 | Template de documentação de arquitetura em 12 seções, usado neste documento. |
-| Azure Function | Função serverless da Azure, cobrada por execução e sem servidor a manter; aqui roda o cálculo IPDD/ADWIN, sem estado. |
+| Azure Function | Função serverless da Azure, cobrada por execução e sem servidor a manter; aqui rodam, sem estado, a detecção IPDD/ADWIN e a previsão experimental, no Function App de análise. |
 | BFF | Backend for Frontend: API feita sob medida para a interface, que encaminha os CRUDs e agrega os dados de vários serviços. |
 | Business (Empresa) | Empresa cliente, identificada pelo CNPJ, à qual pertencem os usuários e os workspaces. |
 | C4 | Modelo de diagramas de arquitetura em quatro níveis de zoom: contexto, containers, componentes e código. |
@@ -1383,6 +1386,7 @@ Termos de domínio e técnicos usados neste documento, em ordem alfabética, par
 | Event log | Registro de eventos de um processo, em CSV ou XES: caso (trace), operação e tempos de início e fim. |
 | Fila (queue) | Canal do Service Bus que guarda as mensagens de um evento até o seu único consumidor ler; se ele estiver fora, a mensagem espera. |
 | Finding (Achado) | Problema encontrado numa inspeção, com severidade; pode abrir uma manutenção. |
+| Function App | Unidade de deploy da Azure que agrupa várias functions com o mesmo código e a mesma configuração; aqui, o Function App de análise com `ipdd-adwin` e `maintenance-prediction` (ADR 11). |
 | Ground truth | Ponto de drift conhecido, injetado nos logs sintéticos, contra o qual a detecção é medida. |
 | Inspection (Inspeção) | Intervenção que só verifica a máquina e registra achados, sem corrigir. |
 | Intervention (Intervenção) | Ação proativa sobre uma máquina, criada a partir de uma recomendação: manutenção ou inspeção. |
