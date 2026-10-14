@@ -2,13 +2,13 @@
 
 Prova de autoria em 16/10. Este roteiro cobre dois CRUDs com conexão ao banco: **Processo** e **Atividade**. Os dois rodam no Core: React (Vercel) → Ktor (Fly.io) → Supabase Postgres. O upload do log, dentro do Processo, passa também pelo serviço de mineração (`deviante-mining`, Fly.io), que lê o arquivo.
 
-**Como ler.** Cada trecho de código traz repositório, arquivo, linhas e um link fixo no commit (`deviante-api@d6ab141`, `deviante-web@b69d9b5`). Abaixo de cada trecho vem o que falar.
+**Como ler.** Cada trecho de código traz repositório, arquivo, linhas e um link fixo no commit (`deviante-api@d6ab141`, `deviante-web@f929aca`). Abaixo de cada trecho vem o que falar.
 
 **Percurso.** Entrar pelo "Modo Protótipo" com a seta na **Alfa**, como **Gestor**. O painel inicial (**Projetos**) é a tela do CRUD de Processo: listar, criar um processo novo e subir um log da Alfa para gerar o gráfico, abrir um processo que já tem gráfico, renomear e excluir. O gestor não tem Operações nem Atividades no menu: ele só mapeia eventos para atividades que já existem. Depois, sair e entrar na **Alfa** como **Administrador**, ir a **Atividades** e fazer o CRUD do catálogo. Em cada tela a ordem é Read, Create, Update e Delete.
 
 ## 1. Depois do login: o menu e o token
 
-📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 34–40 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/components/layout/AppLayout.jsx#L34-L40)
+📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 34–40 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/components/layout/AppLayout.jsx#L34-L40)
 
 ```jsx
           {[
@@ -20,7 +20,7 @@ Prova de autoria em 16/10. Este roteiro cobre dois CRUDs com conexão ao banco: 
           ].filter(([, , feature]) => !feature || (feature === 'catalog' ? canManageCatalog(user) : hasFeature(user, feature))).map(([to, label]) => (
 ```
 
-📍 `deviante-web/src/lib/permissions.js` · linhas 7–11 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/permissions.js#L7-L11)
+📍 `deviante-web/src/lib/permissions.js` · linhas 7–11 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/permissions.js#L7-L11)
 
 ```javascript
 // Operações e o catálogo de atividades são do administrador da empresa. O gestor
@@ -150,7 +150,7 @@ Fala: "Um processo pertence a uma empresa (`business_id`) e guarda quem o criou 
 
 ### 2.2 Read: a lista no painel
 
-📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 323–345 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/DashboardPage.jsx#L323-L345)
+📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 323–345 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/DashboardPage.jsx#L323-L345)
 
 ```jsx
   useEffect(() => {
@@ -178,7 +178,7 @@ Fala: "Um processo pertence a uma empresa (`business_id`) e guarda quem o criou 
   }, [])
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 329–329 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/api.js#L329-L329)
+📍 `deviante-web/src/lib/api.js` · linhas 329–329 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/api.js#L329-L329)
 
 ```javascript
   listProcesses: () => shouldUseRemoteProcesses() ? request('/processes') : mockApi.listProcesses(),
@@ -218,7 +218,7 @@ Fala: "Ao abrir o painel, a tela busca os processos. O Core devolve só os da em
 
 ### 2.3 Create: "Novo processo" e upload do log
 
-📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 347–357 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/DashboardPage.jsx#L347-L357)
+📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 347–357 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/DashboardPage.jsx#L347-L357)
 
 ```jsx
   async function handleCreateProcess() {
@@ -234,7 +234,7 @@ Fala: "Ao abrir o painel, a tela busca os processos. O Core devolve só os da em
   }
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 330–330 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/api.js#L330-L330)
+📍 `deviante-web/src/lib/api.js` · linhas 330–330 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/api.js#L330-L330)
 
 ```javascript
   createProcess: () => shouldUseRemoteProcesses() ? request('/processes', { method: 'POST' }) : mockApi.createProcess(),
@@ -292,7 +292,7 @@ Fala: "O botão cria o processo na hora, com nome 'Untitled' (como no Figma), e 
 
 Com o processo criado, subo o log de eventos:
 
-📍 `deviante-web/src/components/process-graph/EventLogUploadModal.jsx` · linhas 93–112 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/components/process-graph/EventLogUploadModal.jsx#L93-L112)
+📍 `deviante-web/src/components/process-graph/EventLogUploadModal.jsx` · linhas 93–112 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/components/process-graph/EventLogUploadModal.jsx#L93-L112)
 
 ```jsx
   async function handleUpload() {
@@ -317,7 +317,7 @@ Com o processo criado, subo o log de eventos:
       })))
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 362–362 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/api.js#L362-L362)
+📍 `deviante-web/src/lib/api.js` · linhas 362–362 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/api.js#L362-L362)
 
 ```javascript
   uploadEventLog: (processId, file) => upload(`/processes/${processId}/event-logs`, file),
@@ -374,7 +374,7 @@ Fala: "O arquivo vai para o Core, que aceita só `.xes` ou `.csv` (415 para outr
 
 No mapeamento, o gestor só escolhe atividades que já estão no catálogo da Alfa:
 
-📍 `deviante-web/src/components/process-graph/EventLogUploadModal.jsx` · linhas 50–55 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/components/process-graph/EventLogUploadModal.jsx#L50-L55)
+📍 `deviante-web/src/components/process-graph/EventLogUploadModal.jsx` · linhas 50–55 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/components/process-graph/EventLogUploadModal.jsx#L50-L55)
 
 ```jsx
   // Nome aceito: qualquer um para o administrador, só do catálogo para o gestor.
@@ -408,7 +408,7 @@ No mapeamento, o gestor só escolhe atividades que já estão no catálogo da Al
 
 Fala: "Cada evento do log aparece com a atividade sugerida. Para o gestor, só vale um nome que já existe no catálogo da empresa; um nome novo fica pendente, e o Core recusa com 422 se chegar assim. Confirmado o mapeamento, a tela pede o gráfico:"
 
-📍 `deviante-web/src/components/process-graph/ProcessGraphTab.jsx` · linhas 609–616 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/components/process-graph/ProcessGraphTab.jsx#L609-L616)
+📍 `deviante-web/src/components/process-graph/ProcessGraphTab.jsx` · linhas 609–616 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/components/process-graph/ProcessGraphTab.jsx#L609-L616)
 
 ```jsx
     Promise.all([
@@ -421,7 +421,7 @@ Fala: "Cada evento do log aparece com a atividade sugerida. Para o gestor, só v
         setVariants(traceData.variants ?? [])
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 367–370 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/api.js#L367-L370)
+📍 `deviante-web/src/lib/api.js` · linhas 367–370 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/api.js#L367-L370)
 
 ```javascript
   getProcessGraph: (processId, eventLogIds = []) => {
@@ -467,7 +467,7 @@ Fala: "Cada evento do log aparece com a atividade sugerida. Para o gestor, só v
 
 ### 2.4 Read: abrir um processo que já tem gráfico
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 65–75 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ProcessCanvasPage.jsx#L65-L75)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 65–75 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ProcessCanvasPage.jsx#L65-L75)
 
 ```jsx
   useEffect(() => {
@@ -483,7 +483,7 @@ Fala: "Cada evento do log aparece com a atividade sugerida. Para o gestor, só v
   }, [processId])
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 331–331 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/api.js#L331-L331)
+📍 `deviante-web/src/lib/api.js` · linhas 331–331 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/api.js#L331-L331)
 
 ```javascript
   getProcess: (id) => shouldUseRemoteProcesses() ? request(`/processes/${id}`) : mockApi.getProcess(id),
@@ -532,7 +532,7 @@ Fala: "O id vem da URL. Se não for UUID, 400; se não existir ou for de outra e
 
 ### 2.5 Update: clicar no título
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 179–194 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ProcessCanvasPage.jsx#L179-L194)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 179–194 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ProcessCanvasPage.jsx#L179-L194)
 
 ```jsx
           {editingTitle ? (
@@ -553,7 +553,7 @@ Fala: "O id vem da URL. Se não for UUID, 400; se não existir ou for de outra e
           )}
 ```
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 95–109 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ProcessCanvasPage.jsx#L95-L109)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 95–109 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ProcessCanvasPage.jsx#L95-L109)
 
 ```jsx
   async function commitTitle() {
@@ -573,7 +573,7 @@ Fala: "O id vem da URL. Se não for UUID, 400; se não existir ou for de outra e
   }
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 335–337 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/api.js#L335-L337)
+📍 `deviante-web/src/lib/api.js` · linhas 335–337 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/api.js#L335-L337)
 
 ```javascript
   renameProcess: (id, name) => shouldUseRemoteProcesses()
@@ -660,7 +660,7 @@ Fala: "Clicar no título vira um campo; Enter salva com `PATCH /api/processes/{i
 
 ### 2.6 Delete: menu de ações, "Excluir processo" (só administrador e gestor)
 
-📍 `deviante-web/src/lib/permissions.js` · linhas 1–5 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/permissions.js#L1-L5)
+📍 `deviante-web/src/lib/permissions.js` · linhas 1–5 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/permissions.js#L1-L5)
 
 ```javascript
 // Excluir (processo, atividade, equipamento, agenda) é só do administrador e do
@@ -670,13 +670,13 @@ export const DELETE_ROLES = new Set(['owner', 'admin', 'manager'])
 export const canDelete = (user) => DELETE_ROLES.has(user?.role)
 ```
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 203–203 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ProcessCanvasPage.jsx#L203-L203)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 203–203 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ProcessCanvasPage.jsx#L203-L203)
 
 ```jsx
         {canDelete(user) && <ProjectActionsMenu onDelete={deleteCurrentProcess} deleteLabel="Excluir processo" />}
 ```
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 111–120 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ProcessCanvasPage.jsx#L111-L120)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 111–120 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ProcessCanvasPage.jsx#L111-L120)
 
 ```jsx
   async function deleteCurrentProcess() {
@@ -691,7 +691,7 @@ export const canDelete = (user) => DELETE_ROLES.has(user?.role)
   }
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 338–340 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/lib/api.js#L338-L340)
+📍 `deviante-web/src/lib/api.js` · linhas 338–340 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/api.js#L338-L340)
 
 ```javascript
   deleteProcess: (id, confirmation) => shouldUseRemoteProcesses()
@@ -834,7 +834,7 @@ Fala: "Atividade é um catálogo, e cada empresa tem o seu (`business_id`). A ju
 
 ### 3.2 Read: abrir Atividades
 
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 15–33 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ActivitiesPage.jsx#L15-L33)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 15–33 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ActivitiesPage.jsx#L15-L33)
 
 ```jsx
 export default function ActivitiesPage() {
@@ -891,7 +891,7 @@ Fala: "A tela chama `GET /api/activities`. O Core devolve o catálogo da empresa
 
 ### 3.3 Create e Update: "Nova atividade" ou lápis
 
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 96–114 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ActivitiesPage.jsx#L96-L114)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 96–114 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ActivitiesPage.jsx#L96-L114)
 
 ```jsx
   async function submit() {
@@ -1038,7 +1038,7 @@ Fala: "O mesmo modal cria (`POST`, 201) ou edita (`PUT`, 200). Antes de tudo, `r
 
 ### 3.4 Delete: lixeira
 
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 35–43 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ActivitiesPage.jsx#L35-L43)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 35–43 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ActivitiesPage.jsx#L35-L43)
 
 ```jsx
   async function remove(activity) {
@@ -1052,7 +1052,7 @@ Fala: "O mesmo modal cria (`POST`, 201) ou edita (`PUT`, 200). Antes de tudo, `r
   }
 ```
 
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 57–57 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/b69d9b5/src/pages/ActivitiesPage.jsx#L57-L57)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 57–57 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/ActivitiesPage.jsx#L57-L57)
 
 ```jsx
         {allowDelete && <button type="button" onClick={() => remove(activity)} aria-label={`Excluir ${activity.name}`} className="p-1.5 rounded hover:bg-red-950/40" style={{ color: 'var(--crit-soft)' }}><Trash2 size={12} /></button>}

@@ -1,10 +1,10 @@
 # Reuso 03, item 03: roteiro do vídeo de compactação de código por reuso
 
-O enunciado pede o repositório e uma técnica de compactação de código focada em reuso, demonstrada passo a passo num vídeo não listado no YouTube (um por equipe). Este é o roteiro do vídeo: o que mostrar, em que ordem e o que falar. Duração alvo: 4 a 5 minutos.
+O enunciado pede o repositório e uma técnica de compactação de código focada em reuso, demonstrada passo a passo num vídeo não listado no YouTube (um por equipe). Este é o roteiro do vídeo: o que mostrar, em que ordem e o que falar. Duração alvo: 5 a 6 minutos.
 
 ## A técnica
 
-**Extração de componente reutilizável por composição.** Os três formulários em modal do sistema (Equipamento, Agenda de manutenção e Atividade) repetiam o mesmo esqueleto: fundo escuro, cartão, cabeçalho com título e botão de fechar, grade de campos, mensagem de erro, rodapé com Cancelar e Salvar, e as mesmas classes em cada `input`, `select` e `textarea`. A técnica tira esse esqueleto para um componente só, `FormModal`, mais quatro peças de campo (`Field`, `TextInput`, `Select`, `TextArea`). Cada tela passa a declarar apenas o que é dela: os campos e a ação de salvar. O conteúdo variável entra por `children` e por propriedades (`title`, `canSubmit`, `footerStart`, `columns`).
+**Extração de componente reutilizável por composição, depois empacotado como pacote npm.** Os três formulários em modal do sistema (Equipamento, Agenda de manutenção e Atividade) repetiam o mesmo esqueleto: fundo escuro, cartão, cabeçalho com título e botão de fechar, grade de campos, mensagem de erro, rodapé com Cancelar e Salvar, e as mesmas classes em cada `input`, `select` e `textarea`. A técnica tira esse esqueleto para um componente só, `FormModal`, mais quatro peças de campo (`Field`, `TextInput`, `Select`, `TextArea`). Cada tela passa a declarar apenas o que é dela: os campos e a ação de salvar. O conteúdo variável entra por `children` e por propriedades (`title`, `canSubmit`, `footerStart`, `columns`).
 
 O antes e o depois estão em dois commits seguidos do `deviante-web`, o que deixa o vídeo reproduzível:
 
@@ -122,15 +122,30 @@ function ScheduleModal({ initial, onClose, onSave, onDelete }) {
 }
 ```
 
+## O empacotamento
+
+Na aula "Empacotamento para Reuso", empacotar é transformar o código num artefato distribuível e versionado, com manifesto, dependências e documentação. O segundo passo do vídeo faz isso com o componente extraído: `FormModal` e os campos viram o pacote npm **`@deviante/ui` 1.0.0**, na pasta `packages/deviante-ui` do `deviante-web` (commit `f929aca`).
+
+| Peça do pacote | Arquivo | O que define |
+|---|---|---|
+| Manifesto | `packages/deviante-ui/package.json` | Nome, versão 1.0.0, ponto de entrada, arquivos publicados, licença MIT |
+| Dependências | `peerDependencies` no manifesto | `react` e `lucide-react` vêm do projeto que usa o pacote |
+| API pública | `packages/deviante-ui/src/index.js` | `FormModal`, `Field`, `TextInput`, `Select`, `TextArea` |
+| Documentação | `packages/deviante-ui/README.md` | Como instalar, usar e o histórico de versões |
+| Artefato | `npm pack` → `deviante-ui-1.0.0.tgz` (2,1 kB, 4 arquivos) | O que outro projeto instala com `npm install ./deviante-ui-1.0.0.tgz` |
+
+O `deviante-web` passa a consumir o pacote como qualquer dependência: `"@deviante/ui": "file:packages/deviante-ui"` no `package.json`, e as três telas importam de `'@deviante/ui'`, não mais de um caminho interno.
+
 ## Roteiro de gravação
 
 Preparar antes: VS Code aberto no `deviante-web`, terminal na raiz, o site aberto em `https://deviante.alander.io` com a conta **Gestor**.
 
-1. **Abertura (20 s).** Tela do site. Fala: "Este é o Deviante. Vamos mostrar uma técnica de compactação de código focada em reuso: extrair um componente reutilizável para eliminar código repetido entre telas."
+1. **Abertura (20 s).** Tela do site. Fala: "Este é o Deviante. Vamos mostrar uma técnica de compactação de código focada em reuso: extrair um componente reutilizável para eliminar código repetido entre telas e empacotá-lo como pacote versionado."
 2. **O problema (60 s).** No terminal: `git checkout 5c86907`. Abrir lado a lado `src/pages/EquipmentPage.jsx` (função `CreateEquipmentModal`), `src/pages/SchedulesPage.jsx` (`ScheduleModal`) e `src/pages/ActivitiesPage.jsx` (`ActivityModal`). Selecionar em cada um o `div` de fundo, o cabeçalho com o `X`, o rodapé com Cancelar/Salvar e as classes repetidas dos campos. Fala: "três telas, o mesmo esqueleto copiado três vezes; uma mudança de estilo hoje precisa ser feita em três lugares".
 3. **A extração (60 s).** `git checkout 7ddb9a0`. Abrir `src/components/ui/FormModal.jsx`. Mostrar o esqueleto que saiu das telas, as peças de campo e as propriedades que variam: `title`, `canSubmit`, `error`, `footerStart` (o botão Excluir da Agenda) e `columns` (a Atividade usa uma coluna). Fala: "o que é igual fica aqui; o que muda entra por `children` e por propriedades".
 4. **O uso (60 s).** Abrir de novo `ScheduleModal` e `ActivityModal`. Mostrar que cada um agora é só lógica e campos. Rodar `git show --stat 7ddb9a0` e mostrar a tabela de números acima. Fala: "os modais caíram 36%; um formulário novo custa só os campos".
-5. **Funciona igual (45 s).** No site, abrir **Equipamentos → Novo equipamento**, **Agendamentos → Nova manutenção** (mostrar o Excluir ao editar) e **Atividades → Nova atividade**. Fala: "a aparência e o comportamento não mudaram; mudou só quanto código cada tela carrega".
-6. **Fechamento (20 s).** Fala: "a técnica é a mesma que usamos no back-end com o `AppConfig` e os adaptadores: escrever uma vez e reaproveitar. O repositório está em github.com/aland3r/deviante-web."
+5. **O empacotamento (60 s).** `git checkout f929aca`. Abrir `packages/deviante-ui/package.json` e o `README.md`. No terminal: `cd packages/deviante-ui && npm pack`, e mostrar o `deviante-ui-1.0.0.tgz` criado e a lista de arquivos. Abrir `src/pages/ActivitiesPage.jsx` e mostrar o `import { FormModal, Field, TextArea, TextInput } from '@deviante/ui'`. Fala: "o componente virou um pacote com nome, versão, dependências e documentação. Qualquer projeto instala o arquivo `.tgz`; uma correção sai como 1.0.1 sem copiar código".
+6. **Funciona igual (45 s).** No site, abrir **Equipamentos → Novo equipamento**, **Agendamentos → Nova manutenção** (mostrar o Excluir ao editar) e **Atividades → Nova atividade**. Fala: "a aparência e o comportamento não mudaram; mudou só quanto código cada tela carrega".
+7. **Fechamento (20 s).** Fala: "a técnica é a mesma que usamos no back-end com o `AppConfig` e os adaptadores: escrever uma vez e reaproveitar. O repositório está em github.com/aland3r/deviante-web."
 
 Publicar no YouTube como **Não listado** e colar o link na entrega junto com os repositórios (`aland3r/deviante-web`, `aland3r/deviante-api`, `aland3r/deviante-docs`).
