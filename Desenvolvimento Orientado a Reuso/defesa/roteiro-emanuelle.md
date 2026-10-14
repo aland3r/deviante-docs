@@ -4,6 +4,8 @@ Prova de autoria em 16/10. Cada integrante demonstra 2 CRUDs com conexão ao ban
 
 **Como ler.** Cada trecho de código traz a localização exata: repositório, arquivo, linhas e um link fixo no commit (`deviante-api@bdd868c`, `deviante-web@d1cba0d`), que não muda mesmo que a `main` ande. Abaixo de cada trecho vem o que falar. Todo trecho é código que está rodando no sistema.
 
+**Percurso na tela.** Entrar pelo "Modo Protótipo" com a seta na **Alfa**, como **Gestor** (a Alfa tem o plano Manutenção; Beta e Delta não têm essas telas). Do painel inicial, ir pelo menu a **Equipamentos** e fazer o CRUD de Equipamento ali. Depois, pelo menu, ir a **Agendamentos** e fazer o CRUD de Agenda ali. Monitoramentos fica de fora.
+
 ## 0. Mapa do sistema
 
 | Peça | Onde roda | Endereço | Código |
@@ -412,7 +414,7 @@ data class EquipmentResponse(
 )
 ```
 
-Fala: "Só `name` é obrigatório no `EquipmentRequest`. A resposta traz, além das colunas, os nomes dos processos e monitoramentos ligados. No banco, apagar um equipamento apaga em cascata as agendas, vínculos com processos e monitoramentos, parâmetros e recomendações (conferido no Supabase em 13/10)."
+Fala: "Só `name` é obrigatório no `EquipmentRequest`. A resposta traz, além das colunas, os nomes dos processos ligados. No banco, apagar um equipamento apaga em cascata as agendas e os vínculos dele (conferido no Supabase em 13/10)."
 
 📍 `deviante-api/src/main/kotlin/repository/MaintenanceRepository.kt` · linhas 387–397 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/MaintenanceRepository.kt#L387-L397)
 
@@ -559,7 +561,7 @@ export default function EquipmentPage() {
         val equipmentIds = rows.map { it[EquipmentTable.id] }
 ```
 
-Fala: "A lista filtra pelo `business_id`, então cada empresa só vê as próprias máquinas (o administrador vê todas). Os filtros da tela (busca, processo, monitoramento) rodam no navegador sobre essa lista."
+Fala: "A lista filtra pelo `business_id`, então cada empresa só vê as próprias máquinas (o administrador vê todas). Os filtros da tela (busca e processo) rodam no navegador sobre essa lista."
 
 Read de um equipamento:
 
@@ -673,11 +675,11 @@ Fala: "A confirmação avisa que parâmetros, leituras, análises e agendas do e
 
 ### 2.6 Roteiro de fala
 
-1. Logar e abrir `https://deviante.alander.io/equipment`.
+1. Em `https://deviante.alander.io`, no "Modo Protótipo", deixar a seta na **Alfa** e entrar como **Gestor**. No painel inicial, clicar em **Equipamentos** no menu.
 2. **Create:** cadastrar "Torno CNC Prod1", tipo torno, TAG TRN-01. Mostrar no DevTools o `POST /api/equipment` e o 201.
 3. **Read:** mostrar a lista e o filtro `business_id in (...)` no repositório.
 4. **Update:** clicar no lápis e editar a localização (`PUT /api/equipment/{id}`).
-5. **Delete:** clicar na lixeira de um equipamento sem agenda (204). Explicar que, com agenda, o banco apaga a agenda junto (cascata). Entrar como operador e mostrar que a lixeira não aparece.
+5. **Delete:** clicar na lixeira de um equipamento sem agenda (204). Explicar que, com agenda, o banco apaga a agenda junto (cascata). Entrar como operador (também na Alfa) e mostrar que a lixeira não aparece.
 
 ## 3. CRUD de Agenda de manutenção (objeto ORCA MAINTENANCE)
 
@@ -953,11 +955,11 @@ Fala: "O botão só é passado ao modal quando a agenda já existe e o usuário 
 
 ### 3.6 Roteiro de fala
 
-1. Abrir `https://deviante.alander.io/schedules`. Clicar "Nova manutenção": "Troca de rolamento", Torno CNC Prod1, início amanhã (Create: `POST /api/schedules`, 201).
+1. Voltar como **Gestor** da Alfa e clicar em **Agendamentos** no menu. Clicar "Nova manutenção": "Troca de rolamento", Torno CNC Prod1, início amanhã (Create: `POST /api/schedules`, 201).
 2. Mostrar as três visões (lista, kanban, calendário): mesma API, agrupamentos diferentes.
 3. Abrir o card, mudar o status para "Em andamento" e salvar (Update: `PUT /api/schedules/{id}`). O card muda de coluna no kanban.
 4. Tentar salvar com fim antes do início: 400. Explicar o 422 quando o equipamento não existe.
-5. Excluir a manutenção (Delete: 204). Entrar como operador e mostrar que o botão "Excluir" não aparece.
+5. Excluir a manutenção (Delete: 204). Entrar como operador da Alfa e mostrar que o botão "Excluir" não aparece.
 6. Fechar: "no meu par de CRUDs são duas tabelas, `equipment` e `maintenance_schedules`, ligadas por FK; a agenda ainda aponta para `processes`, que é o CRUD do Alander".
 
 ## 4. Perguntas prováveis
@@ -969,5 +971,5 @@ Fala: "O botão só é passado ao modal quando a agenda já existe e o usuário 
 
 ## 5. Checagem antes de ensaiar
 
-- [ ] Deploy da API no Fly.io concluído (sem ele, os papéis por conta e a validação do `PUT` não estão no site).
+- [ ] Login com a seta na **Alfa** (ou na Gama), que têm Equipamentos e Agendamentos.
 - [ ] Ensaiar com a conta demo do gestor (exclui) e a do operador (sem botão de excluir).
