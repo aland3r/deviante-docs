@@ -18,10 +18,10 @@ O login demo tem quatro empresas clientes, cada uma com o nome de uma letra greg
 
 | Empresa | Plano | Exclusivas | O que muda na tela |
 |---|---|---|---|
-| Metalúrgica Alfa | Manutenção | CSV | Tudo, com "Exportar CSV" |
-| Metalúrgica Beta | Essencial | nenhuma | Sem "Equipamentos" e "Agendamentos" no menu |
-| Metalúrgica Gama | Manutenção | nenhuma | Agendamentos sem "Exportar CSV" |
-| Metalúrgica Delta | Essencial | nenhuma | Sem "Equipamentos" e "Agendamentos" no menu |
+| Alfa | Manutenção | CSV | Tudo, com "Exportar CSV" |
+| Beta | Essencial | nenhuma | Sem "Equipamentos" e "Agendamentos" no menu |
+| Gama | Manutenção | nenhuma | Agendamentos sem "Exportar CSV" |
+| Delta | Essencial | nenhuma | Sem "Equipamentos" e "Agendamentos" no menu |
 
 No login, o "Modo Protótipo" tem setas que trocam a empresa; os quatro papéis (administrador, gestor, operador, técnico) entram em qualquer uma. O nome da empresa aparece ao lado do nome do usuário, no topo. Cada empresa tem as próprias instâncias de processo, análise, máquina, monitoramento e agenda; o administrador vê as de todas, com o nome da empresa em cada processo.
 
@@ -104,16 +104,16 @@ productLine:
     - name: "Deviante"
       plan: manutencao
       exclusive: [schedule-export]
-    - name: "Metalúrgica Alfa"
+    - name: "Alfa"
       plan: manutencao
       exclusive: [schedule-export]
-    - name: "Metalúrgica Beta"
+    - name: "Beta"
       plan: essencial
       exclusive: []
-    - name: "Metalúrgica Gama"
+    - name: "Gama"
       plan: manutencao
       exclusive: []
-    - name: "Metalúrgica Delta"
+    - name: "Delta"
       plan: essencial
       exclusive: []
 ```
@@ -382,10 +382,10 @@ A escolha vai em todas as requisições, num cabeçalho:
 // registro guarda no banco a empresa dona). A Deviante não entra aqui: é a
 // empresa de quem entra pelo Google.
 export const COMPANIES = [
-  { name: 'Metalúrgica Alfa', plan: 'Manutenção', exclusive: ['CSV'] },
-  { name: 'Metalúrgica Beta', plan: 'Essencial', exclusive: [] },
-  { name: 'Metalúrgica Gama', plan: 'Manutenção', exclusive: [] },
-  { name: 'Metalúrgica Delta', plan: 'Essencial', exclusive: [] },
+  { name: 'Alfa', plan: 'Manutenção', exclusive: ['CSV'] },
+  { name: 'Beta', plan: 'Essencial', exclusive: [] },
+  { name: 'Gama', plan: 'Manutenção', exclusive: [] },
+  { name: 'Delta', plan: 'Essencial', exclusive: [] },
 ]
 
 const KEY = 'deviante.demoCompany'
@@ -483,15 +483,15 @@ A lista de processos aplica o escopo e rotula cada processo com a empresa dona:
 ```kotlin
     @Test
     fun `each company receives its own variant`() {
-        val alfa = productLine.variantOrDefault("Metalúrgica Alfa")
+        val alfa = productLine.variantOrDefault("Alfa")
         val beta = productLine.variantOrDefault("metalúrgica beta ")
-        val gama = productLine.variantOrDefault("Metalúrgica Gama")
-        val delta = productLine.variantOrDefault("Metalúrgica Delta")
+        val gama = productLine.variantOrDefault("Gama")
+        val delta = productLine.variantOrDefault("Delta")
 
         assertEquals(Plan.MANUTENCAO, alfa.plan)
         assertTrue(alfa.has(Feature.SCHEDULE_EXPORT))
 
-        assertEquals("Metalúrgica Beta", beta.client)
+        assertEquals("Beta", beta.client)
         assertEquals(Plan.ESSENCIAL, beta.plan)
         assertFalse(beta.has(Feature.EQUIPMENT))
         assertFalse(beta.has(Feature.SCHEDULES))
@@ -507,9 +507,9 @@ Rodar: `./gradlew test --tests ProductLineTest` dentro de `deviante-api`.
 
 ## 6. Demonstração (três minutos)
 
-1. Em `https://deviante.alander.io`, no "Modo Protótipo", usar as setas até **Metalúrgica Alfa** e entrar como **Gestor**. Mostrar "· Metalúrgica Alfa" ao lado do nome e os processos da Alfa. Abrir **Agendamentos** e clicar em **Exportar CSV**.
-2. Sair, ir com a seta até **Metalúrgica Gama** e entrar de novo como **Gestor**. Mesmo papel, outra empresa: outros processos, e Agendamentos sem **Exportar CSV** (mesmo plano, sem a função exclusiva).
-3. Sair, ir até **Metalúrgica Beta** (plano Essencial) e entrar como **Operador**. O menu não tem **Equipamentos** nem **Agendamentos**. Digitar `/schedules` na barra de endereço: volta para o painel.
+1. Em `https://deviante.alander.io`, no "Modo Protótipo", usar as setas até **Alfa** e entrar como **Gestor**. Mostrar "· Alfa" ao lado do nome e os processos da Alfa. Abrir **Agendamentos** e clicar em **Exportar CSV**.
+2. Sair, ir com a seta até **Gama** e entrar de novo como **Gestor**. Mesmo papel, outra empresa: outros processos, e Agendamentos sem **Exportar CSV** (mesmo plano, sem a função exclusiva).
+3. Sair, ir até **Beta** (plano Essencial) e entrar como **Operador**. O menu não tem **Equipamentos** nem **Agendamentos**. Digitar `/schedules` na barra de endereço: volta para o painel.
 4. Entrar como **Administrador** em qualquer empresa: o painel mostra os processos de todas, com o selo da empresa em cada um.
 5. Abrir o `application.yaml` e mostrar que trocar `plan: essencial` por `plan: manutencao` na Beta é tudo o que muda a variante.
 

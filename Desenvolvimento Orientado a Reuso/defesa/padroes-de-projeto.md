@@ -875,7 +875,7 @@ export default function PlannedMaintenanceBadge() {
               {label}{to === '/schedules' && <PlannedMaintenanceBadge />}
 ```
 
-**Demonstrar:** entrar como gestor (Metalúrgica Alfa), abrir `/schedules`, olhar o número ao lado de "Agendamentos" no menu, criar uma manutenção com situação "Planejada" e mostrar o número subir sem recarregar a página. Excluir a manutenção e mostrar o número descer. Fala: "o formulário só publica `schedule-saved`; quem atualiza o menu é o contador, que se inscreveu sozinho".
+**Demonstrar:** entrar como gestor (Alfa), abrir `/schedules`, olhar o número ao lado de "Agendamentos" no menu, criar uma manutenção com situação "Planejada" e mostrar o número subir sem recarregar a página. Excluir a manutenção e mostrar o número descer. Fala: "o formulário só publica `schedule-saved`; quem atualiza o menu é o contador, que se inscreveu sozinho".
 
 ## 4. Perguntas prováveis
 
