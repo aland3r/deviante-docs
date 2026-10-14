@@ -273,14 +273,14 @@ C4Container
         Container(s4, " ", " ")
         Container(web, "Microfrontend", "React + Vite, Vercel", "Telas do produto.")
         Container(gw, "API Gateway", "AWS", "Entrada única; valida o JWT.")
-        Container(bff, "BFF", "Node.js + NestJS", "Encaminha os CRUDs e agrega os dados.")
-        Container(ms1, "MS1 · Ingestão", "FastAPI + PM4Py", "Upload do event log e grafo.")
-        Container(ms2, "MS2 · Análises", "FastAPI", "CRUD das análises de drift.")
-        Container(fn, "Análise (ML)", "Azure Functions, Python", "ipdd-adwin (drift) e maintenance-prediction (falha e RUL, experimental).")
-        Container(core, "Core API", "Kotlin + Ktor", "Processos, máquinas e manutenção.")
         ContainerDb(dbMs1, "MongoDB", "Atlas", "Event logs, traces e grafos.")
-        ContainerDb(dbMs2, "Azure SQL", "Azure", "Análises e drifts.")
+        Container(ms1, "MS1 · Ingestão", "FastAPI + PM4Py", "Upload do event log e grafo.")
+        Container(bff, "BFF", "Node.js + NestJS", "Encaminha os CRUDs e agrega os dados.")
+        Container(fn, "Function App de análise", "Azure Functions, Python", "ipdd-adwin (drift) e maintenance-prediction (falha e RUL, experimental).")
         ContainerQueue(bus, "Service Bus", "Azure, tier Basic", "Quatro filas, uma por evento, cada uma com um consumidor.")
+        Container(core, "Core API", "Kotlin + Ktor", "Processos, máquinas e manutenção.")
+        ContainerDb(dbMs2, "Azure SQL", "Azure", "Análises e drifts.")
+        Container(ms2, "MS2 · Análises", "FastAPI", "CRUD das análises de drift.")
         ContainerDb(dbCore, "Postgres", "Supabase", "Dados do Core.")
     }
 
@@ -297,18 +297,19 @@ C4Container
     Rel(bff, ms2, "REST")
     Rel(ms2, fn, "Previsão (HTTP)")
     Rel(ms1, bus, "EventLogParsed")
-    BiRel(ms2, bus, "AnalysisRequested, DriftDetected")
+    BiRel(ms2, bus, "Publica e consome eventos")
     BiRel(bus, fn, "Gatilho de fila")
     Rel(bus, core, "DriftDetected")
     Rel(core, dbCore, "JDBC")
     Rel(ms1, dbMs1, "Driver")
     Rel(ms2, dbMs2, "Driver")
 
-    UpdateRelStyle(ms2, fn, $offsetX="-45", $offsetY="-22")
-    UpdateRelStyle(ms1, bus, $offsetX="-250", $offsetY="30")
-    UpdateRelStyle(ms2, bus, $offsetX="-60", $offsetY="-25")
-    UpdateRelStyle(bus, fn, $offsetX="12", $offsetY="-20")
-    UpdateRelStyle(bus, core, $offsetX="0", $offsetY="0")
+    UpdateRelStyle(bus, fn, $offsetX="-30", $offsetY="22")
+    UpdateRelStyle(ms2, bus, $offsetX="-75", $offsetY="-20")
+    UpdateRelStyle(ms1, bus, $offsetX="5", $offsetY="25")
+    UpdateRelStyle(bff, fn, $offsetX="-150", $offsetY="25")
+    UpdateRelStyle(bus, core, $offsetX="-5", $offsetY="-22")
+    UpdateRelStyle(bff, ms2, $offsetX="30", $offsetY="40")
     UpdateRelStyle(mes, web, $offsetX="60", $offsetY="-90")
 
     UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
@@ -359,7 +360,7 @@ C4Component
 
     Container(bff, "BFF", "Node.js + NestJS", "Encaminha as chamadas da interface.")
     System_Ext(auth, "Supabase Auth", "Publica as chaves (JWKS) do JWT.")
-    ContainerQueue(bus, "Service Bus", "Azure", "Entrega o evento DriftDetected.")
+    ContainerQueue(bus, "Service Bus", "Azure, tier Basic", "Entrega o evento DriftDetected.")
     ContainerDb(db, "Postgres", "Supabase", "Dados do Core.")
 
     Container_Boundary(core, "Core API") {
@@ -758,36 +759,52 @@ classDiagram
 Interfaces entre os containers da seção 5.1.
 
 ```mermaid
-flowchart LR
-    subgraph BFF["BFF"]
-        bffAgg(["IAggregatedData"])
-    end
-    subgraph CORE["Core API"]
-        coreRest(["IDomainCrud"])
-        coreEvt(["IDriftDetectedHandler"])
-    end
-    subgraph MS1["MS1 Ingestão"]
-        ms1Rest(["IEventLogs"])
-    end
-    subgraph MS2["MS2 Análises"]
-        ms2Rest(["IAnalyses"])
-        ms2Evt(["IEventLogParsedHandler"])
-        ms2Done(["IAnalysisCompletedHandler"])
-    end
-    subgraph FN["Azure Function"]
-        fnHttp(["IDriftCalculation"])
-        fnEvt(["IAnalysisRequestedHandler"])
-        fnPred(["IMaintenancePrediction"])
-    end
-    BFF -.->|requer| coreRest
-    BFF -.->|requer| ms1Rest
-    BFF -.->|requer| ms2Rest
-    BFF -.->|requer| fnHttp
-    MS2 -.->|publica para| fnEvt
-    MS2 -.->|requer| fnPred
-    FN -.->|publica para| ms2Done
-    MS1 -.->|publica para| ms2Evt
-    MS2 -.->|publica para| coreEvt
+%%{init: {"wrap": true, "c4": {"width": 200, "wrap": true}}}%%
+C4Component
+
+    Container_Boundary(bff, "BFF") {
+        Component(bffAgg, "IAggregatedData", "REST", "GET /aggregated-data")
+    }
+    Container_Boundary(ms1, "MS1 · Ingestão") {
+        Component(ms1Rest, "IEventLogs", "REST", "Upload multipart")
+    }
+    Boundary(sp, " ", " ") {
+        Component(s1, " ", " ")
+    }
+    Container_Boundary(fn, "Function App de análise") {
+        Component(fnHttp, "IDriftCalculation", "HTTP", "POST /ipdd-adwin")
+        Component(fnEvt, "IAnalysisRequestedHandler", "Fila", "analysis-requested")
+        Component(fnPred, "IMaintenancePrediction", "HTTP", "POST /maintenance-prediction")
+    }
+    Container_Boundary(ms2, "MS2 · Análises") {
+        Component(ms2Evt, "IEventLogParsedHandler", "Fila", "eventlog-parsed")
+        Component(ms2Rest, "IAnalyses", "REST", "CRUD das análises")
+        Component(ms2Done, "IAnalysisCompletedHandler", "Fila", "analysis-completed")
+    }
+    Container_Boundary(core, "Core API") {
+        Component(coreRest, "IDomainCrud", "REST", "CRUDs do domínio")
+        Component(coreEvt, "IDriftDetectedHandler", "Fila", "drift-detected")
+    }
+
+    Rel(bffAgg, ms1Rest, "Requer")
+    Rel(bffAgg, fnHttp, "Requer (prévia)")
+    Rel(bffAgg, ms2Rest, "Requer")
+    Rel(bffAgg, coreRest, "Requer")
+    Rel(ms1Rest, ms2Evt, "EventLogParsed")
+    Rel(ms2Rest, fnEvt, "AnalysisRequested")
+    Rel(ms2Rest, fnPred, "Requer")
+    Rel(fnEvt, ms2Done, "AnalysisCompleted")
+    Rel(ms2Done, coreEvt, "DriftDetected")
+
+    UpdateRelStyle(bffAgg, coreRest, $offsetX="60", $offsetY="10")
+    UpdateRelStyle(ms1Rest, ms2Evt, $offsetX="-55", $offsetY="0")
+    UpdateRelStyle(ms2Rest, fnPred, $offsetX="-60", $offsetY="25")
+    UpdateRelStyle(fnEvt, ms2Done, $offsetX="0", $offsetY="-15")
+
+    UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(sp, $borderColor="transparent", $fontColor="transparent")
+
+    UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="3")
 ```
 
 ---
