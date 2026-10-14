@@ -32,7 +32,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RF-12 | Gestor cadastra, lista, atualiza e exclui máquinas, agrupa em monitoramentos e associa a processos, que as exibem no detalhe | Core API |
 | RF-13 | Carregar log CSV ou XES de uma máquina e registrar seus parâmetros no monitoramento | MS1 · Ingestão + Core API |
 | RF-14 | Configurar os parâmetros da análise: filtro de traces antes da 1ª execução e sensibilidade do IPDD/ADWIN para reexecutar sem novo upload | MS2 |
-| RF-15 | Executar a análise de desvio (drift) sobre um processo ou máquina, com o cálculo IPDD/ADWIN numa função sem estado | MS2 · Análises (FastAPI, Azure SQL) + Azure Function (HTTP Trigger) |
+| RF-15 | Executar a análise de desvio (drift) sobre um processo ou máquina, com o cálculo IPDD/ADWIN numa função sem estado | MS2 · Análises (FastAPI, Azure SQL) + Azure Function (ServiceBusQueueTrigger) |
 | RF-16 | Exibir o diagnóstico de saúde de uma máquina monitorada, incluindo a degradação de seus componentes | Core API |
 | RF-17 | Criar ações proativas (manutenção ou inspeção) a partir de uma recomendação, e editá-las e excluí-las | Core API |
 | RF-18 | Técnico registra a execução de uma ação proativa e reabilita a máquina | Core API |
@@ -63,13 +63,13 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RNF-14 | Microsserviços com Database per Service | Core, MS1 e MS2, cada um com seu banco (persistência poliglota) |
 | RNF-15 | Microsserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
 | RNF-16 | Microsserviço 2 com Azure SQL (oferta gratuita) | MS2 |
-| RNF-17 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger) |
+| RNF-17 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger para a prévia do BFF) |
 | RNF-18 | API Gateway na AWS | API Gateway |
-| RNF-19 | Arquitetura Orientada a Eventos | Azure Service Bus (`EventLogParsed`, `DriftDetected`) |
+| RNF-19 | Arquitetura Orientada a Eventos | Azure Service Bus, uma fila por evento (`EventLogParsed`, `AnalysisRequested`, `AnalysisCompleted`, `DriftDetected`) |
 | RNF-20 | Clean Architecture (Domain, Application, Infrastructure, API) | Todos os serviços (§5.2) |
 | RNF-21 | Vertical Slice (uma pasta por feature) | Todos os serviços (§5.2) |
 | RNF-22 | Testes unitários e de arquitetura | §8.5 |
-| RNF-23 | Swagger no BFF, microsserviços e eventos | OpenAPI do NestJS e do FastAPI; AsyncAPI para os eventos `EventLogParsed` e `DriftDetected` |
+| RNF-23 | Swagger no BFF, microsserviços e eventos | OpenAPI do NestJS e do FastAPI; AsyncAPI para os eventos `EventLogParsed`, `AnalysisRequested`, `AnalysisCompleted` e `DriftDetected` |
 | RNF-24 | Imagens do BFF e dos microsserviços no Docker Hub | §7 |
 | RNF-25 | Aplicação em URLs da nuvem, não localhost | §7 |
 
@@ -222,13 +222,13 @@ Esta seção resume as decisões que dão forma ao Deviante: como o sistema é d
 
 O sistema é dividido por responsabilidade, cada parte com seu banco (Database per Service). A interface é um microfrontend em React que conversa só com o BFF em NestJS, e o BFF fica atrás do API Gateway da AWS. O domínio (processos, atividades, máquinas, monitoramentos e manutenções) fica na Core API em Kotlin/Ktor sobre o Postgres do Supabase, que também cuida do login. A ingestão do log e o grafo do processo ficam no MS1 (FastAPI + PM4Py, MongoDB Atlas) e as análises de desvio no MS2 (FastAPI, Azure SQL). Cada serviço usa o banco que combina com o seu dado (persistência poliglota): relacional no Core, documentos no MS1 e Azure SQL no MS2.
 
-**Núcleo analítico.** O IPDD/ADWIN roda numa Azure Function sem estado, chamada sob demanda, reaproveitando o código da pesquisa sem reescrita para preservar os resultados do método publicado.
+**Núcleo analítico.** O IPDD/ADWIN roda numa Azure Function sem estado, disparada por uma fila do Service Bus quando o MS2 pede uma análise (HTTP só para a prévia do BFF), reaproveitando o código da pesquisa sem reescrita para preservar os resultados do método publicado.
 
-**Integração.** Os serviços trocam eventos no Azure Service Bus (`EventLogParsed`, `DriftDetected`). Assim ingestão, análise e domínio evoluem e falham separados, e o BFF consegue devolver um agregado parcial quando um deles está fora.
+**Integração.** Os serviços trocam eventos no Azure Service Bus, uma fila por evento (`EventLogParsed`, `AnalysisRequested`, `AnalysisCompleted`, `DriftDetected`). Assim ingestão, análise e domínio evoluem e falham separados, e o BFF consegue devolver um agregado parcial quando um deles está fora.
 
 ### 4.2 Padrões arquiteturais e de projeto
 
-No nível da arquitetura, o Deviante combina microsserviços com Database per Service, Backend for Frontend (BFF), API Gateway e comunicação orientada a eventos (publish/subscribe no Service Bus); dentro de cada serviço, Clean Architecture com uma pasta por feature (Vertical Slice). No nível do código, adota um padrão de cada família GoF: o **Singleton** (criacional) garante uma única instância do motor de análise na Function (`AnalysisEngine`) e da configuração (`AppConfig`); o **Adapter** (estrutural) envolve o código IPDD/ADWIN da pesquisa (`IpddAdwinAdapter` → `DriftDetector`) e o PM4Py (`Pm4pyGraphAdapter` → `GraphMiner`) atrás de interfaces próprias; e o **Observer** (comportamental) faz o `DriftSubject` notificar `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` no microfrontend quando um drift é detectado. Os detalhes de cada padrão estão na seção 8.3.
+No nível da arquitetura, o Deviante combina microsserviços com Database per Service, Backend for Frontend (BFF), API Gateway e comunicação orientada a eventos (filas do Service Bus, uma por evento); dentro de cada serviço, Clean Architecture com uma pasta por feature (Vertical Slice). No nível do código, adota um padrão de cada família GoF: o **Singleton** (criacional) garante uma única instância do motor de análise na Function (`AnalysisEngine`) e da configuração (`AppConfig`); o **Adapter** (estrutural) envolve o código IPDD/ADWIN da pesquisa (`IpddAdwinAdapter` → `DriftDetector`) e o PM4Py (`Pm4pyGraphAdapter` → `GraphMiner`) atrás de interfaces próprias; e o **Observer** (comportamental) faz o `DriftSubject` notificar `InvestigationPanel`, `MonitoringContext` e `AnalysisHud` no microfrontend quando um drift é detectado. Os detalhes de cada padrão estão na seção 8.3.
 
 ### 4.3 Tecnologia e operação
 
@@ -276,11 +276,11 @@ C4Container
         Container(bff, "BFF", "Node.js + NestJS", "Encaminha os CRUDs e agrega os dados.")
         Container(ms1, "MS1 · Ingestão", "FastAPI + PM4Py", "Upload do event log e grafo.")
         Container(ms2, "MS2 · Análises", "FastAPI", "CRUD das análises de drift.")
-        Container(fn, "IPDD/ADWIN", "Azure Function", "Calcula os pontos de drift, sem estado.")
+        Container(fn, "Análise (ML)", "Azure Functions, Python", "ipdd-adwin (drift) e maintenance-prediction (falha e RUL, experimental).")
         Container(core, "Core API", "Kotlin + Ktor", "Processos, máquinas e manutenção.")
         ContainerDb(dbMs1, "MongoDB", "Atlas", "Event logs, traces e grafos.")
-        ContainerQueue(bus, "Service Bus", "Azure", "Entrega EventLogParsed ao MS2 e DriftDetected ao Core.")
         ContainerDb(dbMs2, "Azure SQL", "Azure", "Análises e drifts.")
+        ContainerQueue(bus, "Service Bus", "Azure, tier Basic", "Quatro filas, uma por evento, cada uma com um consumidor.")
         ContainerDb(dbCore, "Postgres", "Supabase", "Dados do Core.")
     }
 
@@ -291,22 +291,24 @@ C4Container
     Rel(mes, web, "Event log por upload")
     Rel(web, gw, "REST")
     Rel(gw, bff, "REST")
-    Rel(bff, fn, "Prévia")
+    Rel(bff, fn, "Prévia (HTTP)")
     Rel(bff, core, "REST")
     Rel(bff, ms1, "REST")
     Rel(bff, ms2, "REST")
-    Rel(ms2, fn, "Calcula drift")
+    Rel(ms2, fn, "Previsão (HTTP)")
     Rel(ms1, bus, "EventLogParsed")
-    BiRel(ms2, bus, "Publica DriftDetected, recebe EventLogParsed")
+    BiRel(ms2, bus, "AnalysisRequested, DriftDetected")
+    BiRel(bus, fn, "Gatilho de fila")
     Rel(bus, core, "DriftDetected")
     Rel(core, dbCore, "JDBC")
     Rel(ms1, dbMs1, "Driver")
     Rel(ms2, dbMs2, "Driver")
 
-    UpdateRelStyle(ms2, fn, $offsetX="-5", $offsetY="-20")
-    UpdateRelStyle(ms1, bus, $offsetX="-60", $offsetY="40")
-    UpdateRelStyle(ms2, bus, $offsetX="40", $offsetY="60")
-    UpdateRelStyle(bus, core, $offsetX="-10", $offsetY="10")
+    UpdateRelStyle(ms2, fn, $offsetX="-45", $offsetY="-22")
+    UpdateRelStyle(ms1, bus, $offsetX="-250", $offsetY="30")
+    UpdateRelStyle(ms2, bus, $offsetX="-60", $offsetY="-25")
+    UpdateRelStyle(bus, fn, $offsetX="12", $offsetY="-20")
+    UpdateRelStyle(bus, core, $offsetX="0", $offsetY="0")
     UpdateRelStyle(mes, web, $offsetX="60", $offsetY="-90")
 
     UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
@@ -317,7 +319,7 @@ C4Container
     UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
 ```
 
-**Motivação.** Cada serviço é dono de um grupo de objetos ORCA e do seu próprio banco, para que ingestão, análise e domínio evoluam e sejam implantados separadamente (meta de modificabilidade, §1.2). Cada banco combina com o dado do serviço (persistência poliglota, ADR 08): o domínio do Core é relacional e fica no Postgres, os logs e traces do MS1 são documentos e ficam no MongoDB, e as análises do MS2 ficam no Azure SQL. O BFF concentra a agregação para que o Microfrontend faça uma única chamada por tela, e o cálculo IPDD/ADWIN fica isolado numa função sem estado, que pode ser trocada sem mexer nos serviços.
+**Motivação.** Cada serviço é dono de um grupo de objetos ORCA e do seu próprio banco, para que ingestão, análise e domínio evoluam e sejam implantados separadamente (meta de modificabilidade, §1.2). Cada banco combina com o dado do serviço (persistência poliglota, ADR 08): o domínio do Core é relacional e fica no Postgres, os logs e traces do MS1 são documentos e ficam no MongoDB, e as análises do MS2 ficam no Azure SQL. O BFF concentra a agregação para que o Microfrontend faça uma única chamada por tela, e o cálculo IPDD/ADWIN fica isolado numa função sem estado, que pode ser trocada sem mexer nos serviços. A análise chega à função por uma fila do Service Bus, para que um cálculo demorado não prenda o MS2; só a prévia do BFF, que precisa de resposta imediata, usa HTTP (ADR 05). Todo o aprendizado de máquina fica num único Function App de análise, com uma function para a detecção e outra para a previsão experimental de falha, para que o código de ML evolua num lugar só, sem espalhar pelos serviços (ADR 11).
 
 **Blocos contidos**
 
@@ -328,9 +330,9 @@ C4Container
 | BFF | Proxy dos CRUDs; `GET /aggregated-data` junta Core, MS1, MS2 e Function num único JSON | Node.js + NestJS, Fly.io | — |
 | Core API | Empresas, usuários, processos, atividades, mapeamentos, máquinas e componentes, monitoramentos, recomendações e intervenções | Kotlin + Ktor, Fly.io | Supabase Postgres |
 | MS1 · Ingestão | Upload CSV/XES, parse, operações, traces e grafo (DFG) com PM4Py; CRUD de event logs (ADR 02) | Python + FastAPI + PM4Py, Fly.io | MongoDB Atlas |
-| MS2 · Análises | CRUD das análises de drift; monta a série de tempos e chama a Function | Python + FastAPI, Fly.io | Azure SQL |
-| Azure Function | IPDD/ADWIN: recebe a série, devolve os pontos de drift; sem estado | Python, HTTP Trigger | — |
-| Service Bus | Transporte de eventos entre serviços | Azure Service Bus | — |
+| MS2 · Análises | CRUD das análises de drift; monta a série de tempos, pede o cálculo por fila e grava o resultado; numa análise de máquina, pede também a previsão experimental | Python + FastAPI, Fly.io | Azure SQL |
+| Function App de análise (ML) | `ipdd-adwin`: recebe a série e devolve os pontos de drift. `maintenance-prediction` (experimental): Random Forest treinado a cada chamada com execuções rotuladas, devolve a probabilidade de falha e o RUL em traces. Sem estado | Python, plano Consumption; `ipdd-adwin` com ServiceBusQueueTrigger e HTTP Trigger (prévia), `maintenance-prediction` com HTTP Trigger | — |
+| Service Bus | Transporte de eventos entre serviços, uma fila por evento | Azure Service Bus, tier Basic | — |
 
 **Interfaces importantes.** São os contratos entre os containers. As REST passam pelo BFF; as de evento passam pelo Service Bus. O diagrama de componentes da §5.3 mostra quem fornece e quem requer cada uma.
 
@@ -340,9 +342,12 @@ C4Container
 | `IDomainCrud` | Core API | REST | BFF |
 | `IEventLogs` | MS1 · Ingestão | REST, upload multipart | BFF |
 | `IAnalyses` | MS2 · Análises | REST | BFF |
-| `IDriftCalculation` | Azure Function | HTTP, `POST /ipdd-adwin` | BFF, MS2 |
-| `IEventLogParsedHandler` | MS2 · Análises | Evento `EventLogParsed` | MS1 (publica) |
-| `IDriftDetectedHandler` | Core API | Evento `DriftDetected` | MS2 (publica) |
+| `IDriftCalculation` | Azure Function | HTTP, `POST /ipdd-adwin` | BFF (prévia) |
+| `IMaintenancePrediction` | Azure Function | HTTP, `POST /maintenance-prediction` (experimental) | MS2 |
+| `IAnalysisRequestedHandler` | Azure Function | Evento `AnalysisRequested`, fila `analysis-requested` | MS2 (publica) |
+| `IAnalysisCompletedHandler` | MS2 · Análises | Evento `AnalysisCompleted`, fila `analysis-completed` | Azure Function (publica) |
+| `IEventLogParsedHandler` | MS2 · Análises | Evento `EventLogParsed`, fila `eventlog-parsed` | MS1 (publica) |
+| `IDriftDetectedHandler` | Core API | Evento `DriftDetected`, fila `drift-detected` | MS2 (publica) |
 
 ### 5.2 Componentes do Core API
 
@@ -767,15 +772,20 @@ flowchart LR
     subgraph MS2["MS2 Análises"]
         ms2Rest(["IAnalyses"])
         ms2Evt(["IEventLogParsedHandler"])
+        ms2Done(["IAnalysisCompletedHandler"])
     end
     subgraph FN["Azure Function"]
         fnHttp(["IDriftCalculation"])
+        fnEvt(["IAnalysisRequestedHandler"])
+        fnPred(["IMaintenancePrediction"])
     end
     BFF -.->|requer| coreRest
     BFF -.->|requer| ms1Rest
     BFF -.->|requer| ms2Rest
     BFF -.->|requer| fnHttp
-    MS2 -.->|requer| fnHttp
+    MS2 -.->|publica para| fnEvt
+    MS2 -.->|requer| fnPred
+    FN -.->|publica para| ms2Done
     MS1 -.->|publica para| ms2Evt
     MS2 -.->|publica para| coreEvt
 ```
@@ -818,14 +828,19 @@ sequenceDiagram
     W->>GW: POST /analyses/{id}/run (JWT)
     GW->>B: POST /analyses/{id}/run
     B->>M2: POST /analyses/{id}/run
-    M2->>F: POST /ipdd-adwin (série, delta)
-    F-->>M2: pontos de drift
+    M2-->>B: 202 análise em andamento
+    M2->>Q: AnalysisRequested (série, delta)
+    Q->>F: AnalysisRequested (ServiceBusQueueTrigger)
+    F->>F: IPDD/ADWIN
+    F->>Q: AnalysisCompleted (pontos de drift)
+    Q->>M2: AnalysisCompleted
+    M2->>M2: grava análise e drifts
     M2->>Q: DriftDetected (drift, processo, máquina)
     Q->>C: DriftDetected
     C->>C: cria Recommendation
 ```
 
-**Análise.** O gestor envia o event log exportado do MES/ERP. A ingestão responde na hora e avisa o MS2 por evento quando o log fica disponível. Depois o gestor configura a análise (filtro de traces e sensibilidade, RF-14) e a executa; o resultado segue por evento até o Core criar a recomendação de manutenção. Se o arquivo for inválido, o MS1 marca o event log como falho e nenhum evento é publicado.
+**Análise.** O gestor envia o event log exportado do MES/ERP. A ingestão responde na hora e avisa o MS2 por evento quando o log fica disponível. Depois o gestor configura a análise (filtro de traces e sensibilidade, RF-14) e a executa. O MS2 responde na hora e pede o cálculo por fila; a Function é disparada pela própria fila, calcula e devolve o resultado por outra fila. O MS2 grava os drifts e o resultado segue por evento até o Core criar a recomendação de manutenção. Cada fila tem um único consumidor. Se o arquivo for inválido, o MS1 marca o event log como falho e nenhum evento é publicado.
 
 ### 6.2 Abrir o processo (`GET /aggregated-data`)
 
@@ -939,7 +954,7 @@ flowchart TB
         ms2["MS2 Análises"]
     end
     subgraph azure["Microsoft Azure · eastus · rg-deviante"]
-        fn["Function IPDD/ADWIN"]
+        fn["Function App de análise<br/>ipdd-adwin · maintenance-prediction"]
         sql[("Azure SQL")]
         bus{{"Service Bus"}}
     end
@@ -950,13 +965,13 @@ flowchart TB
     browser -->|HTTPS| fe
     fe -->|HTTPS| gw --> bff
     bff --> core & ms1 & ms2
-    bff --> fn
-    ms2 --> fn
+    bff -->|HTTP, prévia| fn
+    ms2 -->|HTTP, previsão| fn
     fe -.->|login| supa
     core --> supa
     ms1 --> mongo
     ms2 --> sql
-    ms1 & ms2 & core <--> bus
+    ms1 & ms2 & core & fn <--> bus
 ```
 
 **Motivação.** As restrições de Cloud (§2) fixam o API Gateway na AWS e a Azure Function e o Azure SQL na Azure, que também hospeda o barramento de eventos. Os serviços em contêiner ficam no Fly.io, onde o deploy já funcionava no plano gratuito (ADR 04), rodando as mesmas imagens publicadas no Docker Hub. Os bancos gerenciados (Supabase, MongoDB Atlas e Azure SQL) evitam operar banco próprio, um por serviço (ADR 08). Azure, Fly.io e Atlas ficam na mesma área, a costa leste dos EUA (eastus, iad e us-east-1); a assinatura Azure for Students não libera East US 2.
@@ -970,8 +985,8 @@ flowchart TB
 | Microfrontend | Vercel | Deploy a cada push na `main` |
 | API Gateway | AWS API Gateway (HTTP API) | Configuração de rotas e autorizador JWT |
 | BFF, Core API, MS1, MS2 | Fly.io, uma app por serviço | Imagem no Docker Hub, deploy via GitHub Actions |
-| Azure Function IPDD/ADWIN | Azure Functions, plano Consumption, eastus, resource group `rg-deviante` | Deploy via GitHub Actions com login OIDC na managed identity, sem segredo |
-| Service Bus | Azure Service Bus | Filas e tópicos dos eventos `EventLogParsed` e `DriftDetected` |
+| Function App de análise (`ipdd-adwin` e `maintenance-prediction`) | Um único Azure Function App em Python, plano Consumption, eastus, resource group `rg-deviante`; `ipdd-adwin` com ServiceBusQueueTrigger na fila `analysis-requested` e HTTP Trigger para a prévia; `maintenance-prediction` com HTTP Trigger | Deploy via GitHub Actions com login OIDC na managed identity, sem segredo |
+| Service Bus | Azure Service Bus, tier Basic, eastus, resource group `rg-deviante` | Quatro filas, uma por evento e cada uma com um único consumidor: `eventlog-parsed` (MS2), `analysis-requested` (Function), `analysis-completed` (MS2) e `drift-detected` (Core); o tier Basic não tem tópicos |
 | Bancos | Supabase Postgres, MongoDB Atlas M0 `pjbl` (us-east-1), Azure SQL Free (eastus) | Serviços gerenciados; um usuário de banco por serviço, com acesso só aos próprios dados; strings de conexão nos secrets do GitHub Actions |
 | Autenticação | Supabase Auth | Login Google e emissão do JWT |
 
@@ -1167,7 +1182,7 @@ O login é feito no Supabase Auth com Google. O JWT é validado no API Gateway e
 
 ### 8.3 Padrões de reuso
 
-Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, análise de drift, investigação). Manutenção preditiva (RUL, probabilidade de falha) fica fora da v1 (ADR 06).
+Um padrão de cada família, todos sobre o que a v1 faz de fato (upload, grafo, análise de drift, investigação). A manutenção preditiva (RUL e probabilidade de falha) é experimental na v1 e não entra nos padrões (ADR 06).
 
 | Padrão | Família | Exemplos | Onde |
 |---|---|---|---|
@@ -1219,7 +1234,7 @@ O Adapter é o padrão que preserva a pesquisa: o código da pesquisa é envolvi
 
 ### 8.4 Tratamento de erros e resiliência
 
-Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa timeout por serviço e devolve agregado parcial. Eventos são idempotentes (chave = id do event log no `EventLogParsed` e id do drift no `DriftDetected`).
+Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa timeout por serviço e devolve agregado parcial. Eventos são idempotentes (chave = id do event log no `EventLogParsed`, id da análise no `AnalysisRequested` e no `AnalysisCompleted` e id do drift no `DriftDetected`).
 
 ### 8.5 Testes de arquitetura
 
@@ -1241,15 +1256,17 @@ Esta seção registra as decisões de arquitetura importantes, caras de reverter
 
 | ADR | Decisão | Contexto e motivo | Alternativa descartada | Consequências | Status |
 |---|---|---|---|---|---|
-| 01 | O cálculo IPDD/ADWIN roda numa Azure Function sem estado; o MS2 só gerencia as análises | O cálculo é puro e vem pronto da pesquisa (RT10). Isolado, ele pode ser trocado ou escalado sem mexer nos serviços, e a Function é exigida (RT5) | Rodar o detector dentro do MS2 | Uma chamada HTTP a mais por análise e cold start na primeira chamada (§11) | Aceita, 05/10/2026 |
+| 01 | O cálculo IPDD/ADWIN roda numa Azure Function sem estado; o MS2 só gerencia as análises | O cálculo é puro e vem pronto da pesquisa (RT10). Isolado, ele pode ser trocado ou escalado sem mexer nos serviços, e a Function é exigida (RT5) | Rodar o detector dentro do MS2 | Uma ida e volta pela fila a mais por análise (ADR 10) e cold start na primeira chamada (§11) | Aceita, 05/10/2026 |
 | 02 | O MS1 concentra tudo que lê o log bruto: upload, parse CSV/XES, operações, traces e o grafo (DFG) com PM4Py | Um novo formato de log deve mudar um único serviço (meta 2, §1.2) | Fazer o parse no Core e só o grafo em Python | Os demais serviços nunca leem o log; recebem ids e séries de tempo pelo evento `EventLogParsed` | Aceita, 05/10/2026 |
 | 03 | A Core API evolui o `deviante-api` existente (Kotlin + Ktor) como serviço de domínio | O Core é dono de cinco dos seis objetos ORCA e já tem login, CRUDs e deploy funcionando | Começar um serviço novo em Node ou Python | Herda a organização por tipo e o modelo antigo, que precisam migrar (§11) | Aceita, 05/10/2026 |
 | 04 | BFF, Core, MS1 e MS2 hospedados no Fly.io | O deploy já funcionava no plano gratuito, com as mesmas imagens do Docker Hub | Contêineres na Azure ou na AWS | Três nuvens (Fly.io, Azure, AWS) e latência entre elas; todas na costa leste dos EUA (§7) | Aceita, 05/10/2026 |
-| 05 | Eventos entre serviços pelo Azure Service Bus (`EventLogParsed`, `DriftDetected`) | A comunicação por eventos é exigida (RT7), e o Service Bus fica na mesma assinatura e região da Function e do Azure SQL | Chamadas REST encadeadas entre os serviços | Consistência eventual; os consumidores precisam ser idempotentes (§8.4) | Aceita, 05/10/2026 |
-| 06 | Prognóstico de manutenção (RUL) fora do escopo desta versão | A entrega se concentra na detecção de drift e no diagnóstico de saúde (RF-16) | Calcular o RUL na Azure Function junto com o drift | Nenhum serviço calcula nem guarda RUL; se voltar ao escopo, entra como nova decisão | Aceita, 06/10/2026 |
+| 05 | Eventos entre serviços pelo Azure Service Bus, tier Basic, uma fila por evento (`EventLogParsed`, `AnalysisRequested`, `AnalysisCompleted`, `DriftDetected`) | A comunicação por eventos é exigida (RT7), e o Service Bus fica na mesma assinatura e região da Function e do Azure SQL | Chamadas REST encadeadas entre os serviços | Consistência eventual; os consumidores precisam ser idempotentes (§8.4); sem tópicos no tier Basic, cada evento tem um único consumidor | Aceita, 05/10/2026; filas revistas em 14/10/2026 |
+| 06 | Prognóstico de manutenção (probabilidade de falha e RUL) é experimental nesta versão | A entrega se concentra na detecção de drift e no diagnóstico de saúde (RF-16). A previsão adapta experimentos ainda não publicados da pesquisa (Random Forest) e não tem modelo validado nem salvo | Tratar a previsão como resultado definitivo, no mesmo nível da detecção | A previsão roda na function `maintenance-prediction` (ADR 11), só em análises de máquina com dados suficientes, e aparece marcada como experimental; nenhuma regra de negócio depende só dela | Aceita, 06/10/2026; revista em 14/10/2026 |
 | 07 | Identidade no Supabase Auth com Google; papel e isolamento entre empresas aplicados na aplicação, sem RLS no banco | Só a Core API acessa as tabelas do Core, com credencial própria, e o JWT já traz usuário e papel (RNF-08, RNF-10) | Políticas RLS por empresa no Postgres; provedor de identidade próprio | Uma consulta sem filtro exporia dados de outra empresa; um teste de arquitetura cobra o filtro (§8.5) | Aceita, 05/10/2026 |
 | 08 | Persistência poliglota: cada serviço usa o banco que combina com o seu dado (Postgres no Core, MongoDB no MS1, Azure SQL no MS2) | O domínio do Core é relacional, logs e traces são documentos e o Azure SQL do MS2 é exigência da disciplina (RT3, RT4) | Consolidar Core e MS1 no MongoDB Atlas | Três provedores de dados, cada um com sua credencial; entre bancos só trafegam ids | Aceita, 05/10/2026 |
 | 09 | Dados de máquina entram só por upload de event log, sem sensores em tempo real | O sistema de origem exporta o log em arquivo (§3), e o método da pesquisa foi validado sobre logs | Ingestão contínua de sensores (IoT) | O diagnóstico é tão atual quanto o último upload; um fluxo contínuo entraria como nova fonte de eventos no MS1 | Aceita, 08/10/2026 |
+| 10 | A Function IPDD/ADWIN é disparada pela fila `analysis-requested` (ServiceBusQueueTrigger) e devolve o resultado pela fila `analysis-completed`; o HTTP Trigger fica só para a prévia do BFF | A arquitetura orientada a eventos da disciplina pede uma Function no plano Consumption consumindo o Service Bus por fila (RT5, RT7); um cálculo demorado não deve prender o MS2 | O MS2 chamar a Function por HTTP e esperar a resposta | A análise fica “em andamento” até o `AnalysisCompleted` chegar; dois eventos a mais para documentar e testar | Aceita, 14/10/2026 |
+| 11 | Todo o aprendizado de máquina fica num único Function App de análise, em Python e com um só pacote de código, com duas functions: `ipdd-adwin` (detecção) e `maintenance-prediction` (previsão experimental) | Detecção e previsão são cálculos sem estado que vêm da mesma pesquisa e evoluem juntos; mantê-los num lugar só separa o ML dos serviços sem espalhar código | Uma Function App por modelo; a previsão dentro do MS2 ou do Core | Um deploy e um cold start compartilhados pelas duas functions; um modelo treinado e salvo entra nesse pacote com versão, sem mexer nos serviços | Aceita, 14/10/2026 |
 
 ---
 
@@ -1347,6 +1364,7 @@ Termos de domínio e técnicos usados neste documento, em ordem alfabética, par
 | DFG | Directly-Follows Graph: grafo de quais atividades seguem quais, com a frequência de cada passagem. |
 | Drift | Mudança estatisticamente relevante no comportamento de uma série, aqui o sojourn time de uma atividade. |
 | Event log | Registro de eventos de um processo, em CSV ou XES: caso (trace), operação e tempos de início e fim. |
+| Fila (queue) | Canal do Service Bus que guarda as mensagens de um evento até o seu único consumidor ler; se ele estiver fora, a mensagem espera. |
 | Finding (Achado) | Problema encontrado numa inspeção, com severidade; pode abrir uma manutenção. |
 | Ground truth | Ponto de drift conhecido, injetado nos logs sintéticos, contra o qual a detecção é medida. |
 | Inspection (Inspeção) | Intervenção que só verifica a máquina e registra achados, sem corrigir. |
@@ -1362,9 +1380,11 @@ Termos de domínio e técnicos usados neste documento, em ordem alfabética, par
 | Operation (Operação) | Rótulo de atividade como vem no event log, antes de ser mapeado para uma Activity. |
 | PM4Py | Biblioteca Python de mineração de processo, usada para ler o log e gerar o DFG. |
 | Process (Processo) | Objeto ORCA: processo de manufatura registrado e analisado. |
+| Random Forest | Modelo de aprendizado de máquina formado por várias árvores de decisão; aqui estima a probabilidade de falha e o RUL, de forma experimental. |
 | Recommendation (Recomendação) | Sugestão de manutenção ou inspeção gerada a partir de um drift; quando aceita, vira uma intervenção. |
-| RUL | Remaining Useful Life: vida útil restante estimada de uma máquina; fora do escopo desta versão (ADR 06). |
-| Service Bus | Barramento de mensagens da Azure que transporta os eventos entre os serviços. |
+| RUL | Remaining Useful Life: vida útil restante estimada de uma máquina, aqui em traces; experimental nesta versão (ADR 06). |
+| Service Bus | Barramento de mensagens da Azure que transporta os eventos entre os serviços. Aqui no tier Basic, que só tem filas. |
+| ServiceBusQueueTrigger | Gatilho que executa uma Azure Function a cada mensagem que chega numa fila do Service Bus. |
 | Sojourn time | Tempo que um caso passa numa atividade (fim − início). |
 | Trace | Sequência de eventos de um mesmo caso. |
 | Vertical Slice | Organização do código por feature, com uma pasta por caso de uso de ponta a ponta. |
