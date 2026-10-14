@@ -63,7 +63,7 @@ O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, 
 | RNF-14 | Microsserviços com Database per Service | Core, MS1 e MS2, cada um com seu banco (persistência poliglota) |
 | RNF-15 | Microsserviço 1 com MongoDB Atlas (Free Tier) | MS1 |
 | RNF-16 | Microsserviço 2 com Azure SQL (oferta gratuita) | MS2 |
-| RNF-17 | Azure Function exposta via HTTP | Azure Function (HTTP Trigger para a prévia do BFF) |
+| RNF-17 | Azure Function exposta via HTTP | Function App de análise com HTTP Trigger na prévia do BFF (`ipdd-adwin`) e na previsão experimental chamada pelo MS2 (`maintenance-prediction`) |
 | RNF-18 | API Gateway na AWS | API Gateway |
 | RNF-19 | Arquitetura Orientada a Eventos | Azure Service Bus, uma fila por evento (`EventLogParsed`, `AnalysisRequested`, `AnalysisCompleted`, `DriftDetected`) |
 | RNF-20 | Clean Architecture (Domain, Application, Infrastructure, API) | Todos os serviços (§5.2) |
@@ -1156,6 +1156,7 @@ erDiagram
 erDiagram
     ANALYSES ||--o{ ANALYSIS_EVENT_LOGS : analisa
     ANALYSES ||--o{ DRIFTS : detecta
+    ANALYSES ||--o| MAINTENANCE_PREDICTIONS : estima
     ANALYSES {
         uuid id PK
         string business_ref
@@ -1183,7 +1184,18 @@ erDiagram
         float mean_after
         float magnitude_percent
     }
+    MAINTENANCE_PREDICTIONS {
+        uuid id PK
+        uuid analysis_id FK
+        string machine_ref
+        float failure_probability
+        int rul_traces
+        string model
+        timestamp predicted_at
+    }
 ```
+
+A tabela `maintenance_predictions` guarda o resultado da previsão experimental (ADR 06), só em análises de máquina.
 
 **MS1 (MongoDB Atlas)** — coleções `event_logs` (formato e status do parse), `traces` (eventos embutidos, com temperatura, vibração e ruído quando o log traz), `operations` (rótulos brutos e status do mapeamento) e `process_graphs` (nós e arestas do DFG com frequências).
 
@@ -1251,7 +1263,7 @@ O Adapter é o padrão que preserva a pesquisa: o código da pesquisa é envolvi
 
 ### 8.4 Tratamento de erros e resiliência
 
-Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa timeout por serviço e devolve agregado parcial. Eventos são idempotentes (chave = id do event log no `EventLogParsed`, id da análise no `AnalysisRequested` e no `AnalysisCompleted` e id do drift no `DriftDetected`).
+Erros saem como JSON com um campo `error` e status HTTP adequado. O BFF usa timeout por serviço e devolve agregado parcial. Eventos são idempotentes (chave = id do event log no `EventLogParsed`, id da análise no `AnalysisRequested` e no `AnalysisCompleted` e id do drift no `DriftDetected`). Uma análise sem `AnalysisCompleted` dentro do prazo é marcada como falha pelo MS2 e pode ser executada de novo; mensagens que falham repetidamente vão para a fila de mensagens mortas do Service Bus.
 
 ### 8.5 Testes de arquitetura
 
