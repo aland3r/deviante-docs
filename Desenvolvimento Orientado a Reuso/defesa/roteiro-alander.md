@@ -1,190 +1,28 @@
 # Defesa Reuso 03: roteiro do Alander (Processo e Atividade)
 
-Prova de autoria em 16/10. Cada integrante demonstra 2 CRUDs com conexão ao banco e explica o caminho do código. Este roteiro cobre **Processo** e **Atividade**. Os dois rodam só no Core (React → Ktor → Supabase Postgres), sem Function nem microsserviços.
+Prova de autoria em 16/10. Este roteiro cobre dois CRUDs com conexão ao banco: **Processo** e **Atividade**. Os dois rodam no Core: React (Vercel) → Ktor (Fly.io) → Supabase Postgres. O upload do log, dentro do Processo, passa também pelo serviço de mineração (`deviante-mining`, Fly.io), que lê o arquivo.
 
-**Como ler.** Cada trecho de código traz a localização exata: repositório, arquivo, linhas e um link fixo no commit (`deviante-api@bdd868c`, `deviante-web@d1cba0d`), que não muda mesmo que a `main` ande. Abaixo de cada trecho vem o que falar. Todo trecho é código que está rodando no sistema.
+**Como ler.** Cada trecho de código traz repositório, arquivo, linhas e um link fixo no commit (`deviante-api@cea030d`, `deviante-web@32eb2d0`). Abaixo de cada trecho vem o que falar.
 
-## 0. Mapa do sistema
+**Percurso.** Entrar pelo "Modo Protótipo" com a seta na **Alfa**, como **Gestor**. O painel inicial (**Projetos**) é a tela do CRUD de Processo: listar, criar um processo novo e subir um log para gerar o gráfico, abrir um processo que já tem gráfico, renomear e excluir. Depois, pelo menu, ir a **Atividades** e fazer o CRUD ali. Em cada tela a ordem é Read, Create, Update e Delete.
 
-| Peça | Onde roda | Endereço | Código |
-|---|---|---|---|
-| Telas | Vercel | `https://deviante.alander.io` (`/dashboard`, `/processes/{id}`, `/activities`) | `aland3r/deviante-web` |
-| Proxy da API | Vercel (rewrite) | `https://deviante.alander.io/api/*` → `https://deviante-api.fly.dev/api/*` | `deviante-web/vercel.json` |
-| Core API | Fly.io, app `deviante-api`, região `iad` | `https://deviante-api.fly.dev/api` | `aland3r/deviante-api` (`src/main/kotlin`) |
-| Autenticação | Supabase Auth (Google e contas demo) | `https://<projeto>.supabase.co/auth/v1/user` | chamado por `SupabaseAuth.kt` |
-| Banco | Supabase Postgres, schema `deviante` | tabelas `processes`, `activities`, `process_activities`, `managers`, `users` | mapeado em `src/main/kotlin/db/*.kt` |
-| Mining (não usado nos CRUDs) | Fly.io, app `deviante-mining` | só o Core chama | `deviante-api/mining/` |
+## 1. Depois do login: o menu e o token
 
-📍 `deviante-web/vercel.json` · linhas 1–6 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/vercel.json#L1-L6)
+📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 33–39 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/components/layout/AppLayout.jsx#L33-L39)
 
-```json
-{
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://deviante-api.fly.dev/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+```jsx
+          {[
+            ['/dashboard', 'Projetos'],
+            ['/operations', 'Operações'],
+            ['/activities', 'Atividades'],
+            ['/equipment', 'Equipamentos', FEATURES.equipment],
+            ['/schedules', 'Agendamentos', FEATURES.schedules],
+          ].filter(([, , feature]) => !feature || hasFeature(user, feature)).map(([to, label]) => (
 ```
 
-O navegador sempre chama `/api/...` no próprio domínio do site; a Vercel repassa para o Fly.io. Por isso o front não precisa saber o endereço do Core.
+Fala: "O menu leva às telas. Projetos é o painel de processos; Atividades é o catálogo de atividades."
 
-## 1. O caminho comum (falar uma vez, no início)
-
-```mermaid
-sequenceDiagram
-    actor M as Manager
-    participant W as deviante-web (React)
-    participant V as Vercel (rewrite /api)
-    participant C as Core API (Ktor, Fly.io)
-    participant A as Supabase Auth
-    participant R as Repository (Exposed)
-    participant DB as Postgres (schema deviante)
-    M->>W: ação na tela
-    W->>W: api.js request() anexa Bearer token
-    W->>V: HTTPS /api/...
-    V->>C: repassa para deviante-api.fly.dev
-    C->>C: CORS (Http.kt) e JSON (Serialization.kt)
-    C->>A: SupabaseAuthClient.verify(token)
-    A-->>C: id e e-mail
-    C->>R: ManagerRepository.findOrCreateForSupabaseUser
-    C->>R: ProcessRepository / ActivitiesRepository
-    R->>DB: transaction { SQL }
-    DB-->>R: linhas
-    R-->>C: Record
-    C-->>W: DTO em JSON (toResponse)
-    W-->>M: estado React atualizado
-```
-
-### 1.1 Front: o cliente HTTP
-
-📍 `deviante-web/src/lib/api.js` · linhas 28–28 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L28-L28)
-
-```javascript
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
-```
-
-📍 `deviante-web/src/lib/api.js` · linhas 244–268 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L244-L268)
-
-```javascript
-async function authHeader() {
-  if (!isSupabaseConfigured()) return {}
-  const { data } = await getSupabase().auth.getSession()
-  const token = data.session?.access_token
-  return token ? { Authorization: `Bearer ${token}`, ...companyHeader() } : {}
-}
-
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(await authHeader()),
-      ...(options.headers ?? {}),
-    },
-    ...options,
-  })
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}))
-    throw new ApiError(payload.message ?? 'Falha na requisição.', payload.fieldErrors ?? {})
-  }
-
-  if (response.status === 204) return null
-  return response.json()
-}
-```
-
-Fala: "Toda chamada passa por `request()`. Ele pega o token da sessão do Supabase (`authHeader`) e manda no cabeçalho `Authorization: Bearer`. Se a resposta não for 2xx, transforma o JSON de erro num `ApiError` com a mensagem e os erros por campo; se for 204, devolve `null`."
-
-### 1.2 Core: inicialização
-
-📍 `deviante-api/src/main/resources/application.yaml` · linhas 1–18 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/resources/application.yaml#L1-L18)
-
-```yaml
-ktor:
-  deployment:
-    port: 8080
-  application:
-    modules:
-      - com.deviante.HttpKt.configureHttp
-      - com.deviante.SerializationKt.configureSerialization
-      - com.deviante.DatabaseKt.configureDatabase
-      - com.deviante.RoutingKt.configureRouting
-
-database:
-  jdbcUrl: ${DATABASE_JDBC_URL:jdbc:postgresql://localhost:5432/postgres?sslmode=require}
-  user: ${DATABASE_USER:postgres}
-  password: ${DATABASE_PASSWORD:}
-
-supabase:
-  url: ${SUPABASE_URL:}
-  anonKey: ${SUPABASE_ANON_KEY:}
-```
-
-Fala: "O Ktor sobe os módulos nesta ordem: HTTP (CORS), serialização JSON, banco e rotas. As credenciais vêm de variáveis de ambiente no Fly.io."
-
-📍 `deviante-api/src/main/kotlin/Http.kt` · linhas 8–25 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Http.kt#L8-L25)
-
-```kotlin
-fun Application.configureHttp() {
-    install(CORS) {
-        allowMethod(HttpMethod.Get)
-        allowMethod(HttpMethod.Post)
-        allowMethod(HttpMethod.Put)
-        allowMethod(HttpMethod.Delete)
-        allowMethod(HttpMethod.Patch)
-        allowMethod(HttpMethod.Options)
-
-        allowHeader(HttpHeaders.Authorization)
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Accept)
-        allowHeader("X-Deviante-Company")
-
-        allowCredentials = true
-        anyHost()
-    }
-}
-```
-
-📍 `deviante-api/src/main/kotlin/Serialization.kt` · linhas 8–12 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Serialization.kt#L8-L12)
-
-```kotlin
-fun Application.configureSerialization() {
-    install(ContentNegotiation) {
-        json()
-    }
-}
-```
-
-📍 `deviante-api/src/main/kotlin/Database.kt` · linhas 9–28 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Database.kt#L9-L28)
-
-```kotlin
-fun Application.configureDatabase() {
-    AppConfig.init(environment.config)
-    val jdbcUrl = AppConfig.jdbcUrl
-    val user = AppConfig.dbUser
-    val password = AppConfig.dbPassword
-
-    val hikariConfig = HikariConfig().apply {
-        this.jdbcUrl = jdbcUrl
-        this.username = user
-        this.password = password
-        driverClassName = "org.postgresql.Driver"
-        maximumPoolSize = 5
-    }
-
-    val dataSource = HikariDataSource(hikariConfig)
-    Database.connect(dataSource)
-
-    // Seed demo data if needed (idempotent check inside)
-    SeedDemoData.runIfNeeded()
-}
-```
-
-Fala: "A configuração vem do `AppConfig`, carregado uma vez (é um dos Singletons da defesa de padrões). O Hikari mantém um pool de até 5 conexões com o Postgres. O Exposed usa esse pool em cada `transaction { }` dos repositórios."
-
-### 1.3 Core: autenticação e Manager
-
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 117–134 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L117-L134)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 117–134 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L117-L134)
 
 ```kotlin
 private suspend fun ApplicationCall.requireSupabaseUser(authClient: SupabaseAuthClient): SupabaseUser? {
@@ -207,166 +45,72 @@ private suspend fun ApplicationCall.requireSupabaseUser(authClient: SupabaseAuth
 }
 ```
 
-📍 `deviante-api/src/main/kotlin/SupabaseAuth.kt` · linhas 44–71 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/SupabaseAuth.kt#L44-L71)
+Fala: "Toda rota começa aqui: o front manda o token do Supabase no cabeçalho, o Core confere com o Supabase Auth e responde 401 se não houver token válido. Depois acha o Manager e a empresa em que ele entrou, que filtram e carimbam os registros."
 
-```kotlin
-    /** Verifies a Supabase access token by asking Supabase Auth who it belongs to. */
-    suspend fun verify(accessToken: String): SupabaseUser? {
-        if (baseUrl.isBlank() || anonKey.isBlank()) {
-            logger.error("Supabase auth is not configured (SUPABASE_URL / SUPABASE_ANON_KEY missing).")
-            return null
-        }
+## 2. CRUD de Processo (tela Projetos)
 
-        return try {
-            val response = client.get("$baseUrl/auth/v1/user") {
-                header(HttpHeaders.Authorization, "Bearer $accessToken")
-                header("apikey", anonKey)
-            }
-            if (!response.status.isSuccess()) {
-                logger.warn("Supabase rejected the access token: {} {}", response.status, response.bodyAsText())
-                return null
-            }
-
-            val body = response.body<SupabaseUserResponse>()
-            SupabaseUser(
-                id = UUID.fromString(body.id),
-                email = body.email ?: "",
-                fullNameHint = body.user_metadata?.full_name ?: body.user_metadata?.name ?: "",
-            )
-        } catch (error: Exception) {
-            logger.error("Failed to verify Supabase access token.", error)
-            null
-        }
-    }
+```mermaid
+sequenceDiagram
+    actor G as Gestor (Alfa)
+    participant P as Projetos e canvas (web)
+    participant A as api.js
+    participant C as Core (Routing.kt)
+    participant M as deviante-mining
+    participant R as Repositórios
+    participant DB as Postgres
+    Note over P,DB: Read (lista)
+    P->>A: listProcesses()
+    A->>C: GET /api/processes
+    C->>R: listAll, filtrado pela empresa
+    R->>DB: SELECT processes
+    C-->>A: 200 JSON
+    A-->>P: cards dos processos
+    Note over P,DB: Create
+    G->>P: "Novo processo"
+    P->>A: createProcess()
+    A->>C: POST /api/processes
+    C->>R: create(manager, empresa)
+    R->>DB: INSERT processes (nome "Untitled")
+    C-->>A: 201
+    A-->>P: abre /processes/{id}
+    G->>P: sobe o log (.xes ou .csv)
+    P->>A: uploadEventLog(id, arquivo)
+    A->>C: POST /api/processes/{id}/event-logs
+    C->>M: parse(arquivo)
+    M-->>C: eventos
+    C->>R: ingest(processo, eventos)
+    R->>DB: INSERT event_logs, traces, operations
+    C-->>A: 201 log e operações
+    P->>A: getProcessGraph(id)
+    A->>C: GET /api/processes/{id}/graph
+    C-->>A: 200 grafo
+    A-->>P: gráfico desenhado
+    Note over P,DB: Read (um processo com gráfico pronto)
+    G->>P: abre um processo da Alfa
+    P->>A: getProcess(id)
+    A->>C: GET /api/processes/{id}
+    C-->>A: 200 (404 se não for da empresa)
+    Note over P,DB: Update (renomear)
+    G->>P: clica no título e digita
+    P->>A: renameProcess(id, nome)
+    A->>C: PATCH /api/processes/{id}/name
+    C->>C: valida o nome (400)
+    C->>R: updateName(id, nome)
+    R->>DB: UPDATE processes
+    C-->>A: 200
+    Note over P,DB: Delete (só administrador e gestor)
+    G->>P: "Excluir processo" e digita o nome
+    P->>A: deleteProcess(id, confirmação)
+    A->>C: DELETE /api/processes/{id}
+    C->>C: requireDeleter (403), existe (404), confirmação (400)
+    C->>R: delete(id)
+    R->>DB: DELETE (logs e análises vão junto, CASCADE)
+    C-->>A: 204
 ```
 
-Fala: "O Core não valida a senha: pergunta ao Supabase Auth de quem é o token. Sem token, 401 'Você precisa estar autenticado'; token inválido, 401 'Sessão inválida ou expirada'."
+### 2.1 A tabela
 
-📍 `deviante-api/src/main/kotlin/repository/ManagerRepository.kt` · linhas 15–41 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ManagerRepository.kt#L15-L41)
-
-```kotlin
-class ManagerRepository {
-    companion object {
-        private val OWNER_EMAILS = setOf("design@alander.io", "alanderavila@gmail.com")
-        private val MENTOR_EMAILS = setOf("pafileiro@gmail.com", "erloures@gmail.com")
-
-        // Contas de demonstração do login (RF-01/RF-02): um papel por conta.
-        private val DEMO_ROLES = mapOf(
-            "demo-administrador@deviante.alander.io" to "admin",
-            "demo-gestor@deviante.alander.io" to "manager",
-            "demo-operador@deviante.alander.io" to "operator",
-            "demo-tecnico@deviante.alander.io" to "technician",
-        )
-
-        internal fun roleForEmail(email: String): String {
-            val normalized = email.trim().lowercase()
-            return when {
-                normalized in OWNER_EMAILS -> "owner"
-                normalized in MENTOR_EMAILS -> "mentor"
-                else -> DEMO_ROLES[normalized] ?: "manager"
-            }
-        }
-
-        /** Contas demo podem escolher a empresa no login (demonstração da variabilidade). */
-        internal fun isDemoAccount(email: String): Boolean = email.trim().lowercase() in DEMO_ROLES
-    }
-
-    private fun detectRole(email: String): String = roleForEmail(email)
-```
-
-📍 `deviante-api/src/main/kotlin/repository/ManagerRepository.kt` · linhas 57–77 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ManagerRepository.kt#L57-L77)
-
-```kotlin
-    fun findOrCreateForSupabaseUser(supabaseUserId: UUID, email: String, fullNameHint: String): ManagerRecord =
-        transaction {
-            val existing = (ManagersTable innerJoin UsersTable)
-                .selectAll()
-                .where { ManagersTable.userId eq supabaseUserId }
-                .limit(1)
-                .firstOrNull()
-                ?.toManagerRecord()
-            if (existing != null) {
-                // Re-derive the role on every login: a manager row created
-                // before its e-mail was added to OWNER_EMAILS/MENTOR_EMAILS
-                // would otherwise stay stuck on the role it got at signup.
-                val expected = detectRole(existing.email)
-                if (existing.role == expected) return@transaction existing
-
-                ManagersTable.update({ ManagersTable.userId eq supabaseUserId }) {
-                    it[ManagersTable.role] = expected
-                    it[ManagersTable.updatedAt] = OffsetDateTime.now()
-                }
-                return@transaction existing.copy(role = expected)
-            }
-```
-
-Fala: "Com o id do Supabase, o Core acha ou cria a linha em `managers`. O papel sai do e-mail: cada conta demo tem o seu (administrador, gestor, operador, técnico), e a re-derivação a cada login corrige linhas antigas."
-
-📍 `deviante-api/src/main/kotlin/model/ManagerRecord.kt` · linhas 15–24 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/model/ManagerRecord.kt#L15-L24)
-
-```kotlin
-) {
-    fun isOwner(): Boolean = role == "owner"
-
-    /** Excluir registros é permitido só ao administrador (owner ou admin) e ao gestor. */
-    fun canDelete(): Boolean = role in DELETE_ROLES
-
-    companion object {
-        val DELETE_ROLES = setOf("owner", "admin", "manager")
-    }
-}
-```
-
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 214–229 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L214-L229)
-
-```kotlin
-/**
- * Exclusões (processo, atividade, equipamento, agenda) são permitidas só ao
- * administrador e ao gestor; operador, técnico e mentor recebem 403.
- */
-private suspend fun ApplicationCall.requireDeleter(
-    authClient: SupabaseAuthClient,
-    managerRepository: ManagerRepository,
-): ManagerRecord? {
-    val user = requireSupabaseUser(authClient) ?: return null
-    val manager = managerRepository.findOrCreateForSupabaseUser(user.id, user.email, user.fullNameHint)
-    if (!manager.canDelete()) {
-        respond(HttpStatusCode.Forbidden, ErrorResponse("Somente o administrador ou o gestor pode excluir."))
-        return null
-    }
-    return manager
-}
-```
-
-Fala: "Excluir é permitido só ao administrador e ao gestor. Toda rota de exclusão começa por `requireDeleter`: sem token, 401; papel sem permissão, 403 'Somente o administrador ou o gestor pode excluir'."
-
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 1664–1668 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L1664-L1668)
-
-```kotlin
-private fun runCatchingUuid(value: String): UUID? = try {
-    UUID.fromString(value)
-} catch (_: IllegalArgumentException) {
-    null
-}
-```
-
-📍 `deviante-api/src/main/kotlin/dto/ProcessDto.kt` · linhas 39–43 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/dto/ProcessDto.kt#L39-L43)
-
-```kotlin
-@Serializable
-data class ErrorResponse(
-    val message: String,
-    val fieldErrors: Map<String, String> = emptyMap(),
-)
-```
-
-Fala: "IDs inválidos viram `null` e a rota responde 400. Todo erro volta no mesmo formato: `message` e `fieldErrors`."
-
-## 2. CRUD de Processo (objeto ORCA PROCESS)
-
-### 2.1 Tabela
-
-📍 `deviante-api/src/main/kotlin/db/ProcessesTable.kt` · linhas 6–20 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/db/ProcessesTable.kt#L6-L20)
+📍 `deviante-api/src/main/kotlin/db/ProcessesTable.kt` · linhas 6–20 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/db/ProcessesTable.kt#L6-L20)
 
 ```kotlin
 object ProcessesTable : Table(name = "processes") {
@@ -386,11 +130,79 @@ object ProcessesTable : Table(name = "processes") {
 }
 ```
 
-Fala: "Um processo pertence a uma empresa (`business_id`, chave estrangeira para `businesses`) e guarda quem o criou (`manager_id`). No banco, apagar um processo apaga em cascata `process_activities`, `process_equipment`, `event_logs` e `analyses`, e deixa `process_id` nulo nas agendas de manutenção (conferido no Supabase em 13/10)."
+Fala: "Um processo pertence a uma empresa (`business_id`) e guarda quem o criou (`manager_id`). Apagar um processo apaga em cascata os logs, as análises e os vínculos com atividades."
 
-### 2.2 Create — tela `/dashboard`, botão "Novo processo"
+### 2.2 Read: a lista no painel
 
-📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 347–357 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/DashboardPage.jsx#L347-L357)
+📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 323–345 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/DashboardPage.jsx#L323-L345)
+
+```jsx
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      api.listProcesses(),
+      api.listAnalyses().catch(() => []),
+      api.listMonitorings().catch(() => []),
+    ])
+      .then(([processRows, analysisRows, monitoringRows]) => {
+        if (cancelled) return
+        setProcesses(processRows)
+        setAnalyses(analysisRows)
+        setMonitorings(monitoringRows)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o painel.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
+```
+
+📍 `deviante-web/src/lib/api.js` · linhas 329–329 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/api.js#L329-L329)
+
+```javascript
+  listProcesses: () => shouldUseRemoteProcesses() ? request('/processes') : mockApi.listProcesses(),
+```
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 293–306 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L293-L306)
+
+```kotlin
+                get {
+                    val supabaseUser = call.requireSupabaseUser(authClient) ?: return@get
+                    val manager = managerRepository.findOrCreateForSupabaseUser(
+                        supabaseUser.id,
+                        supabaseUser.email,
+                        supabaseUser.fullNameHint,
+                    )
+                    val scope = call.companyScope(manager)
+                    val labels = businessRepository.namesById()
+                    val processes = processRepository.listAll()
+                        .filter { scope.sees(it.businessId) }
+                        .map { it.toResponse(company = labels[it.businessId]) }
+                    call.respond(processes)
+                }
+```
+
+📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 19–24 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ProcessRepository.kt#L19-L24)
+
+```kotlin
+    fun listAll(): List<ProcessRecord> = transaction {
+        ProcessesTable
+            .selectAll()
+            .orderBy(ProcessesTable.updatedAt, SortOrder.DESC)
+            .map { it.toProcessRecord() }
+    }
+```
+
+Fala: "Ao abrir o painel, a tela busca os processos. O Core devolve só os da empresa em que entrei; o administrador vê todos, com o nome da empresa em cada card."
+
+### 2.3 Create: "Novo processo" e upload do log
+
+📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 347–357 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/DashboardPage.jsx#L347-L357)
 
 ```jsx
   async function handleCreateProcess() {
@@ -406,13 +218,13 @@ Fala: "Um processo pertence a uma empresa (`business_id`, chave estrangeira para
   }
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 330–330 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L330-L330)
+📍 `deviante-web/src/lib/api.js` · linhas 330–330 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/api.js#L330-L330)
 
 ```javascript
   createProcess: () => shouldUseRemoteProcesses() ? request('/processes', { method: 'POST' }) : mockApi.createProcess(),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 308–317 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L308-L317)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 308–317 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L308-L317)
 
 ```kotlin
                 post {
@@ -427,7 +239,7 @@ Fala: "Um processo pertence a uma empresa (`business_id`, chave estrangeira para
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 36–63 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ProcessRepository.kt#L36-L63)
+📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 36–63 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ProcessRepository.kt#L36-L63)
 
 ```kotlin
     fun create(managerId: UUID, businessId: UUID): ProcessRecord = transaction {
@@ -460,93 +272,140 @@ Fala: "Um processo pertence a uma empresa (`business_id`, chave estrangeira para
     }
 ```
 
-📍 `deviante-api/src/main/kotlin/dto/ProcessDto.kt` · linhas 55–63 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/dto/ProcessDto.kt#L55-L63)
+Fala: "O botão cria o processo na hora, com nome 'Untitled' (como no Figma), e a tela abre o canvas dele."
 
-```kotlin
-}
+Com o processo criado, subo o log de eventos:
 
-fun ProcessRecord.toResponse(company: String? = null) = ProcessResponse(
-    id = id.toString(),
-    name = name,
-    description = description,
-    sector = sector,
-    createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-    updatedAt = updatedAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-```
-
-Fala: "O botão chama `createProcess`, que faz `POST /api/processes` sem corpo. O Core identifica o Manager e o repositório faz o `INSERT` com nome padrão 'Untitled' (criação instantânea, como no Figma). A resposta é 201 com o DTO, e o front navega para `/processes/{id}`."
-
-### 2.3 Read (lista) — tela `/dashboard`
-
-📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 323–345 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/DashboardPage.jsx#L323-L345)
+📍 `deviante-web/src/components/process-graph/EventLogUploadModal.jsx` · linhas 81–90 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/components/process-graph/EventLogUploadModal.jsx#L81-L90)
 
 ```jsx
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      api.listProcesses(),
-      api.listAnalyses().catch(() => []),
-      api.listMonitorings().catch(() => []),
-    ])
-      .then(([processRows, analysisRows, monitoringRows]) => {
-        if (cancelled) return
-        setProcesses(processRows)
-        setAnalyses(analysisRows)
-        setMonitorings(monitoringRows)
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : 'Não foi possível carregar o painel.')
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [])
+  async function handleUpload() {
+    if (!file || uploading || eventLog) return
+
+    setUploading(true)
+    setUploadError('')
+    setFormatError(false)
+
+    try {
+      const result = await api.uploadEventLog(processId, file)
+      setEventLog(result.eventLog)
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 329–329 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L329-L329)
+📍 `deviante-web/src/lib/api.js` · linhas 362–362 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/api.js#L362-L362)
 
 ```javascript
-  listProcesses: () => shouldUseRemoteProcesses() ? request('/processes') : mockApi.listProcesses(),
+  uploadEventLog: (processId, file) => upload(`/processes/${processId}/event-logs`, file),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 293–306 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L293-L306)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 1490–1531 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L1490-L1531)
 
 ```kotlin
+                post {
+                    val processId = call.parameters["processId"]?.let(::runCatchingUuid)
+                    if (processId == null) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID de processo inválido."))
+                        return@post
+                    }
+                    if (call.requireProcess(authClient, managerRepository, processRepository, processId) == null) {
+                        return@post
+                    }
+
+                    val upload = call.receiveUploadedFile()
+                    if (upload == null) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Nenhum arquivo enviado."))
+                        return@post
+                    }
+                    val (fileName, bytes) = upload
+
+                    val extension = fileName.substringAfterLast('.', "").lowercase()
+                    if (extension !in setOf("xes", "csv")) {
+                        call.respond(
+                            HttpStatusCode.UnsupportedMediaType,
+                            ErrorResponse("Envie um arquivo .xes ou .csv."),
+                        )
+                        return@post
+                    }
+
+                    val parsed = try {
+                        miningClient.parse(fileName, bytes)
+                    } catch (err: MiningParseException) {
+                        // Keep the failed attempt on the process: a log the
+                        // Manager could not parse is history worth showing.
+                        ingestionRepository.recordFailure(
+                            processId, fileName, extension, err.message ?: "Falha ao interpretar o arquivo.",
+                        )
+                        call.respond(HttpStatusCode.UnprocessableEntity, ErrorResponse(err.message ?: "Arquivo inválido."))
+                        return@post
+                    } catch (err: MiningUnavailableException) {
+                        call.respond(HttpStatusCode.ServiceUnavailable, ErrorResponse(err.message ?: "Serviço indisponível."))
+                        return@post
+                    }
+
+                    val ingested = ingestionRepository.ingest(processId, fileName, parsed)
+```
+
+Fala: "O arquivo vai para o Core, que aceita só `.xes` ou `.csv` (415 para outros). O serviço de mineração lê o arquivo; se não conseguir, a tentativa fica registrada e a resposta é 422. Depois o Core grava o log, os traços e as operações no banco, e a tela pede o gráfico:"
+
+📍 `deviante-web/src/components/process-graph/ProcessGraphTab.jsx` · linhas 609–616 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/components/process-graph/ProcessGraphTab.jsx#L609-L616)
+
+```jsx
+    Promise.all([
+      api.getProcessGraph(processId, selectedEventLogIdList),
+      api.getProcessTraces(processId, selectedEventLogIdList).catch(() => ({ variants: [] })),
+    ])
+      .then(([graphData, traceData]) => {
+        if (cancelled) return
+        setGraph(graphData)
+        setVariants(traceData.variants ?? [])
+```
+
+📍 `deviante-web/src/lib/api.js` · linhas 367–370 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/api.js#L367-L370)
+
+```javascript
+  getProcessGraph: (processId, eventLogIds = []) => {
+    const query = new URLSearchParams(eventLogIds.map((id) => ['eventLogId', id])).toString()
+    return request(`/processes/${processId}/graph${query ? `?${query}` : ''}`)
+  },
+```
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 1021–1050 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L1021-L1050)
+
+```kotlin
+            route("/processes/{processId}/graph") {
                 get {
-                    val supabaseUser = call.requireSupabaseUser(authClient) ?: return@get
-                    val manager = managerRepository.findOrCreateForSupabaseUser(
-                        supabaseUser.id,
-                        supabaseUser.email,
-                        supabaseUser.fullNameHint,
-                    )
-                    val scope = call.companyScope(manager)
-                    val labels = businessRepository.namesById()
-                    val processes = processRepository.listAll()
-                        .filter { scope.sees(it.businessId) }
-                        .map { it.toResponse(company = labels[it.businessId]) }
-                    call.respond(processes)
+                    val processId = call.parameters["processId"]?.let(::runCatchingUuid)
+                    if (processId == null) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID de processo inválido."))
+                        return@get
+                    }
+                    if (call.requireProcess(authClient, managerRepository, processRepository, processId) == null) {
+                        return@get
+                    }
+
+                    val eventLogIds = call.request.queryParameters.getAll("eventLogId").orEmpty()
+                        .mapNotNull(::runCatchingUuid)
+                        .toSet()
+                    if (eventLogIds.size != call.request.queryParameters.getAll("eventLogId").orEmpty().size) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID de log de eventos inválido."))
+                        return@get
+                    }
+                    if (eventLogIds.isNotEmpty()) {
+                        val available = eventLogsRepository.findByProcessId(processId)
+                            .filter { it.parseStatus == "parsed" }
+                            .map { it.id }
+                            .toSet()
+                        if (!available.containsAll(eventLogIds)) {
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Selecione apenas logs parseados deste processo."))
+                            return@get
+                        }
+                    }
+                    call.respond(graphRepository.graph(processId, eventLogIds))
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 19–24 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ProcessRepository.kt#L19-L24)
+### 2.4 Read: abrir um processo que já tem gráfico
 
-```kotlin
-    fun listAll(): List<ProcessRecord> = transaction {
-        ProcessesTable
-            .selectAll()
-            .orderBy(ProcessesTable.updatedAt, SortOrder.DESC)
-            .map { it.toProcessRecord() }
-    }
-```
-
-Fala: "Ao abrir o painel, o `useEffect` busca processos, análises e monitoramentos em paralelo. O repositório faz `SELECT` ordenado por `updated_at` decrescente, e cada linha vira `ProcessResponse`."
-
-### 2.4 Read (um) — tela `/processes/{id}`
-
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 65–75 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ProcessCanvasPage.jsx#L65-L75)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 65–75 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ProcessCanvasPage.jsx#L65-L75)
 
 ```jsx
   useEffect(() => {
@@ -562,13 +421,13 @@ Fala: "Ao abrir o painel, o `useEffect` busca processos, análises e monitoramen
   }, [processId])
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 331–331 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L331-L331)
+📍 `deviante-web/src/lib/api.js` · linhas 331–331 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/api.js#L331-L331)
 
 ```javascript
   getProcess: (id) => shouldUseRemoteProcesses() ? request(`/processes/${id}`) : mockApi.getProcess(id),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 319–338 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L319-L338)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 319–338 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L319-L338)
 
 ```kotlin
                 get("/{id}") {
@@ -593,7 +452,7 @@ Fala: "Ao abrir o painel, o `useEffect` busca processos, análises e monitoramen
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 26–34 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ProcessRepository.kt#L26-L34)
+📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 26–34 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ProcessRepository.kt#L26-L34)
 
 ```kotlin
     fun findById(id: UUID): ProcessRecord? = transaction {
@@ -607,11 +466,11 @@ Fala: "Ao abrir o painel, o `useEffect` busca processos, análises e monitoramen
 
 ```
 
-Fala: "O id vem da URL. Se não for UUID, 400; se não existir, 404 'Processo não encontrado'."
+Fala: "O id vem da URL. Se não for UUID, 400; se não existir ou for de outra empresa, 404."
 
-### 2.5 Update — tela `/processes/{id}`, clicar no título
+### 2.5 Update: clicar no título
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 179–194 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ProcessCanvasPage.jsx#L179-L194)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 179–194 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ProcessCanvasPage.jsx#L179-L194)
 
 ```jsx
           {editingTitle ? (
@@ -632,7 +491,7 @@ Fala: "O id vem da URL. Se não for UUID, 400; se não existir, 404 'Processo n�
           )}
 ```
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 95–109 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ProcessCanvasPage.jsx#L95-L109)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 95–109 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ProcessCanvasPage.jsx#L95-L109)
 
 ```jsx
   async function commitTitle() {
@@ -652,7 +511,7 @@ Fala: "O id vem da URL. Se não for UUID, 400; se não existir, 404 'Processo n�
   }
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 335–337 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L335-L337)
+📍 `deviante-web/src/lib/api.js` · linhas 335–337 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/api.js#L335-L337)
 
 ```javascript
   renameProcess: (id, name) => shouldUseRemoteProcesses()
@@ -660,7 +519,7 @@ Fala: "O id vem da URL. Se não for UUID, 400; se não existir, 404 'Processo n�
     : mockApi.renameProcess(id, name),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 383–413 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L383-L413)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 383–413 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L383-L413)
 
 ```kotlin
                 patch("/{id}/name") {
@@ -696,7 +555,7 @@ Fala: "O id vem da URL. Se não for UUID, 400; se não existir, 404 'Processo n�
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 77–96 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L77-L96)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 77–96 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L77-L96)
 
 ```kotlin
 private suspend fun ApplicationCall.requireProcess(
@@ -721,7 +580,7 @@ private suspend fun ApplicationCall.requireProcess(
 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 84–92 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ProcessRepository.kt#L84-L92)
+📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 84–92 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ProcessRepository.kt#L84-L92)
 
 ```kotlin
     fun updateName(id: UUID, name: String): ProcessRecord? = transaction {
@@ -735,11 +594,11 @@ private suspend fun ApplicationCall.requireProcess(
     }
 ```
 
-Fala: "Clicar no título vira um campo; Enter ou sair do campo chama `commitTitle`, que faz `PATCH /api/processes/{id}/name`. A rota usa `requireProcess` (autentica, acha o Manager, confere se o processo existe) e valida o nome: em branco ou com mais de 100 caracteres dá 400. O repositório faz `UPDATE` e devolve o processo atualizado."
+Fala: "Clicar no título vira um campo; Enter salva com `PATCH /api/processes/{id}/name`. A rota usa `requireProcess` (autentica e confere se o processo é da empresa) e valida o nome: em branco ou com mais de 100 caracteres dá 400."
 
-### 2.6 Delete — tela `/processes/{id}`, menu de ações, "Excluir processo"
+### 2.6 Delete: menu de ações, "Excluir processo" (só administrador e gestor)
 
-📍 `deviante-web/src/lib/permissions.js` · linhas 1–5 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/permissions.js#L1-L5)
+📍 `deviante-web/src/lib/permissions.js` · linhas 1–5 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/permissions.js#L1-L5)
 
 ```javascript
 // Excluir (processo, atividade, equipamento, agenda) é só do administrador e do
@@ -749,19 +608,13 @@ export const DELETE_ROLES = new Set(['owner', 'admin', 'manager'])
 export const canDelete = (user) => DELETE_ROLES.has(user?.role)
 ```
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 38–38 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ProcessCanvasPage.jsx#L38-L38)
-
-```jsx
-  const { user } = useAuth()
-```
-
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 203–203 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ProcessCanvasPage.jsx#L203-L203)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 203–203 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ProcessCanvasPage.jsx#L203-L203)
 
 ```jsx
         {canDelete(user) && <ProjectActionsMenu onDelete={deleteCurrentProcess} deleteLabel="Excluir processo" />}
 ```
 
-📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 111–120 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ProcessCanvasPage.jsx#L111-L120)
+📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 111–120 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ProcessCanvasPage.jsx#L111-L120)
 
 ```jsx
   async function deleteCurrentProcess() {
@@ -776,7 +629,7 @@ export const canDelete = (user) => DELETE_ROLES.has(user?.role)
   }
 ```
 
-📍 `deviante-web/src/lib/api.js` · linhas 338–340 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L338-L340)
+📍 `deviante-web/src/lib/api.js` · linhas 338–340 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/lib/api.js#L338-L340)
 
 ```javascript
   deleteProcess: (id, confirmation) => shouldUseRemoteProcesses()
@@ -784,7 +637,7 @@ export const canDelete = (user) => DELETE_ROLES.has(user?.role)
     : mockApi.deleteProcess(id, confirmation),
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 415–446 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L415-L446)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 415–446 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L415-L446)
 
 ```kotlin
                 delete("/{id}") {
@@ -821,37 +674,7 @@ export const canDelete = (user) => DELETE_ROLES.has(user?.role)
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/dto/ProcessDto.kt` · linhas 31–55 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/dto/ProcessDto.kt#L31-L55)
-
-```kotlin
-const val PROCESS_DELETE_CONFIRMATION_PHRASE = "quero excluir este processo"
-
-@Serializable
-data class DeleteProcessRequest(
-    val processName: String,
-    val confirmationPhrase: String,
-)
-
-@Serializable
-data class ErrorResponse(
-    val message: String,
-    val fieldErrors: Map<String, String> = emptyMap(),
-)
-
-fun validateProcessDeletion(
-    request: DeleteProcessRequest,
-    expectedProcessName: String,
-): Map<String, String> = buildMap {
-    if (request.processName != expectedProcessName) {
-        put("processName", "Digite exatamente o nome do processo.")
-    }
-    if (request.confirmationPhrase != PROCESS_DELETE_CONFIRMATION_PHRASE) {
-        put("confirmationPhrase", "Digite exatamente a frase de confirmação.")
-    }
-}
-```
-
-📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 94–96 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ProcessRepository.kt#L94-L96)
+📍 `deviante-api/src/main/kotlin/repository/ProcessRepository.kt` · linhas 94–96 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ProcessRepository.kt#L94-L96)
 
 ```kotlin
     fun delete(id: UUID): Boolean = transaction {
@@ -859,15 +682,64 @@ fun validateProcessDeletion(
     }
 ```
 
-Fala: "O front pede que o usuário digite o nome e manda nome e frase de confirmação no corpo do `DELETE`. O menu de exclusão só aparece para administrador e gestor (`canDelete`). O Core repete a regra e checa, nesta ordem: papel (`requireDeleter`, 403), existência (404) e confirmação (400). Só então apaga; o banco remove os dependentes em cascata. Resposta 204."
+Fala: "O menu de exclusão só aparece para administrador e gestor. A tela pede que eu digite o nome do processo. O Core checa, nesta ordem: papel (403), existência (404) e confirmação (400). Só então apaga, e o banco remove os dependentes em cascata. Resposta 204."
 
-Para demonstrar: excluir com a conta demo do gestor ou do administrador; entrar com a do operador e mostrar que o menu "Excluir processo" não aparece.
+### 2.7 Demonstração
 
-## 3. CRUD de Atividade (objeto ORCA ACTIVITY)
+1. Entrar na **Alfa** como **Gestor**. **Read:** mostrar os processos da Alfa no painel.
+2. **Create:** "Novo processo". No canvas, subir o log de exemplo e confirmar o mapeamento; o gráfico aparece.
+3. **Read:** voltar ao painel e abrir um processo da Alfa que já tem gráfico.
+4. **Update:** clicar no título do processo novo e renomear (`PATCH`, 200).
+5. **Delete:** excluir o processo novo, digitando o nome (204). Sair, entrar como **Operador** da Alfa e mostrar que "Excluir processo" não aparece.
 
-### 3.1 Tabelas
+## 3. CRUD de Atividade (tela Atividades)
 
-📍 `deviante-api/src/main/kotlin/db/ActivitiesTable.kt` · linhas 6–26 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/db/ActivitiesTable.kt#L6-L26)
+```mermaid
+sequenceDiagram
+    actor G as Gestor (Alfa)
+    participant N as Menu (AppLayout.jsx)
+    participant P as ActivitiesPage.jsx
+    participant A as api.js
+    participant C as Core (Routing.kt)
+    participant R as ActivitiesRepository
+    participant DB as Postgres (activities)
+    G->>N: clica em "Atividades"
+    N->>P: abre /activities
+    Note over P,DB: Read
+    P->>A: listActivities()
+    A->>C: GET /api/activities
+    C->>R: listAll()
+    R->>DB: SELECT ... ORDER BY name
+    C-->>A: 200 JSON
+    A-->>P: lista
+    Note over P,DB: Create
+    G->>P: "Nova atividade" e preenche o modal
+    P->>A: createActivity(dados)
+    A->>C: POST /api/activities
+    C->>C: valida nome (400 se vazio)
+    C->>R: create(dados)
+    R->>DB: INSERT activities
+    C-->>A: 201
+    Note over P,DB: Update
+    G->>P: lápis e edita
+    P->>A: updateActivity(id, dados)
+    A->>C: PUT /api/activities/{id}
+    C->>R: update(id, dados)
+    R->>DB: UPDATE activities
+    C-->>A: 200
+    Note over P,DB: Delete (só administrador e gestor)
+    G->>P: lixeira e confirma
+    P->>A: deleteActivity(id)
+    A->>C: DELETE /api/activities/{id}
+    C->>C: requireDeleter (403)
+    C->>R: delete(id)
+    R->>DB: confere operações mapeadas (409) e DELETE
+    C-->>A: 204
+```
+
+### 3.1 A tabela
+
+📍 `deviante-api/src/main/kotlin/db/ActivitiesTable.kt` · linhas 6–26 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/db/ActivitiesTable.kt#L6-L26)
 
 ```kotlin
 object ActivitiesTable : Table(name = "activities") {
@@ -893,56 +765,11 @@ object ProcessActivitiesTable : Table(name = "process_activities") {
 }
 ```
 
-Fala: "Atividade é um catálogo. A tabela de junção `process_activities` diz quais atividades cada processo usa (N:N). No banco, apagar uma atividade apaga em cascata os vínculos em `process_activities`, mas `operations.activity_id` é `NO ACTION`: se alguma operação de log estiver mapeada para a atividade, o Postgres recusa o delete (conferido em 13/10)."
+Fala: "Atividade é um catálogo. A junção `process_activities` diz quais atividades cada processo usa (N:N). Se alguma operação de log estiver mapeada para a atividade, o banco não deixa apagar."
 
-### 3.2 Tela `/activities` (menu "Atividades")
+### 3.2 Read: abrir Atividades
 
-📍 `deviante-web/src/App.jsx` · linhas 88–88 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/App.jsx#L88-L88)
-
-```jsx
-              <Route path="/activities" element={<ActivitiesPage />} />
-```
-
-📍 `deviante-web/src/components/layout/AppLayout.jsx` · linhas 32–39 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/layout/AppLayout.jsx#L32-L39)
-
-```jsx
-        <nav className="hidden md:flex items-center justify-center gap-2" aria-label="Navegação principal">
-          {[
-            ['/dashboard', 'Projetos'],
-            ['/operations', 'Operações'],
-            ['/activities', 'Atividades'],
-            ['/equipment', 'Equipamentos', FEATURES.equipment],
-            ['/schedules', 'Agendamentos', FEATURES.schedules],
-          ].filter(([, , feature]) => !feature || hasFeature(user, feature)).map(([to, label]) => (
-```
-
-📍 `deviante-web/src/lib/api.js` · linhas 342–358 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L342-L358)
-
-```javascript
-  listActivities: () => request('/activities'),
-  createActivity: (data) => request('/activities', {
-    method: 'POST',
-    body: JSON.stringify({ name: data.name, description: data.description ?? '' }),
-  }),
-  updateActivity: (id, data) => request(`/activities/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ name: data.name, description: data.description ?? '' }),
-  }),
-  deleteActivity: (id) => request(`/activities/${id}`, { method: 'DELETE' }),
-  listProcessActivities: (processId) => request(`/processes/${processId}/activities`),
-  addProcessActivity: (processId, activityId) => request(`/processes/${processId}/activities/${activityId}`, {
-    method: 'PUT',
-  }),
-  removeProcessActivity: (processId, activityId) => request(`/processes/${processId}/activities/${activityId}`, {
-    method: 'DELETE',
-  }),
-```
-
-Fala: "A tela de Atividades é a porta de entrada do CRUD. Todas as chamadas passam pelo mesmo `request()` da seção 1."
-
-### 3.3 Read — abrir `/activities`
-
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 15–33 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ActivitiesPage.jsx#L15-L33)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 15–33 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ActivitiesPage.jsx#L15-L33)
 
 ```jsx
 export default function ActivitiesPage() {
@@ -966,7 +793,7 @@ export default function ActivitiesPage() {
   }, [rows, query])
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 450–459 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L450-L459)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 450–459 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L450-L459)
 
 ```kotlin
                 get {
@@ -981,7 +808,7 @@ export default function ActivitiesPage() {
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 24–38 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ActivitiesRepository.kt#L24-L38)
+📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 24–38 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ActivitiesRepository.kt#L24-L38)
 
 ```kotlin
     fun listAll(): List<ActivityRecord> = transaction {
@@ -1001,11 +828,11 @@ export default function ActivitiesPage() {
     }
 ```
 
-Fala: "O `useEffect` chama `listActivities` (`GET /api/activities`). O repositório faz `SELECT` ordenado por nome; a busca filtra no próprio navegador (`useMemo`)."
+Fala: "A tela chama `GET /api/activities`. O repositório ordena por nome, e a busca filtra no próprio navegador."
 
-### 3.4 Create e Update — botão "Nova atividade" ou lápis
+### 3.3 Create e Update: "Nova atividade" ou lápis
 
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 96–114 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ActivitiesPage.jsx#L96-L114)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 96–114 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ActivitiesPage.jsx#L96-L114)
 
 ```jsx
   async function submit() {
@@ -1029,7 +856,7 @@ Fala: "O `useEffect` chama `listActivities` (`GET /api/activities`). O repositó
   }
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 461–482 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L461-L482)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 461–482 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L461-L482)
 
 ```kotlin
                 post {
@@ -1056,7 +883,7 @@ Fala: "O `useEffect` chama `listActivities` (`GET /api/activities`). O repositó
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 49–68 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ActivitiesRepository.kt#L49-L68)
+📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 49–68 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ActivitiesRepository.kt#L49-L68)
 
 ```kotlin
     fun create(name: String, description: String): ActivityRecord = transaction {
@@ -1081,7 +908,7 @@ Fala: "O `useEffect` chama `listActivities` (`GET /api/activities`). O repositó
     }
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 504–535 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L504-L535)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 504–535 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L504-L535)
 
 ```kotlin
                 put("/{id}") {
@@ -1118,7 +945,7 @@ Fala: "O `useEffect` chama `listActivities` (`GET /api/activities`). O repositó
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 70–80 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ActivitiesRepository.kt#L70-L80)
+📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 70–80 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ActivitiesRepository.kt#L70-L80)
 
 ```kotlin
     fun update(id: UUID, name: String, description: String): ActivityRecord? = transaction {
@@ -1134,137 +961,11 @@ Fala: "O `useEffect` chama `listActivities` (`GET /api/activities`). O repositó
     }
 ```
 
-📍 `deviante-api/src/main/kotlin/dto/ActivityDto.kt` · linhas 7–34 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/dto/ActivityDto.kt#L7-L34)
+Fala: "O mesmo modal cria (`POST`, 201) ou edita (`PUT`, 200). Nome em branco volta 400 com o erro no campo."
 
-```kotlin
-@Serializable
-data class ActivityResponse(
-    val id: String,
-    val name: String,
-    val description: String,
-    val createdAt: String,
-    val updatedAt: String,
-)
+### 3.4 Delete: lixeira (só administrador e gestor)
 
-@Serializable
-data class CreateActivityRequest(
-    val name: String,
-    val description: String = "",
-)
-
-@Serializable
-data class UpdateActivityRequest(
-    val name: String,
-    val description: String,
-)
-
-fun ActivityRecord.toResponse() = ActivityResponse(
-    id = id.toString(),
-    name = name,
-    description = description,
-    createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-    updatedAt = updatedAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-)
-```
-
-Fala: "O mesmo modal cria (`POST /api/activities`, 201) ou edita (`PUT /api/activities/{id}`). Nome em branco volta 400 com o erro no campo. Depois de salvar, o modal compara os processos marcados com os vínculos atuais e chama só o que mudou."
-
-### 3.5 Vincular ao processo — caixas "Processos que usam esta atividade"
-
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 73–88 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ActivitiesPage.jsx#L73-L88)
-
-```jsx
-  useEffect(() => {
-    let alive = true
-    api.listProcesses().then(async (data) => {
-      const list = Array.isArray(data) ? data : data?.items ?? []
-      const current = new Set()
-      if (initial.id) {
-        await Promise.all(list.map(async (process) => {
-          const activities = await api.listProcessActivities(process.id).catch(() => [])
-          if (activities.some((activity) => activity.id === initial.id)) current.add(process.id)
-        }))
-      }
-      if (!alive) return
-      setProcesses(list); setLinked(current); setSelected(new Set(current))
-    }).catch(() => {})
-    return () => { alive = false }
-  }, [initial.id])
-```
-
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 950–992 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L950-L992)
-
-```kotlin
-                put("/{activityId}") {
-                    val processId = call.parameters["processId"]?.let(::runCatchingUuid)
-                    val activityId = call.parameters["activityId"]?.let(::runCatchingUuid)
-                    if (processId == null) {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID de processo inválido."))
-                        return@put
-                    }
-                    if (activityId == null) {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID de atividade inválido."))
-                        return@put
-                    }
-                    if (call.requireProcess(authClient, managerRepository, processRepository, processId) == null) {
-                        return@put
-                    }
-
-                    val activity = activitiesRepository.findById(activityId)
-                    if (activity == null) {
-                        call.respond(HttpStatusCode.NotFound, ErrorResponse("Atividade não encontrada."))
-                        return@put
-                    }
-
-                    activitiesRepository.linkToProcess(processId, activityId)
-                    call.respond(activity.toResponse())
-                }
-
-                delete("/{activityId}") {
-                    val processId = call.parameters["processId"]?.let(::runCatchingUuid)
-                    val activityId = call.parameters["activityId"]?.let(::runCatchingUuid)
-                    if (processId == null) {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID de processo inválido."))
-                        return@delete
-                    }
-                    if (activityId == null) {
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID de atividade inválido."))
-                        return@delete
-                    }
-                    if (call.requireProcess(authClient, managerRepository, processRepository, processId) == null) {
-                        return@delete
-                    }
-
-                    activitiesRepository.unlinkFromProcess(processId, activityId)
-                    call.respond(HttpStatusCode.NoContent)
-                }
-```
-
-📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 93–107 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ActivitiesRepository.kt#L93-L107)
-
-```kotlin
-    fun linkToProcess(processId: UUID, activityId: UUID): Boolean = transaction {
-        val now = OffsetDateTime.now()
-        ProcessActivitiesTable.insertIgnore {
-            it[ProcessActivitiesTable.processId] = processId
-            it[ProcessActivitiesTable.activityId] = activityId
-            it[ProcessActivitiesTable.createdAt] = now
-        }.insertedCount > 0
-    }
-
-    fun unlinkFromProcess(processId: UUID, activityId: UUID): Boolean = transaction {
-        ProcessActivitiesTable.deleteWhere {
-            (ProcessActivitiesTable.processId eq processId) and
-                (ProcessActivitiesTable.activityId eq activityId)
-        } > 0
-    }
-```
-
-Fala: "`insertIgnore` vira `INSERT ... ON CONFLICT DO NOTHING`: como a chave primária é o par (processo, atividade), vincular duas vezes não duplica."
-
-### 3.6 Delete — lixeira (só administrador e gestor)
-
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 35–43 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ActivitiesPage.jsx#L35-L43)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 35–43 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ActivitiesPage.jsx#L35-L43)
 
 ```jsx
   async function remove(activity) {
@@ -1278,13 +979,13 @@ Fala: "`insertIgnore` vira `INSERT ... ON CONFLICT DO NOTHING`: como a chave pri
   }
 ```
 
-📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 57–57 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/pages/ActivitiesPage.jsx#L57-L57)
+📍 `deviante-web/src/pages/ActivitiesPage.jsx` · linhas 57–57 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/32eb2d0/src/pages/ActivitiesPage.jsx#L57-L57)
 
 ```jsx
         {allowDelete && <button type="button" onClick={() => remove(activity)} aria-label={`Excluir ${activity.name}`} className="p-1.5 rounded hover:bg-red-950/40" style={{ color: 'var(--crit-soft)' }}><Trash2 size={12} /></button>}
 ```
 
-📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 537–553 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Routing.kt#L537-L553)
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 537–553 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/Routing.kt#L537-L553)
 
 ```kotlin
                 delete("/{id}") {
@@ -1306,13 +1007,7 @@ Fala: "`insertIgnore` vira `INSERT ... ON CONFLICT DO NOTHING`: como a chave pri
                 }
 ```
 
-📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 21–21 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ActivitiesRepository.kt#L21-L21)
-
-```kotlin
-enum class ActivityDeletion { DELETED, NOT_FOUND, IN_USE }
-```
-
-📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 82–91 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/repository/ActivitiesRepository.kt#L82-L91)
+📍 `deviante-api/src/main/kotlin/repository/ActivitiesRepository.kt` · linhas 82–91 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/cea030d/src/main/kotlin/repository/ActivitiesRepository.kt#L82-L91)
 
 ```kotlin
     /**
@@ -1327,34 +1022,24 @@ enum class ActivityDeletion { DELETED, NOT_FOUND, IN_USE }
     }
 ```
 
-Fala: "A lixeira só aparece para quem pode excluir. O Core confere o papel (`requireDeleter`) e o repositório verifica se alguma operação de log está mapeada para a atividade: se estiver, responde 409, porque `operations.activity_id` não tem cascata. Sem uso, apaga; os vínculos em `process_activities` caem em cascata pelo banco. Resposta 204."
+Fala: "A lixeira só aparece para quem pode excluir, e o Core confere o papel de novo (403). Se a atividade estiver em uso por operações de log, a resposta é 409; sem uso, apaga e responde 204."
 
-### 3.7 Roteiro de fala
+### 3.5 Demonstração
 
-1. Abrir `https://deviante.alander.io/activities`. Criar "Usinagem" e "Inspeção", marcando o processo criado na parte 2 (Create + vínculo).
-2. Reabrir "Inspeção", trocar para "Inspeção final" (Update). O vínculo continua, porque guarda só o id.
-3. Desmarcar o processo de uma delas (desvincular: `DELETE /api/processes/{p}/activities/{a}`).
-4. Excluir uma atividade sem uso (Delete: 204). Explicar o 409 quando há operações mapeadas.
-5. Entrar como operador e mostrar que a lixeira não aparece.
-6. Fechar: "no meu par de CRUDs são três tabelas: `processes`, `activities` e a junção `process_activities`".
+1. Como **Gestor** da Alfa, clicar em **Atividades** no menu.
+2. **Read:** mostrar a lista e a busca.
+3. **Create:** "Nova atividade": "Inspeção" (`POST`, 201).
+4. **Update:** lápis, trocar para "Inspeção final" (`PUT`, 200).
+5. **Delete:** lixeira na "Inspeção final" (204). Como **Operador**, a lixeira não aparece.
 
 ## 4. Perguntas prováveis
 
-- **Por que o front não acessa o banco direto?** A credencial do Postgres ficaria no navegador. O Core concentra a regra de negócio (papel, validação, confirmação) e é o único com acesso ao banco.
-- **Onde fica a transação?** Cada função de repositório roda dentro de `transaction { }` do Exposed, com conexão do pool aberto em `Database.kt`.
-- **Como o Core sabe quem é o usuário?** Pelo token do Supabase: `verify` pergunta ao Supabase Auth e `findOrCreateForSupabaseUser` liga a resposta a uma linha de `managers`.
-- **O que acontece com os dados ligados a um processo excluído?** O banco apaga em cascata vínculos, logs e análises e deixa a agenda sem processo (`SET NULL`).
-- **E se o Supabase não estiver configurado?** `api.js` cai num mock em `localStorage`:
+- **Por que o front não acessa o banco direto?** A credencial do Postgres ficaria no navegador. O Core concentra a regra (papel, validação, confirmação) e é o único com acesso ao banco.
+- **Onde fica a transação?** Cada função de repositório roda em `transaction { }` do Exposed.
+- **O que acontece com os dados de um processo excluído?** O banco apaga em cascata logs, análises e vínculos, e deixa a agenda de manutenção sem processo (`SET NULL`).
 
-📍 `deviante-web/src/lib/api.js` · linhas 542–544 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/lib/api.js#L542-L544)
+## 5. Antes de ensaiar
 
-```javascript
-function shouldUseRemoteProcesses() {
-  return isSupabaseConfigured() || isRemoteApiEnabled()
-}
-```
-
-## 5. Checagem antes de ensaiar
-
-- [ ] Deploy da API no Fly.io concluído (sem ele, excluir atividade e os papéis por conta não funcionam no site).
-- [ ] Ensaiar com a conta demo do gestor (exclui) e a do operador (sem botão de excluir).
+- [ ] Ter no computador um log de exemplo (`.xes` ou `.csv`) para o upload.
+- [ ] Entrar com a seta na **Alfa** e conferir que há um processo com gráfico pronto.
+- [ ] Ensaiar com o **Gestor** (exclui) e o **Operador** (sem botão de excluir).
