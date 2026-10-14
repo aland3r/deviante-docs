@@ -1,6 +1,7 @@
 erDiagram
     ANALYSES ||--o{ ANALYSIS_EVENT_LOGS : analisa
     ANALYSES ||--o{ DRIFTS : detecta
+    ANALYSES ||--o| MAINTENANCE_PREDICTIONS : estima
     ANALYSES {
         uuid id PK
         string business_ref
@@ -27,4 +28,13 @@ erDiagram
         float mean_before
         float mean_after
         float magnitude_percent
+    }
+    MAINTENANCE_PREDICTIONS {
+        uuid id PK
+        uuid analysis_id FK
+        string machine_ref
+        float failure_probability
+        int rul_traces
+        string model
+        timestamp predicted_at
     }
