@@ -27,28 +27,28 @@ const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><sty
 @page a3p { size: A3 portrait; margin: 12mm; }
 @page a3l { size: A3 landscape; margin: 12mm; }
 @page capa { size: A4; margin: 30mm 25mm; }
-body { font-family: 'Liberation Sans', Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #111; }
-h2 { font-size: 17pt; margin: 18pt 0 8pt; break-after: avoid; color: #0b3b6f; }
+body { font-family: 'Liberation Sans', Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #111; }
+h2 { font-size: 16pt; margin: 18pt 0 8pt; break-after: avoid; color: #0b3b6f; }
 h2#h0, .sumario + h2 { margin-top: 0; }
 h3 { font-size: 13pt; margin: 14pt 0 6pt; break-after: avoid; color: #0b3b6f; }
-h4 { font-size: 11pt; break-after: avoid; }
+h4 { font-size: 11pt; font-weight: bold; margin: 10pt 0 4pt; break-after: avoid; }
 p.lbl { break-after: avoid; margin-top: 10pt; }
 p { margin: 0 0 7pt; text-align: justify; }
-table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 10.5pt; line-height: 1.35; }
+table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 11pt; line-height: 1.35; }
 th, td { border: 0.6pt solid #9aa5b1; padding: 3pt 5pt; vertical-align: top; text-align: left; }
 th { background: #e8eef5; }
 td:first-child, th:first-child { white-space: nowrap; }
-tr { break-inside: avoid; }
+tr { break-inside: auto; }
 thead { display: table-header-group; }
-code { font-family: 'Liberation Mono', monospace; font-size: 0.92em; background: #f1f3f5; padding: 0 2pt; border-radius: 2pt; }
+code { font: inherit; }
 ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
 .capa { page: capa; height: 230mm; break-after: page; display: flex; flex-direction: column; justify-content: space-between; text-align: center; }
-.capa .t1 { font-size: 20pt; font-weight: bold; line-height: 1.35; }
-.capa .autores { font-size: 12pt; font-weight: bold; line-height: 1.8; }
+.capa .t1 { font-size: 16pt; font-weight: bold; line-height: 1.35; }
+.capa .autores { font-size: 11pt; font-weight: bold; line-height: 1.8; }
 .capa .inst { font-size: 11pt; line-height: 1.7; }
 .sumario { line-height: 1.32; break-after: page; }
 .sumario li { break-inside: avoid; }
-.sumario h1 { font-size: 17pt; color: #0b3b6f; }
+.sumario h1 { font-size: 16pt; color: #0b3b6f; margin: 0 0 8pt; }
 .sumario ul { list-style: none; padding-left: 0; }
 .sumario ul ul { padding-left: 12pt; }
 .sumario a { color: #111; text-decoration: none; display: flex; }
@@ -77,7 +77,7 @@ ${body}
 const MM = 96 / 25.4;
 const MINPX = +(process.env.MINPX ?? 0);
 const MAXH = +(process.env.MAXH ?? 190);
-const SHRINK = +(process.env.SHRINK ?? 0.7);
+const SHRINK = +(process.env.SHRINK ?? 0.35);
 const PAGES = { a4p: [210, 297], a4l: [297, 210], a3p: [297, 420], a3l: [420, 297] };
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
@@ -225,12 +225,12 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, MAXH }) => 
   return out;
 }, { codes, PAGES, MM, MINPX, MAXH });
 console.table(report);
-// escala fixa do layout impresso (o PDF entregue em 15/10 saía nessa escala)
+// quatro estilos no documento: título 16pt, subtítulo 13pt, texto 11pt e texto em negrito 11pt
 const pdfOpts = {
-  scale: +(process.env.SCALE ?? 0.76),
+  scale: +(process.env.SCALE ?? 1),
   preferCSSPageSize: true, printBackground: true, displayHeaderFooter: true,
   headerTemplate: '<span></span>',
-  footerTemplate: '<div style="width:100%;font-size:8px;color:#777;text-align:center;font-family:Arial"><span class="pageNumber"></span></div>',
+  footerTemplate: '<div style="width:100%;font-size:11pt;color:#777;text-align:center;font-family:Arial"><span class="pageNumber"></span></div>',
 };
 const tmp = out + '.tmp.pdf';
 const norm = t => t.replace(/\s+/g, '');
@@ -266,20 +266,75 @@ for (let round = 0; round < 40; round++) {
   let changed = false;
   for (const bl of blocks) {
     if (!bl.key) continue;
-    const n = texts.findIndex((t, j) => j > 1 && t.startsWith(bl.key));
+    let n = texts.findIndex((t, j) => j > 1 && t.startsWith(bl.key));
+    if (n < 0) {
+      // the block may start lower on its page, below a label or paragraph pushed along
+      // with it: those go up together, so they count against the room in the gap
+      const m = texts.findIndex((t, j) => j > 1 && t.includes(bl.key));
+      if (m < 2 || gap[m - 1] < 20 || bl.done) continue;
+      // text that introduces the diagram stays behind on the page with the gap;
+      // only the diagram's own title goes with it
+      const popped = await page.evaluate(k => {
+        const b = document.querySelectorAll('.dginline')[k], kids = [...b.children];
+        const pre = kids.slice(0, kids.indexOf(b.querySelector('svg')) - 1);
+        if (!pre.length || b.dataset.popped) return false;
+        pre.forEach(x => b.before(x)); b.dataset.popped = '1';
+        return true;
+      }, bl.k);
+      if (popped) { console.log(`introdução do diagrama ${bl.k} ficou na página anterior`); changed = true; break; }
+      const preMM = await page.evaluate(({ k, page, MM }) => {
+        let e = document.querySelectorAll('.dginline')[k].previousElementSibling, h = 0;
+        while (e && page.startsWith(e.textContent.replace(/\s+/g, '').slice(0, 40)) === false && page.includes(e.textContent.replace(/\s+/g, '').slice(0, 40))) {
+          h += e.getBoundingClientRect().height / MM + 4; e = e.previousElementSibling;
+        }
+        return e && page.startsWith(e.textContent.replace(/\s+/g, '').slice(0, 40)) ? h + e.getBoundingClientRect().height / MM + 4 : -1;
+      }, { k: bl.k, page: texts[m], MM });
+      if (preMM < 0) continue;
+      const room = gap[m - 1] - 8 - preMM;
+      const target = bl.svgMM - (bl.blockMM - room);
+      if (target / bl.svgMM < SHRINK) continue;
+      await page.evaluate(({ k, f }) => {
+        const b = document.querySelectorAll('.dginline')[k], s = b.querySelector('svg');
+        s.setAttribute('width', +s.getAttribute('width') * f);
+        s.setAttribute('height', +s.getAttribute('height') * f);
+        b.dataset.done = '1';
+      }, { k: bl.k, f: target / bl.svgMM });
+      console.log(`diagrama ${bl.k}: reduzido a ${(target / bl.svgMM * 100).toFixed(0)}% para subir com o texto acima para a página ${m}`);
+      changed = true;
+      break;
+    }
     if (n < 2 || gap[n - 1] < 20) continue;
     // 1st choice: the text that follows the diagram in its section moves up into the gap
     const moved = await page.evaluate(({ k, room, MM }) => {
       const b = document.querySelectorAll('.dginline')[k];
       const e = b.nextElementSibling;
       if (!e || /^H[1-4]$/.test(e.tagName) || e.classList.contains('dginline')) return false;
-      if (e.getBoundingClientRect().height / MM > room) return false;
+      // a label (bold line) never travels without the table or text it introduces
+      const isLbl = el => el.tagName === 'P' && (el.classList.contains('lbl') || (el.children.length === 1 && el.firstElementChild.tagName === 'STRONG' && el.textContent.trim() === el.firstElementChild.textContent.trim()));
+      const move = [e];
+      if (isLbl(e)) {
+        const f = e.nextElementSibling;
+        if (!f || /^H[1-4]$/.test(f.tagName) || f.classList.contains('dginline')) return false;
+        move.push(f);
+      }
+      // tables and paragraphs break across pages, so a long one just fills the gap and goes on
+      if (move.reduce((a, x) => a + x.getBoundingClientRect().height / MM + 4, 0) > room && !move.some(x => /^(TABLE|P|UL|OL)$/.test(x.tagName) && x.getBoundingClientRect().height / MM > 30)) return false;
       if (/^H[34]$/.test(b.firstElementChild.tagName) && b.firstElementChild.nextElementSibling.tagName !== 'svg') b.before(b.firstElementChild);
-      b.before(e);
+      move.forEach(x => b.before(x));
       return true;
     }, { k: bl.k, room: gap[n - 1] - 6, MM });
     if (moved) { console.log(`texto depois do diagrama ${bl.k} subiu para a página ${n}`); changed = true; break; }
     // 2nd choice: shrink the diagram, down to SHRINK of its size
+    // text that introduces the diagram stays behind on the page with the gap;
+    // only the diagram's own title goes with it
+    const popped = await page.evaluate(k => {
+      const b = document.querySelectorAll('.dginline')[k], kids = [...b.children];
+      const pre = kids.slice(0, kids.indexOf(b.querySelector('svg')) - 1);
+      if (!pre.length || b.dataset.popped) return false;
+      pre.forEach(x => b.before(x)); b.dataset.popped = '1';
+      return true;
+    }, bl.k);
+    if (popped) { console.log(`introdução do diagrama ${bl.k} ficou na página anterior`); changed = true; break; }
     if (bl.done) continue;
     const room = gap[n - 1] - 8;
     const target = bl.svgMM - (bl.blockMM - room);
