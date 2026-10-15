@@ -67,7 +67,7 @@ ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
 <div class="capa">
   <div class="inst">PONTIFÍCIA UNIVERSIDADE CATÓLICA DO PARANÁ</div>
   <div class="t1">Documentação Arc42: Sistema de Suporte a Decisão em Manutenção Industrial</div>
-  <div class="autores">ALANDER MENEZES ARANTES DE ÁVILA<br>EMANUELLE SKOLUT JOSE</div>
+  <div class="autores">ALANDER MENEZES ARANTES DE ÁVILA<br>BERNARDO CREPLIVE VIEIRA<br>EMANUELLE SKOLUT JOSE<br>MURILO REGNIER STANGE</div>
   <div class="inst">6º Período – Engenharia de Software<br>Curso: Arquitetura e Soluções</div>
 </div>
 <div class="sumario"><h1>Sumário</h1><div id="toc"></div></div>
@@ -84,6 +84,11 @@ const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromi
 const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
 await page.addInitScript(() => { Object.defineProperty(screen, 'availWidth', { get: () => 1200 }); });
 await page.setContent(html, { waitUntil: 'load' });
+// a 1ª coluna só fica sem quebra quando todas as células dela são curtas (IDs, nomes)
+await page.evaluate(() => document.querySelectorAll('table').forEach(t => {
+  const first = [...t.rows].map(r => r.cells[0]).filter(Boolean);
+  if (first.some(c => c.textContent.trim().length > 45)) first.forEach(c => { c.style.whiteSpace = 'normal'; });
+}));
 await page.addScriptTag({ path: path.join(here, 'node_modules/mermaid/dist/mermaid.min.js') });
 const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, MAXH }) => {
   mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
@@ -220,7 +225,9 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, MAXH }) => 
   return out;
 }, { codes, PAGES, MM, MINPX, MAXH });
 console.table(report);
+// escala fixa do layout impresso (o PDF entregue em 15/10 saía nessa escala)
 const pdfOpts = {
+  scale: +(process.env.SCALE ?? 0.76),
   preferCSSPageSize: true, printBackground: true, displayHeaderFooter: true,
   headerTemplate: '<span></span>',
   footerTemplate: '<div style="width:100%;font-size:8px;color:#777;text-align:center;font-family:Arial"><span class="pageNumber"></span></div>',
