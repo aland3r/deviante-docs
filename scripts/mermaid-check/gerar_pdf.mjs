@@ -44,15 +44,14 @@ ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
 .capa .t1 { font-size: 20pt; font-weight: bold; line-height: 1.35; }
 .capa .autores { font-size: 12pt; font-weight: bold; line-height: 1.8; }
 .capa .inst { font-size: 11pt; line-height: 1.7; }
-.sumario { font-size: 9.5pt; line-height: 1.25; }
-.sumario > div > ul { columns: 2; column-gap: 10mm; }
+.sumario { font-size: 10.5pt; line-height: 1.32; }
 .sumario li { break-inside: avoid; }
 .sumario h1 { font-size: 17pt; color: #0b3b6f; }
 .sumario ul { list-style: none; padding-left: 0; }
 .sumario ul ul { padding-left: 12pt; }
 .sumario a { color: #111; text-decoration: none; display: flex; }
 .sumario a .pg { margin-left: auto; padding-left: 6pt; }
-.sumario li { margin: 1.5pt 0; }
+.sumario li { margin: 1pt 0; }
 .sumario ul ul { margin: 2pt 0 4pt; }
 .dginline { break-inside: avoid; margin: 8pt 0 10pt; text-align: center; }
 .dginline svg { display: inline-block; }
