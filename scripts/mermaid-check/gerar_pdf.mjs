@@ -32,19 +32,19 @@ h2 { font-size: 17pt; margin: 0 0 8pt; break-before: page; break-after: avoid; c
 h3 { font-size: 13pt; margin: 14pt 0 6pt; break-after: avoid; color: #0b3b6f; }
 h4 { font-size: 11pt; break-after: avoid; }
 p { margin: 0 0 7pt; text-align: justify; }
-table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 9pt; line-height: 1.3; }
+table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 10.5pt; line-height: 1.35; }
 th, td { border: 0.6pt solid #9aa5b1; padding: 3pt 5pt; vertical-align: top; text-align: left; }
 th { background: #e8eef5; }
 td:first-child, th:first-child { white-space: nowrap; }
 tr { break-inside: avoid; }
 thead { display: table-header-group; }
-code { font-family: 'Liberation Mono', monospace; font-size: 8.8pt; background: #f1f3f5; padding: 0 2pt; border-radius: 2pt; }
+code { font-family: 'Liberation Mono', monospace; font-size: 0.92em; background: #f1f3f5; padding: 0 2pt; border-radius: 2pt; }
 ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
 .capa { page: capa; height: 230mm; break-after: page; display: flex; flex-direction: column; justify-content: space-between; text-align: center; }
 .capa .t1 { font-size: 20pt; font-weight: bold; line-height: 1.35; }
 .capa .autores { font-size: 12pt; font-weight: bold; line-height: 1.8; }
 .capa .inst { font-size: 11pt; line-height: 1.7; }
-.sumario { font-size: 10.5pt; line-height: 1.32; }
+.sumario { line-height: 1.32; }
 .sumario li { break-inside: avoid; }
 .sumario h1 { font-size: 17pt; color: #0b3b6f; }
 .sumario ul { list-style: none; padding-left: 0; }
@@ -73,7 +73,7 @@ ${body}
 
 const MM = 96 / 25.4;
 const MINPX = +(process.env.MINPX ?? 0);
-const LANDGAIN = +(process.env.LANDGAIN ?? 1.25);
+const INLINEPX = +(process.env.INLINEPX ?? 7);
 const PAGES = { a4p: [210, 297], a4l: [297, 210], a3p: [297, 420], a3l: [420, 297] };
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
@@ -81,7 +81,7 @@ const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
 await page.addInitScript(() => { Object.defineProperty(screen, 'availWidth', { get: () => 1200 }); });
 await page.setContent(html, { waitUntil: 'load' });
 await page.addScriptTag({ path: path.join(here, 'node_modules/mermaid/dist/mermaid.min.js') });
-const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, LANDGAIN }) => {
+const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, INLINEPX }) => {
   mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
   // Sumário from the h2/h3 headings
   const toc = document.getElementById('toc');
@@ -128,7 +128,8 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, LANDGAIN })
     const colW = 174 * MM, colH = 245 * MM;
     const inl = Math.min(colW / pre.w, colH / pre.h, 1.3);
     const land = Math.min(273 * MM / pre.w, 170 * MM / pre.h);
-    if (land < inl * LANDGAIN && !/^\s*classDiagram/.test(codes[i])) {
+    // upright in the flow while its smallest text stays >= INLINEPX; otherwise a landscape page
+    if (pre.fmin * inl >= INLINEPX || land < inl * 1.1) {
       const s = wrap.querySelector('svg');
       s.removeAttribute('style');
       s.setAttribute('viewBox', pre.vb);
@@ -207,7 +208,7 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, LANDGAIN })
     out.push({ i, k, fmin, eff: +(fmin * fa4).toFixed(1), a4: +fa4.toFixed(2), sc: +sc.toFixed(2), cap: take.map(e => e.textContent).join(' / ').slice(0, 60) });
   }
   return out;
-}, { codes, PAGES, MM, MINPX, LANDGAIN });
+}, { codes, PAGES, MM, MINPX, INLINEPX });
 console.table(report);
 const pdfOpts = {
   preferCSSPageSize: true, printBackground: true, displayHeaderFooter: true,
