@@ -28,9 +28,11 @@ const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><sty
 @page a3l { size: A3 landscape; margin: 12mm; }
 @page capa { size: A4; margin: 30mm 25mm; }
 body { font-family: 'Liberation Sans', Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #111; }
-h2 { font-size: 17pt; margin: 0 0 8pt; break-before: page; break-after: avoid; color: #0b3b6f; }
+h2 { font-size: 17pt; margin: 18pt 0 8pt; break-after: avoid; color: #0b3b6f; }
+h2#h0, .sumario + h2 { margin-top: 0; }
 h3 { font-size: 13pt; margin: 14pt 0 6pt; break-after: avoid; color: #0b3b6f; }
 h4 { font-size: 11pt; break-after: avoid; }
+p.lbl { break-after: avoid; margin-top: 10pt; }
 p { margin: 0 0 7pt; text-align: justify; }
 table { border-collapse: collapse; width: 100%; margin: 4pt 0 10pt; font-size: 10.5pt; line-height: 1.35; }
 th, td { border: 0.6pt solid #9aa5b1; padding: 3pt 5pt; vertical-align: top; text-align: left; }
@@ -44,7 +46,7 @@ ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
 .capa .t1 { font-size: 20pt; font-weight: bold; line-height: 1.35; }
 .capa .autores { font-size: 12pt; font-weight: bold; line-height: 1.8; }
 .capa .inst { font-size: 11pt; line-height: 1.7; }
-.sumario { line-height: 1.32; }
+.sumario { line-height: 1.32; break-after: page; }
 .sumario li { break-inside: avoid; }
 .sumario h1 { font-size: 17pt; color: #0b3b6f; }
 .sumario ul { list-style: none; padding-left: 0; }
@@ -53,8 +55,9 @@ ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
 .sumario a .pg { margin-left: auto; padding-left: 6pt; }
 .sumario li { margin: 1pt 0; }
 .sumario ul ul { margin: 2pt 0 4pt; }
-.dginline { break-inside: avoid; margin: 8pt 0 10pt; text-align: center; }
-.dginline svg { display: inline-block; }
+.dginline { break-inside: avoid; margin: 6pt 0 10pt; }
+.dginline > h3, .dginline > h4 { margin-top: 14pt; }
+.dginline svg { display: block; margin: 4pt auto 0; }
 .dgpage { break-inside: avoid; display: flex; flex-direction: column; align-items: center; }
 .dgpage > h2 { break-before: auto; }
 .dgpage > h2, .dgpage > h3, .dgpage > p { align-self: stretch; text-align: left; margin: 0 0 4pt; }
@@ -73,7 +76,8 @@ ${body}
 
 const MM = 96 / 25.4;
 const MINPX = +(process.env.MINPX ?? 0);
-const INLINEPX = +(process.env.INLINEPX ?? 7);
+const MAXH = +(process.env.MAXH ?? 190);
+const SHRINK = +(process.env.SHRINK ?? 0.7);
 const PAGES = { a4p: [210, 297], a4l: [297, 210], a3p: [297, 420], a3l: [420, 297] };
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
@@ -81,7 +85,7 @@ const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
 await page.addInitScript(() => { Object.defineProperty(screen, 'availWidth', { get: () => 1200 }); });
 await page.setContent(html, { waitUntil: 'load' });
 await page.addScriptTag({ path: path.join(here, 'node_modules/mermaid/dist/mermaid.min.js') });
-const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, INLINEPX }) => {
+const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, MAXH }) => {
   mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
   // Sumário from the h2/h3 headings
   const toc = document.getElementById('toc');
@@ -112,6 +116,8 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, INLINEPX })
       .filter(t => t.textContent.trim()).map(t => parseFloat(getComputedStyle(t).fontSize)).filter(Boolean);
     return { w, h, vb: `${x0 - pad} ${y0 - pad} ${w} ${h}`, fmin: Math.min(...fonts) };
   };
+  // bold-only lines work as small headings: keep them with what follows
+  document.querySelectorAll('body > p').forEach(p => { const b = p.querySelector('strong'); if (b && b.textContent.trim() === p.textContent.trim()) p.classList.add('lbl'); });
   const out = [];
   for (const div of document.querySelectorAll('.dg')) {
     const i = +div.dataset.i;
@@ -123,19 +129,23 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, INLINEPX })
     const take = [];
     wrap.insertAdjacentHTML('beforeend', svg);
     const pre = probe(wrap.querySelector('svg'));
-    // portrait diagrams stay in the text flow at column width; only wide ones,
-    // which gain a lot on a landscape page, get a landscape page of their own
-    const colW = 174 * MM, colH = 245 * MM;
-    const inl = Math.min(colW / pre.w, colH / pre.h, 1.3);
-    const land = Math.min(273 * MM / pre.w, 170 * MM / pre.h);
-    // upright in the flow while its smallest text stays >= INLINEPX; otherwise a landscape page
-    if (pre.fmin * inl >= INLINEPX || land < inl * 1.1) {
+    // every diagram stays in the text flow at column width, together with the
+    // heading and caption right above it (the block never splits across pages)
+    {
       const s = wrap.querySelector('svg');
+      wrap.className = 'dginline';
+      let prev = wrap.previousElementSibling;
+      const cap = [];
+      while (prev && prev.tagName === 'P' && prev.textContent.length < 400 && cap.length < 2) { cap.unshift(prev); prev = prev.previousElementSibling; }
+      if (prev && /^H[34]$/.test(prev.tagName)) cap.unshift(prev);
+      cap.reverse().forEach(e => wrap.prepend(e));
+      const capH = cap.reduce((acc, e) => acc + e.getBoundingClientRect().height + 10, 0);
+      const colW = 174 * MM, colH = MAXH * MM - capH;
+      const inl = Math.min(colW / pre.w, colH / pre.h, 1.3);
       s.removeAttribute('style');
       s.setAttribute('viewBox', pre.vb);
       s.setAttribute('width', pre.w * inl);
       s.setAttribute('height', pre.h * inl);
-      wrap.className = 'dginline';
       out.push({ i, k: 'inline', fmin: pre.fmin, eff: +(pre.fmin * inl).toFixed(1), sc: +inl.toFixed(2) });
       continue;
     }
@@ -208,17 +218,79 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, INLINEPX })
     out.push({ i, k, fmin, eff: +(fmin * fa4).toFixed(1), a4: +fa4.toFixed(2), sc: +sc.toFixed(2), cap: take.map(e => e.textContent).join(' / ').slice(0, 60) });
   }
   return out;
-}, { codes, PAGES, MM, MINPX, INLINEPX });
+}, { codes, PAGES, MM, MINPX, MAXH });
 console.table(report);
 const pdfOpts = {
   preferCSSPageSize: true, printBackground: true, displayHeaderFooter: true,
   headerTemplate: '<span></span>',
   footerTemplate: '<div style="width:100%;font-size:8px;color:#777;text-align:center;font-family:Arial"><span class="pageNumber"></span></div>',
 };
-// pass 1: find the page of each heading, then write the numbers into the Sumário
 const tmp = out + '.tmp.pdf';
-await page.pdf({ ...pdfOpts, path: tmp });
-const pages = execFileSync('pdftotext', ['-enc', 'UTF-8', tmp, '-']).toString().split('\f').map(t => t.replace(/\s+/g, ''));
+const norm = t => t.replace(/\s+/g, '');
+const pageTexts = () => execFileSync('pdftotext', ['-enc', 'UTF-8', tmp, '-']).toString().split('\f').map(norm);
+// blank space left at the bottom of each page, in mm (from a coarse raster)
+const gaps = () => {
+  const dir = fs.mkdtempSync(path.join(path.dirname(out), '.gap'));
+  execFileSync('pdftoppm', ['-r', '20', '-gray', tmp, path.join(dir, 'p')]);
+  const res = fs.readdirSync(dir).sort().map(f => {
+    const b = fs.readFileSync(path.join(dir, f));
+    // PGM: header 'P5\nW H\n255\n'
+    const hdr = b.toString('latin1', 0, 40).split(/\s+/);
+    const W = +hdr[1], H = +hdr[2];
+    const off = b.length - W * H;
+    const bottom = Math.round(H * (279 / 297));
+    let last = 0;
+    for (let y = 0; y < bottom; y++) for (let x = 0; x < W; x++) if (b[off + y * W + x] < 200) { last = y; break; }
+    return (bottom - last) / H * 297;
+  });
+  fs.rmSync(dir, { recursive: true });
+  return res;
+};
+// shrink a diagram pushed to the next page when the space it left behind can hold it
+// at no less than SHRINK of its size; one diagram per round, since the rest reflows
+for (let round = 0; round < 40; round++) {
+  await page.pdf({ ...pdfOpts, path: tmp });
+  const texts = pageTexts(), gap = gaps();
+  const blocks = await page.evaluate(MM => [...document.querySelectorAll('.dginline')].map((b, k) => {
+    const s = b.querySelector('svg');
+    const first = b.firstElementChild === s ? null : b.firstElementChild.textContent;
+    return { k, key: first ? first.replace(/\s+/g, '').slice(0, 40) : null, blockMM: b.getBoundingClientRect().height / MM, svgMM: s.getBoundingClientRect().height / MM, done: b.dataset.done === '1' };
+  }), MM);
+  let changed = false;
+  for (const bl of blocks) {
+    if (!bl.key) continue;
+    const n = texts.findIndex((t, j) => j > 1 && t.startsWith(bl.key));
+    if (n < 2 || gap[n - 1] < 20) continue;
+    // 1st choice: the text that follows the diagram in its section moves up into the gap
+    const moved = await page.evaluate(({ k, room, MM }) => {
+      const b = document.querySelectorAll('.dginline')[k];
+      const e = b.nextElementSibling;
+      if (!e || /^H[1-4]$/.test(e.tagName) || e.classList.contains('dginline')) return false;
+      if (e.getBoundingClientRect().height / MM > room) return false;
+      if (/^H[34]$/.test(b.firstElementChild.tagName) && b.firstElementChild.nextElementSibling.tagName !== 'svg') b.before(b.firstElementChild);
+      b.before(e);
+      return true;
+    }, { k: bl.k, room: gap[n - 1] - 6, MM });
+    if (moved) { console.log(`texto depois do diagrama ${bl.k} subiu para a página ${n}`); changed = true; break; }
+    // 2nd choice: shrink the diagram, down to SHRINK of its size
+    if (bl.done) continue;
+    const room = gap[n - 1] - 8;
+    const target = bl.svgMM - (bl.blockMM - room);
+    if (target / bl.svgMM < SHRINK) continue;
+    await page.evaluate(({ k, f }) => {
+      const b = document.querySelectorAll('.dginline')[k], s = b.querySelector('svg');
+      s.setAttribute('width', +s.getAttribute('width') * f);
+      s.setAttribute('height', +s.getAttribute('height') * f);
+      b.dataset.done = '1';
+    }, { k: bl.k, f: target / bl.svgMM });
+    console.log(`diagrama ${bl.k}: reduzido a ${(target / bl.svgMM * 100).toFixed(0)}% para caber na página ${n}`);
+    changed = true;
+    break;
+  }
+  if (!changed) break;
+}
+// find the page of each heading, then write the numbers into the Sumário
+const pages = pageTexts();
 const heads = await page.evaluate(() => [...document.querySelectorAll('#toc a')].map(a => a.textContent.replace(/\s+/g, ' ').trim()));
 let from = 2;
 const nums = heads.map(h => {
