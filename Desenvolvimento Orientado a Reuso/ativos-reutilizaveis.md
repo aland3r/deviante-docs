@@ -41,7 +41,7 @@ Em todas as empresas o papel também varia a tela. Só administrador e gestor ex
 |---|---|---|
 | Login (Modo Protótipo, setas de empresa) | 3 | Empresa escolhida |
 | Projetos (painel de processos) | 2, 3, 5 | Administrador vê todas as empresas |
-| Canvas do processo e upload de log | 2, 3, 4, 5 | Gestor mapeia só para atividades do catálogo |
+| Canvas do processo, upload de log e painel Operações | 2, 3, 4, 5 | Gestor mapeia e remapeia operações só para atividades do catálogo da empresa |
 | Análise de drift | 3, 4, 5, 6 | δ e tratamento |
 | Atividades e Operações | 2, 3, 5 | Só administrador |
 | Equipamentos | 1, 2, 3, 5 | Só plano Manutenção |
