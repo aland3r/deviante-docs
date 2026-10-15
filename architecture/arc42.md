@@ -46,7 +46,6 @@ O Deviante auxilia o gestor de manutenção a tomar decisões relacionadas à va
 | RNF-01 | Back-end em Kotlin | Core API (Ktor) |
 | RNF-02 | Persistência poliglota por serviço: Core no PostgreSQL do Supabase, MS1 no MongoDB Atlas e MS2 no Azure SQL | Core API, MS1, MS2 |
 | RNF-03 | Interface em React + Vite | Microfrontend |
-| RNF-04 | Figma como fonte única de tokens e componentes de UI | Microfrontend |
 | RNF-05 | Microsserviços Python em FastAPI, consumidos via REST | MS1, MS2 |
 | RNF-06 | Microsserviços Python como Azure Functions (serverless) | Parcial: o IPDD/ADWIN é Function; MS1 e MS2 rodam no Fly.io (ADR 04) |
 | RNF-07 | Ingestão multiformato: hoje CSV e XES; um novo formato entra com um parser novo no MS1, sem alterar os outros serviços | MS1 (parser por formato) |
@@ -101,7 +100,7 @@ Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os qu
 | Eduardo de Freitas Loures, orientador PIBITI | [eduardo.loures@pucpr.br](mailto:eduardo.loures@pucpr.br) | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
 | Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | [manoel.valerio@pucpr.br](mailto:manoel.valerio@pucpr.br) | Avaliar estilos arquiteturais e implantação em nuvem. |
 | Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | [tiago.adelino@pucpr.edu.br](mailto:tiago.adelino@pucpr.edu.br) | Avaliar padrões de projeto, variabilidade e reuso. |
-| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira,  Emanuelle Skolut Jose, Murilo Regnier Stange | [menezes.alander@pucpr.edu.br](mailto:menezes.alander@pucpr.edu.br) | Uma arquitetura que caiba no prazo e no free tier. |
+| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange | [menezes.alander@pucpr.edu.br](mailto:menezes.alander@pucpr.edu.br), [bernardo.creplive@pucpr.edu.br](mailto:bernardo.creplive@pucpr.edu.br), [emanuelle.skolut@pucpr.edu.br](mailto:emanuelle.skolut@pucpr.edu.br), [murilo.stange@pucpr.edu.br](mailto:murilo.stange@pucpr.edu.br) | Uma arquitetura que caiba no prazo e no free tier. |
 
 ---
 
@@ -135,24 +134,27 @@ As restrições abaixo seguem o template arc42 em três grupos: técnicas, organ
 
 | ID | Restrição | Motivo |
 |---|---|---|
-| RO1 | Equipe de dois alunos | Grupo do projeto integrador (PjBL) do 6º período. |
-| RO2 | Prazos: documentação de Cloud em 15/10/2026; Reuso e apresentação do PIBITI em 16/10/2026; arquitetura completa de Cloud em 12/11/2026 | Calendário das disciplinas e do PIBITI. |
-| RO3 | Método analítico definido pela pesquisa e validado pelo orientador | O PIBITI continua o trabalho do grupo de pesquisa IPDD da PUCPR. |
-| RO4 | Um repositório público no GitHub por serviço, cada um com README (arquitetura, tecnologias, como rodar, nomes dos alunos) | Exigência de Cloud. |
-| RO5 | Imagem Docker do BFF e de cada microsserviço publicada no Docker Hub | Exigência de Cloud (RNF-24). |
-| RO6 | CI com build, testes e deploy a cada alteração; testes unitários e de arquitetura | RNF-09 e exigência de Cloud (RNF-22). |
-| RO7 | Demonstração em URLs da nuvem, não localhost, em vídeo no YouTube com todos os integrantes falando | Exigência de Cloud (RNF-25). |
+| RO1 | Equipe de quatro alunos, que dividem o projeto com as demais disciplinas do semestre | O escopo e o número de serviços precisam caber no tempo disponível do grupo. |
+| RO2 | Entregas em datas fixas: documentação de arquitetura em 15/10/2026, Reuso e apresentação do PIBITI em 16/10/2026 e entrega final de Cloud em 12/11/2026 | Calendário acadêmico. A solução evolui em incrementos, e cada entrega precisa estar funcionando na sua data. |
+| RO3 | O método analítico vem da pesquisa e só muda com o aval do orientador | O PIBITI continua o trabalho do grupo de pesquisa IPDD da PUCPR. |
+| RO4 | Código aberto: um repositório público por serviço, com a descrição da arquitetura e as instruções para rodar | A avaliação de Cloud é feita sobre os repositórios. |
+| RO5 | Cada serviço é distribuído como imagem pública no Docker Hub | Critério de avaliação de Cloud (RNF-24). |
+| RO6 | Toda alteração passa por build, testes unitários e de arquitetura e deploy automáticos | Prática do grupo (RNF-09) e critério de avaliação de Cloud (RNF-22). |
+| RO7 | A apresentação final é um vídeo com o sistema rodando na nuvem e a participação de todos os integrantes | Forma de avaliação de Cloud (RNF-25). |
 
 ### 2.3 Convenções
 
 | ID | Convenção | Motivo |
 |---|---|---|
-| C1 | Documentação de arquitetura no template arc42 (12 seções), com diagramas C4 nos níveis de contexto, contêineres e componentes | Exigência de Cloud. |
-| C2 | Diagramas em Mermaid, versionados como texto | Renderizam a partir do próprio texto, sem ferramenta de desenho. |
-| C3 | Clean Architecture (`domain`, `application`, `infrastructure`, `api`) com uma pasta por feature (Vertical Slice) | Exigência de Cloud (RNF-20, RNF-21). |
-| C4 | APIs documentadas em Swagger/OpenAPI e eventos em AsyncAPI | Exigência de Cloud (RNF-23). |
-| C5 | Figma como fonte única de tokens e componentes de interface | Decisão do grupo (RNF-04). |
-| C6 | Documentação em português; código, nomes de classes e eventos em inglês | Público da documentação é a banca da PUCPR; código segue o padrão das bibliotecas. |
+| C1 | Documentação de arquitetura no template arc42, em 12 seções | Modelo pedido em Cloud; dá a cada leitor um lugar previsível para cada assunto. |
+| C2 | Modelo C4 para a arquitetura (contexto, containers e componentes) e UML para classes e sequências | Notações conhecidas pela banca; o C4 é pedido em Cloud. |
+| C3 | Diagramas escritos em Mermaid e versionados como texto junto da documentação | O diagrama muda junto com o texto, sem ferramenta de desenho à parte. |
+| C4 | OOUX/ORCA para modelar os objetos de negócio, seus relacionamentos e ações | Os mesmos objetos aparecem na interface, nas classes e nos dados (§8.1). |
+| C5 | Código orientado a objetos, com padrões de projeto GoF nos pontos de reuso | Pedido em Reuso; os padrões adotados estão na §8.3. |
+| C6 | Clean Architecture (`domain`, `application`, `infrastructure`, `api`) com uma pasta por feature (Vertical Slice) | Pedido em Cloud (RNF-20, RNF-21). |
+| C7 | APIs documentadas em OpenAPI (Swagger) e eventos em AsyncAPI | Pedido em Cloud (RNF-23). |
+| C8 | Design das telas feito no Figma Make e portado para o React; cores, tipografia e layout seguem esse design | Decisão do grupo. |
+| C9 | Documentação em português; código, nomes de classes e eventos em inglês | Público da documentação é a banca da PUCPR; código segue o padrão das bibliotecas. |
 
 ---
 
@@ -1355,7 +1357,7 @@ Esta seção lista, por prioridade, os riscos técnicos (o que pode dar errado) 
 
 | Prioridade | Tipo | Risco ou dívida | Impacto | Mitigação |
 |---|---|---|---|---|
-| 1 | Dívida | A implementação ainda é a da versão anterior: um único serviço Python (`mining/`) faz ingestão e análise sobre o Postgres, e ainda não existem BFF, API Gateway, Service Bus nem o Function App de análise | A arquitetura das seções 5 a 7 não roda até a migração, com prazo em 12/11/2026 (RO2) para uma equipe de dois alunos (RO1) | Migrar em passos que funcionam sozinhos, cada um com deploy e testes: separar MS1 e MS2 com seus bancos, extrair o IPDD/ADWIN e a previsão para o Function App, criar o BFF atrás do API Gateway e, por fim, ligar o Service Bus |
+| 1 | Dívida | A implementação ainda é a da versão anterior: um único serviço Python (`mining/`) faz ingestão e análise sobre o Postgres, e ainda não existem BFF, API Gateway, Service Bus nem o Function App de análise | A arquitetura das seções 5 a 7 não roda até a migração, com prazo em 12/11/2026 (RO2) para uma equipe de quatro alunos (RO1) | Migrar em passos que funcionam sozinhos, cada um com deploy e testes: separar MS1 e MS2 com seus bancos, extrair o IPDD/ADWIN e a previsão para o Function App, criar o BFF atrás do API Gateway e, por fim, ligar o Service Bus |
 | 2 | Dívida | O banco e o código do Core ainda seguem o modelo antigo (gestor, equipamento, recomendação e agenda), não o modelo de domínio da §5.3 (empresa, workspace, componente, intervenção) | Diagramas e código divergem; parte dos requisitos (RF-04, RF-16, RF-17) não tem onde ser gravada | Migração do schema do Core junto com a reorganização em slices, um objeto ORCA por vez |
 | 3 | Risco | O isolamento entre empresas é feito na aplicação, não no banco (ADR 07) | Uma consulta sem filtro expõe dados de outra empresa | Todo repositório do Core filtra pela empresa do usuário do JWT, com teste de arquitetura (§8.5) e o cenário Q7 (§10) |
 | 4 | Dívida | A API ainda não aplica os papéis administrador, gestor, operador e técnico (RF-02) | Qualquer usuário autenticado alcança operações de outro papel | Ler o papel do JWT e checá-lo em cada caso de uso da camada `application` |
