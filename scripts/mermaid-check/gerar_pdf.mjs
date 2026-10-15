@@ -54,8 +54,11 @@ ul, ol { margin: 0 0 7pt; padding-left: 18pt; }
 .sumario a .pg { margin-left: auto; padding-left: 6pt; }
 .sumario li { margin: 1.5pt 0; }
 .sumario ul ul { margin: 2pt 0 4pt; }
+.dginline { break-inside: avoid; margin: 8pt 0 10pt; text-align: center; }
+.dginline svg { display: inline-block; }
 .dgpage { break-inside: avoid; display: flex; flex-direction: column; align-items: center; }
-.dgpage > h3, .dgpage > p { align-self: stretch; text-align: left; margin: 0 0 4pt; }
+.dgpage > h2 { break-before: auto; }
+.dgpage > h2, .dgpage > h3, .dgpage > p { align-self: stretch; text-align: left; margin: 0 0 4pt; }
 .dgpage .fill { flex: 1 1 auto; min-height: 0; align-self: stretch; position: relative; margin-top: 4pt; }
 .dgpage svg { position: absolute; inset: 0; }
 </style></head><body>
@@ -70,7 +73,8 @@ ${body}
 </body></html>`;
 
 const MM = 96 / 25.4;
-const MINPX = +(process.env.MINPX ?? 9);
+const MINPX = +(process.env.MINPX ?? 0);
+const LANDGAIN = +(process.env.LANDGAIN ?? 1.25);
 const PAGES = { a4p: [210, 297], a4l: [297, 210], a3p: [297, 420], a3l: [420, 297] };
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
@@ -78,7 +82,7 @@ const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
 await page.addInitScript(() => { Object.defineProperty(screen, 'availWidth', { get: () => 1200 }); });
 await page.setContent(html, { waitUntil: 'load' });
 await page.addScriptTag({ path: path.join(here, 'node_modules/mermaid/dist/mermaid.min.js') });
-const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX }) => {
+const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX, LANDGAIN }) => {
   mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
   // Sumário from the h2/h3 headings
   const toc = document.getElementById('toc');
@@ -91,6 +95,24 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX }) => {
     if (h.tagName === 'H2') { ul.appendChild(li); sub = document.createElement('ul'); li.appendChild(sub); }
     else if (sub) sub.appendChild(li);
   });
+  const probe = s => {
+    s.removeAttribute('style');
+    const inv = s.getScreenCTM().inverse();
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const e of s.querySelectorAll('text, rect, path, line, polygon, polyline, circle, ellipse, foreignObject, image')) {
+      if (e.closest('defs, marker')) continue;
+      const r = e.getBoundingClientRect();
+      if (!r.width && !r.height) continue;
+      for (const [px, py] of [[r.left, r.top], [r.right, r.bottom]]) {
+        const pt = new DOMPoint(px, py).matrixTransform(inv);
+        x0 = Math.min(x0, pt.x); y0 = Math.min(y0, pt.y); x1 = Math.max(x1, pt.x); y1 = Math.max(y1, pt.y);
+      }
+    }
+    const pad = 8, w = x1 - x0 + 2 * pad, h = y1 - y0 + 2 * pad;
+    const fonts = [...s.querySelectorAll('text, foreignObject div, foreignObject span, foreignObject p')]
+      .filter(t => t.textContent.trim()).map(t => parseFloat(getComputedStyle(t).fontSize)).filter(Boolean);
+    return { w, h, vb: `${x0 - pad} ${y0 - pad} ${w} ${h}`, fmin: Math.min(...fonts) };
+  };
   const out = [];
   for (const div of document.querySelectorAll('.dg')) {
     const i = +div.dataset.i;
@@ -100,11 +122,41 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX }) => {
     div.replaceWith(wrap);
     // bring the caption (short bold line) and an h3 right above it onto the page
     const take = [];
+    wrap.insertAdjacentHTML('beforeend', svg);
+    const pre = probe(wrap.querySelector('svg'));
+    // portrait diagrams stay in the text flow at column width; only wide ones,
+    // which gain a lot on a landscape page, get a landscape page of their own
+    const colW = 174 * MM, colH = 245 * MM;
+    const inl = Math.min(colW / pre.w, colH / pre.h, 1.3);
+    const land = Math.min(273 * MM / pre.w, 170 * MM / pre.h);
+    if (land < inl * LANDGAIN && !/^\s*classDiagram/.test(codes[i])) {
+      const s = wrap.querySelector('svg');
+      s.removeAttribute('style');
+      s.setAttribute('viewBox', pre.vb);
+      s.setAttribute('width', pre.w * inl);
+      s.setAttribute('height', pre.h * inl);
+      wrap.className = 'dginline';
+      out.push({ i, k: 'inline', fmin: pre.fmin, eff: +(pre.fmin * inl).toFixed(1), sc: +inl.toFixed(2) });
+      continue;
+    }
+    wrap.innerHTML = '';
     let prev = wrap.previousElementSibling;
     while (prev && prev.tagName === 'P' && prev.textContent.length < 400 && take.length < 3) { take.unshift(prev); prev = prev.previousElementSibling; }
-    if (prev && prev.tagName === 'H3') take.unshift(prev);
+    if (prev && prev.tagName === 'H3') {
+      take.unshift(prev); prev = prev.previousElementSibling;
+      // a short section opening (h2 + intro) right above also joins, so it is not left alone on a page
+      const intro = [];
+      while (prev && prev.tagName === 'P' && intro.length < 2) { intro.unshift(prev); prev = prev.previousElementSibling; }
+      if (prev && prev.tagName === 'H2' && intro.reduce((a, e) => a + e.textContent.length, 0) < 700) take.unshift(prev, ...intro);
+    }
     take.forEach(e => wrap.appendChild(e));
     wrap.insertAdjacentHTML('beforeend', svg);
+    // the short analysis right below also joins (it would otherwise sit alone on a page)
+    const after = [];
+    let next = wrap.nextElementSibling;
+    while (next && next.tagName === 'P' && after.length < 2 && after.reduce((a, e) => a + e.textContent.length, 0) + next.textContent.length < 900) { after.push(next); next = next.nextElementSibling; }
+    if (next && !/^H[23]$/.test(next.tagName) && next.tagName !== 'DIV') after.length = 0;
+    after.forEach(e => wrap.appendChild(e));
     const s = wrap.querySelector('svg');
     s.removeAttribute('style');
     // crop to what is actually drawn (getBBox counts hidden helpers)
@@ -128,14 +180,14 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX }) => {
     s.style.display = 'none';
     const headFor = pw => {
       wrap.style.width = (pw - 24) + 'mm';
-      return take.reduce((a, e) => a + e.getBoundingClientRect().height + 8, 0) + 16;
+      return [...take, ...after].reduce((a, e) => a + e.getBoundingClientRect().height + 8, 0) + 16;
     };
     const fit = k => {
       const [pw, ph] = PAGES[k];
       const aw = (pw - 24) * MM, ah = (ph - 24) * MM - headFor(pw);
       return Math.min(aw / w, ah / h);
     };
-    const a4 = ['a4p', 'a4l'].sort((x, y) => fit(y) - fit(x))[0];
+    const a4 = /^\s*classDiagram/.test(codes[i]) ? 'a4l' : ['a4p', 'a4l'].sort((x, y) => fit(y) - fit(x))[0];
     const a3 = ['a3p', 'a3l'].sort((x, y) => fit(y) - fit(x))[0];
     const fonts = [...s.querySelectorAll('text, foreignObject div, foreignObject span, foreignObject p')]
       .filter(t => t.textContent.trim()).map(t => parseFloat(getComputedStyle(t).fontSize)).filter(Boolean);
@@ -156,7 +208,7 @@ const report = await page.evaluate(async ({ codes, PAGES, MM, MINPX }) => {
     out.push({ i, k, fmin, eff: +(fmin * fa4).toFixed(1), a4: +fa4.toFixed(2), sc: +sc.toFixed(2), cap: take.map(e => e.textContent).join(' / ').slice(0, 60) });
   }
   return out;
-}, { codes, PAGES, MM, MINPX });
+}, { codes, PAGES, MM, MINPX, LANDGAIN });
 console.table(report);
 const pdfOpts = {
   preferCSSPageSize: true, printBackground: true, displayHeaderFooter: true,
