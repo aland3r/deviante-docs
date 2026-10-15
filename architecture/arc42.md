@@ -8,11 +8,11 @@
 
 O Deviante é um sistema de suporte a decisões para a gestão de manutenção industrial capaz de detectar desvios temporais a partir de registros do chão de fábrica. Orientado por técnicas de mineração de processo e aprendizagem de máquina, o sistema identifica quando o tempo de execução de uma atividade do processo produtivo muda de comportamento, sinalizando possíveis anomalias que facilitam as decisões de gestores de manutenção no agendamento de inspeções e manutenções no momento mais adequado. O objetivo do projeto é a redução de custos para a empresa e o aumento da disponibilidade dos ativos industriais.
 
-A presente documentação apresenta um conjunto de decisões de design que afetam a estrutura e o comportamento do sistema Deviante. Tais decisões incluem a escolha de padrões arquiteturais, a definição de componentes e suas interações, e a consideração de requisitos funcionais e não funcionais. A arquitetura proposta serve como um guia para o desenvolvimento, influenciando diretamente a qualidade do software e a eficiência do processo de desenvolvimento.
+A presente documentação apresenta um conjunto de decisões de design que afetam a estrutura e o comportamento do sistema Deviante. Tais decisões incluem a escolha de padrões arquiteturais, a definição de componentes e suas interações, além da especificação de requisitos funcionais e não funcionais. A arquitetura proposta serve como um guia para o desenvolvimento, influenciando diretamente a qualidade do software e a eficiência do processo de engenharia.
 
 ### 1.1 Visão Geral de Requisitos
 
-O Deviante apoia o gestor de manutenção numa atividade de negócio: perceber, a partir dos registros do chão de fábrica, que uma máquina começou a demorar mais do que o normal e fornecer recursos para agir antes da falha, momento em que o custo de manutenção é menor. As tabelas abaixo resumem os requisitos:
+O Deviante auxilia o gestor de manutenção a tomar decisões relacionadas à validação da degradação dos ativos industriais e agendamento das manutenções antes de chegar à falha funcionar. Através dos registros oriundos das máquinas envolvidas no processo produtivo, o framework integrado através de microsserviço, o IPDD, detecta que uma máquina começou a demorar mais do que o normal para executar operações e fornece recursos ao gestor para agir antes da falha, momento em que o custo de manutenção é menor, já que leva em consideração a condição do equipamento. As tabelas abaixo resumem os requisitos:
 
 **Requisitos funcionais**
 
@@ -89,7 +89,7 @@ As cinco metas abaixo são as qualidades que mais pesam para os stakeholders, em
 
 Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os quatro primeiros são os usuários do sistema; os demais avaliam, orientam ou constroem o projeto.
 
-| Papel / Nome | Contato | Expectativa |
+| Nome / Papel | Contato | Expectativa |
 |---|---|---|
 | Operador do maquinário | Usuário do sistema | Informar as atividades da cadeia produtiva e registrar os dados. |
 | Gestor de manutenção | Usuário do sistema | Monitorar os dados, gerar análises a partir do processo registrado e acionar a manutenção a tempo. |
@@ -101,7 +101,7 @@ Pessoas e papéis que precisam conhecer, aprovar ou usar esta arquitetura. Os qu
 | Eduardo de Freitas Loures, orientador PIBITI | [eduardo.loures@pucpr.br](mailto:eduardo.loures@pucpr.br) | Orientar a pesquisa e validar a aplicação na manutenção industrial. |
 | Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | [manoel.valerio@pucpr.br](mailto:manoel.valerio@pucpr.br) | Avaliar estilos arquiteturais e implantação em nuvem. |
 | Tiago Adelino Navarro, professor de Desenvolvimento Orientado a Reuso | [tiago.adelino@pucpr.edu.br](mailto:tiago.adelino@pucpr.edu.br) | Avaliar padrões de projeto, variabilidade e reuso. |
-| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Emanuelle Skolut Jose | [menezes.alander@pucpr.edu.br](mailto:menezes.alander@pucpr.edu.br) | Uma arquitetura que caiba no prazo e no free tier. |
+| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira,  Emanuelle Skolut Jose, Murilo Regnier Stange | [menezes.alander@pucpr.edu.br](mailto:menezes.alander@pucpr.edu.br) | Uma arquitetura que caiba no prazo e no free tier. |
 
 ---
 
