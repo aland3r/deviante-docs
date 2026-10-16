@@ -24,9 +24,9 @@ A empresa define o que o produto tem; o papel define o que cada usuário vê e f
 | ![Gestor oculta um processo](07-gestor-visibilidade.png) | **Gestor: visibilidade.** Em cada processo, "Visibilidade" permite ocultá-lo para o Operador ou para o Técnico. Aqui o processo "ST_20 · sem desvio (artigo)" é ocultado para o Operador. |
 | ![Operador, painel](08-operador-menu.png) | **Operador.** Menu só com Projetos, sem "Novo processo". O processo ocultado pelo gestor (ST_20) não aparece: são 3 processos, contra 4 do gestor. |
 | ![Operador, Editar no grafo](09-operador-editar-grafo.png) | **Operador no grafo.** Ao passar o mouse na atividade "Short_Downtime", aparece "Editar". O operador não renomeia, não carrega log e não exclui. |
-| ![Detalhe do trace](10-operador-detalhe-trace.png) | **Detalhe do trace.** O modal escolhe o caso (trace 497) e grava o detalhe naquela atividade; a lista mostra as notas já salvas (casos 496 e 497). |
+| ![Detalhe do trace](10-operador-detalhe-trace.png) | **Detalhe do trace.** O modal escolhe o caso (trace 497) e grava o detalhe naquela atividade; a lista mostra as notas já salvas (casos 497 e 498). |
 | ![Técnico, tela inicial](11-tecnico-inicio.png) | **Técnico.** A tela inicial é Agendamentos e o menu só tem Agendamentos. Não há "Nova manutenção". |
-| ![Técnico, modal da manutenção](12-tecnico-status.png) | **Técnico na manutenção.** O modal só tem Situação e Observações: sem editar título, máquina ou datas, e sem excluir. |
+| ![Técnico, modal da manutenção](12-tecnico-status.png) | **Técnico na manutenção.** O modal só tem Situação e Observações: sem editar título, máquina ou datas, e sem excluir. O link "Ver análise de origem" aparece quando a manutenção tem um processo de origem; esta foi criada antes do campo existir. |
 | ![Técnico registra o andamento](13-tecnico-analise.png) | **Técnico registra o andamento.** Situação "Em andamento" e a observação "Ferramenta trocada; aguardando teste de operação". |
 
 ## 3. Reuso
