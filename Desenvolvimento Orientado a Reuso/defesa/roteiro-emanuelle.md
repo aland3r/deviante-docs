@@ -327,7 +327,7 @@ Fala: "A lixeira só aparece para administrador e gestor. O Core repete a regra 
 2. **Read:** mostrar a lista da Alfa.
 3. **Create:** cadastrar "Torno CNC Prod1", tipo torno, TAG TRN-01. No DevTools, `POST /api/equipment` e 201.
 4. **Update:** lápis, mudar a localização, salvar (`PUT`, 200).
-5. **Delete:** lixeira num equipamento sem agenda (204). Sair, entrar como **Operador** da Alfa e mostrar que a lixeira não aparece.
+5. **Delete:** lixeira num equipamento sem agenda (204). Sair e entrar como **Operador** da Alfa: o menu nem tem Equipamentos (o operador só vê Projetos).
 
 ## 3. CRUD de Agenda de manutenção (tela Agendamentos)
 
@@ -588,7 +588,7 @@ Fala: "O botão só vai para o modal quando a agenda já existe e o papel pode e
 2. **Read:** mostrar lista, kanban e calendário.
 3. **Create:** "Nova manutenção": "Troca de rolamento", Torno CNC Prod1, início amanhã (`POST`, 201).
 4. **Update:** abrir o card, mudar para "Em andamento", salvar (`PUT`, 200). O card muda de coluna no kanban.
-5. **Delete:** excluir a manutenção (204). Como **Operador**, o botão "Excluir" não aparece.
+5. **Delete:** excluir a manutenção (204). Como **Técnico** da Alfa, a tela inicial é Agendamentos e o modal só tem situação e observações, sem "Excluir".
 
 ## 4. Perguntas prováveis
 
@@ -599,4 +599,4 @@ Fala: "O botão só vai para o modal quando a agenda já existe e o papel pode e
 ## 5. Antes de ensaiar
 
 - [ ] Entrar com a seta na **Alfa** (ou na Gama), que têm Equipamentos e Agendamentos.
-- [ ] Ensaiar com o **Gestor** (exclui) e o **Operador** (sem botão de excluir).
+- [ ] Ensaiar com o **Gestor** (exclui) , o **Operador** (sem Equipamentos no menu) e o **Técnico** (só situação e observações).
