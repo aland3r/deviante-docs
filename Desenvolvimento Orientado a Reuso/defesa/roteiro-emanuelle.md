@@ -599,4 +599,4 @@ Fala: "O botão só vai para o modal quando a agenda já existe e o papel pode e
 ## 5. Antes de ensaiar
 
 - [ ] Entrar com a seta na **Alfa** (ou na Gama), que têm Equipamentos e Agendamentos.
-- [ ] Ensaiar com o **Gestor** (exclui) , o **Operador** (sem Equipamentos no menu) e o **Técnico** (só situação e observações).
+- [ ] Ensaiar com o **Gestor** (exclui), o **Operador** (sem Equipamentos no menu) e o **Técnico** (só situação e observações).
