@@ -1,6 +1,6 @@
 # Defesa Reuso 03: exemplo de variabilidade (item 02, 2,0 pts)
 
-O enunciado pede "um exemplo de como planejaram a variabilidade". Na entrega anterior (Parte III) a ideia era: nem todo cliente recebe as mesmas opções, alguns recursos são para todos e algumas funções são feitas para um cliente específico. É isso que está implementado, de ponta a ponta (API e tela), com testes.
+O enunciado pede "um exemplo de como planejaram a variabilidade". Ela tem dois eixos: a **empresa** cliente (o que o produto tem) e o **papel** do usuário (o que cada um faz). Na entrega anterior (Parte III) a ideia era: nem todo cliente recebe as mesmas opções, alguns recursos são para todos e algumas funções são feitas para um cliente específico. É isso que está implementado, de ponta a ponta (API e tela), com testes.
 
 **Como ler.** Os trechos com 📍 e link são o código atual, fixado no commit (`deviante-api@bdd868c`, `deviante-web@d1cba0d`).
 
@@ -476,7 +476,153 @@ A lista de processos aplica o escopo e rotula cada processo com a empresa dona:
 
 **Colas na tela.** Janelas flutuantes, que podem ser fechadas, dizem em cada tela onde está a variabilidade e em que arquivo ela está (login, painel, Equipamentos, Agendamentos). O item "Mostrar colas de variabilidade", no menu do usuário, reabre todas. Arquivos: `src/components/variability/VariabilityHints.jsx` e `LoginHints.jsx`.
 
-## 5. Testes
+## 5. Variabilidade por papel
+
+A empresa decide **o que o produto tem**; o papel decide **o que cada usuário faz** dentro dela. São os mesmos quatro papéis em qualquer empresa:
+
+| Papel | O que vê | O que faz |
+|---|---|---|
+| Administrador | Tudo, de todas as empresas, com o selo da empresa em cada objeto | Tudo, inclusive o catálogo de atividades e a tela de Operações |
+| Gestor | Tudo da empresa em que entrou | Cria, edita e exclui; escolhe o que fica oculto para operador e técnico |
+| Operador | Só Projetos: os processos e as atividades no grafo | Anota, pelo próprio grafo, o detalhe de um trace numa atividade |
+| Técnico | Só Agendamentos, que é a tela inicial dele, e a análise que originou cada manutenção | Muda a situação da manutenção e escreve observações |
+
+No Core, os papéis são conjuntos, como os planos:
+
+📍 `deviante-api/src/main/kotlin/model/ManagerRecord.kt` · linhas 20–40 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/model/ManagerRecord.kt#L20-L40)
+
+```kotlin
+
+    /** Catálogo de atividades e tela de Operações: só o administrador (owner ou admin). */
+    fun keepsCatalog(): Boolean = role in CATALOG_ROLES
+
+    /** Criar e alterar processos, máquinas, agendas e monitoramentos: administrador e gestor. */
+    fun canEdit(): Boolean = role in EDIT_ROLES
+
+    /** Anotar traces do processo: quem edita e o operador. */
+    fun writesTraceNotes(): Boolean = role in NOTE_ROLES
+
+    fun isTechnician(): Boolean = role == "technician"
+
+    companion object {
+        val DELETE_ROLES = setOf("owner", "admin", "manager")
+        val CATALOG_ROLES = setOf("owner", "admin")
+        val EDIT_ROLES = setOf("owner", "admin", "manager")
+        val NOTE_ROLES = EDIT_ROLES + "operator"
+
+        /** Papéis dos quais um processo ou máquina pode ser ocultado. */
+        val HIDEABLE_ROLES = setOf("operator", "technician")
+    }
+```
+
+Fala: "Excluir é de administrador e gestor; criar e editar também. O operador entra no conjunto de quem anota traces. Operador e técnico são os papéis dos quais o gestor pode ocultar um objeto."
+
+Quem vê um processo: a empresa, a agenda (para o técnico) e a ocultação definida pelo gestor (para operador e técnico):
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 85–96 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/Routing.kt#L85-L96)
+
+```kotlin
+
+/**
+ * Pode o usuário ver o processo? Empresa no escopo; o técnico só vê processo
+ * com agenda de manutenção da sua empresa; operador e técnico não veem o que
+ * foi ocultado para o seu papel (falha na tabela de ocultação = nada oculto).
+ */
+internal fun ApplicationCall.canSeeProcess(manager: ManagerRecord, process: ProcessRecord): Boolean {
+    val scope = companyScope(manager)
+    if (!scope.sees(process.businessId)) return false
+    if (manager.isTechnician() && !scheduleLookup.hasScheduleForProcess(process.id, scope.visibleBusinesses)) return false
+    if (manager.role in ManagerRecord.HIDEABLE_ROLES && visibilityRepository.isHiddenSafe("process", process.id, manager.role)) return false
+    return true
+```
+
+O técnico registra o andamento da manutenção, e só isso:
+
+📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 1014–1037 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/Routing.kt#L1014-L1037)
+
+```kotlin
+                // O técnico registra o andamento da manutenção; quem edita também.
+                patch("/{id}/status") {
+                    val u = call.requireSupabaseUser(authClient) ?: return@patch
+                    val m = managerRepository.findOrCreateForSupabaseUser(u.id, u.email, u.fullNameHint)
+                    if (!m.canEdit() && !m.isTechnician()) {
+                        call.respond(HttpStatusCode.Forbidden, ErrorResponse(EDIT_FORBIDDEN))
+                        return@patch
+                    }
+                    val id = call.parameters["id"]?.let(::runCatchingUuid)
+                    val owner = id?.let(maintenanceRepository::scheduleBusiness)
+                    if (id == null || owner == null || !call.companyScope(m).sees(owner.businessId)) {
+                        call.respond(HttpStatusCode.NotFound, ErrorResponse("Agenda não encontrada."))
+                        return@patch
+                    }
+                    val body = call.receive<ScheduleStatusRequest>()
+                    if (body.status !in SCHEDULE_STATUSES) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("Situação inválida: use ${SCHEDULE_STATUSES.joinToString(", ")}."),
+                        )
+                        return@patch
+                    }
+                    val item = maintenanceRepository.updateScheduleStatus(id, body.status, body.notes)
+                    if (item == null) call.respond(HttpStatusCode.NotFound, ErrorResponse("Agenda não encontrada.")) else call.respond(item)
+```
+
+Na tela, o menu e a página inicial também variam pelo papel:
+
+📍 `deviante-web/src/lib/permissions.js` · linhas 15–54 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/28f5a56/src/lib/permissions.js#L15-L54)
+
+```javascript
+// Criar e editar (processo, upload de log, equipamento, agenda, análise) é do
+// administrador e do gestor. Operador e técnico só leem o que lhes cabe.
+export const EDIT_ROLES = new Set(['owner', 'admin', 'manager'])
+
+export const canEdit = (user) => EDIT_ROLES.has(user?.role)
+
+// O operador não edita o processo, mas anota o detalhe de um trace numa atividade.
+export const TRACE_NOTE_ROLES = new Set([...EDIT_ROLES, 'operator'])
+
+export const canWriteTraceNotes = (user) => TRACE_NOTE_ROLES.has(user?.role)
+
+export const isOperator = (user) => user?.role === 'operator'
+
+export const isTechnician = (user) => user?.role === 'technician'
+
+// Quem decide o que operador e técnico enxergam é quem edita.
+export const canManageVisibility = canEdit
+
+/**
+ * Página inicial do papel: o técnico trabalha na agenda; os demais, no painel.
+ * Técnico de empresa sem o módulo de agenda vai para a conta (senão o painel e a
+ * agenda se redirecionariam um para o outro).
+ */
+export const homePath = (user) => {
+  if (!isTechnician(user)) return '/dashboard'
+  return hasFeature(user, FEATURES.schedules) ? '/schedules' : '/account'
+}
+
+// Menu por papel: o operador só vê Projetos e o técnico só Agendamentos.
+// Os outros papéis seguem só as regras de plano (features) e de catálogo.
+const NAV_BY_ROLE = { operator: ['/dashboard'], technician: ['/schedules'] }
+
+export const canSeeNav = (user, path) => !NAV_BY_ROLE[user?.role] || NAV_BY_ROLE[user.role].includes(path)
+
+// Rotas: equipamentos ficam fora para operador e técnico; a agenda, para o operador.
+export const canSeeEquipment = (user) => !isOperator(user) && !isTechnician(user)
+
+export const canSeeSchedules = (user) => !isOperator(user)
+
+export const canSeeDashboard = (user) => !isTechnician(user)
+```
+
+**Visibilidade (gestor).** Em cada processo do painel e em cada equipamento há "Visibilidade": o gestor marca "Ocultar para Operador" e "Ocultar para Técnico". A escolha vai para `deviante.object_visibility` e o Core deixa de listar o objeto para aquele papel.
+
+**Detalhe do trace (operador).** No grafo, passar o mouse numa atividade mostra "Editar". Abre um modal pequeno: escolher o trace (caso) que passou por aquela atividade e escrever o detalhe, que fica em `deviante.trace_notes`.
+
+**Agendamentos (técnico).** Ao entrar, o técnico cai direto em Agendamentos. Clicar numa manutenção abre a situação e as observações, e o link "Ver análise de origem" abre a análise salva do processo, só para leitura, para ele validar se a recomendação se confirmou.
+
+Fala: "É o mesmo produto e a mesma empresa; o papel muda o menu, a tela inicial e o que cada um pode fazer. A regra está na tela e repetida no Core, que responde 403 a quem tenta pelo endereço."
+
+## 6. Testes
 
 📍 `deviante-api/src/test/kotlin/ProductLineTest.kt` · linhas 25–44 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/test/kotlin/ProductLineTest.kt#L25-L44)
 
@@ -505,26 +651,30 @@ A lista de processos aplica o escopo e rotula cada processo com a empresa dona:
 
 Rodar: `./gradlew test --tests ProductLineTest` dentro de `deviante-api`.
 
-## 6. Demonstração (três minutos)
+## 7. Demonstração (três minutos)
 
 1. Em `https://deviante.alander.io`, no "Modo Protótipo", usar as setas até **Alfa** e entrar como **Gestor**. Mostrar "· Alfa" ao lado do nome e os processos da Alfa. Abrir **Agendamentos** e clicar em **Exportar CSV**.
 2. Sair, ir com a seta até **Gama** e entrar de novo como **Gestor**. Mesmo papel, outra empresa: outros processos, e Agendamentos sem **Exportar CSV** (mesmo plano, sem a função exclusiva).
 3. Sair, ir até **Beta** (plano Essencial) e entrar como **Operador**. O menu não tem **Equipamentos** nem **Agendamentos**. Digitar `/schedules` na barra de endereço: volta para o painel.
 4. Entrar como **Administrador** em qualquer empresa: o painel mostra os processos de todas, com o selo da empresa em cada um.
-5. Abrir o `application.yaml` e mostrar que trocar `plan: essencial` por `plan: manutencao` na Beta é tudo o que muda a variante.
+5. Na **Alfa**, como **Gestor**, abrir "Visibilidade" num processo e marcar "Ocultar para Operador".
+6. Entrar na **Alfa** como **Operador**: o menu só tem Projetos e o processo oculto não aparece. Abrir outro processo, passar o mouse numa atividade do grafo, clicar em "Editar" e anotar o detalhe de um trace.
+7. Entrar na **Alfa** como **Técnico**: a tela inicial é Agendamentos. Abrir uma manutenção, mudar a situação, escrever uma observação e abrir "Ver análise de origem".
+8. Abrir o `application.yaml` e mostrar que trocar `plan: essencial` por `plan: manutencao` na Beta é tudo o que muda a variante.
 
 As colas abertas em cada tela servem de roteiro; feche cada uma depois de explicar.
 
 Fala de fechamento: "é um software só; o que muda de um cliente para outro é a configuração. Os recursos comuns são para todos, o módulo de manutenção depende do plano e o CSV foi feito para clientes específicos, que foi o que planejamos na entrega anterior."
 
-## 7. Perguntas prováveis
+## 8. Perguntas prováveis
 
 - **Por que a empresa está no banco e o plano no yaml?** A empresa é dado: cada registro precisa dizer de quem é (chave estrangeira). O plano é a variante do produto, e mantê-lo em configuração é a técnica de LPS escolhida. Levar os planos para o banco mudaria só o `ProductLine.fromConfig`; o resto do sistema continua perguntando `variant.has(feature)`.
 - **Esconder na tela não basta?** Não: quem digita a URL ou chama a API direto ainda acessaria. Por isso a mesma regra está no `FeatureGate` (403) e na tela.
 - **Como o administrador vê tudo e os outros não?** A API calcula o escopo (`CompanyScope`) a cada requisição: para quem não é administrador, só os registros cujo `business_id` é o da empresa escolhida; criar um processo grava esse `business_id`.
-- **Isso é diferente da permissão de excluir?** É. Excluir depende do **papel** do usuário (administrador e gestor). A variabilidade depende do **cliente** (o que a empresa contratou). As duas convivem.
+- **Empresa e papel são a mesma coisa?** Não, são dois eixos. A empresa define o que o produto tem (plano e exclusivas); o papel define o que cada usuário vê e faz dentro dela (seção 5). Os dois convivem: o técnico da Beta não tem Agendamentos porque o plano Essencial não tem o módulo.
 
-## 8. Checagem antes de ensaiar
+## 9. Checagem antes de ensaiar
 
 - [ ] Uma manutenção cadastrada na Alfa, para o CSV não sair vazio.
+- [ ] Essa manutenção ligada a um processo da Alfa que tenha análise salva, para o técnico ver "Ver análise de origem".
 - [ ] Colas reabertas ("Mostrar colas de variabilidade" no menu do usuário), se tiverem sido fechadas no ensaio.

@@ -33,7 +33,16 @@ São seis ativos. Juntos, cobrem os quatro tipos de artefato de domínio: requis
 | Gama | Manutenção | nenhuma | Agendamentos sem "Exportar CSV" | 1, 3, 5 |
 | Delta | Essencial | nenhuma | Igual à Beta | 1, 3, 5 |
 
-Em todas as empresas o papel também varia a tela. Só administrador e gestor excluem registros, e só o administrador mantém o catálogo de atividades (ativos 3 e 5). Os dados de cada empresa ficam separados pelo ativo 2 e filtrados pelo ativo 3.
+Em todas as empresas o papel do usuário é o segundo eixo de variabilidade (ativos 3 e 5):
+
+| Papel | Vê | Faz |
+|---|---|---|
+| Administrador | Tudo, de todas as empresas | Tudo, inclusive o catálogo de atividades |
+| Gestor | Tudo da empresa | Cria, edita e exclui; oculta processos e equipamentos para operador e técnico |
+| Operador | Só Projetos e o grafo | Anota o detalhe de um trace numa atividade, pelo grafo |
+| Técnico | Só Agendamentos (tela inicial) e a análise de origem | Muda a situação e escreve observações das manutenções |
+
+Os dados de cada empresa ficam separados pelo ativo 2 e filtrados pelo ativo 3.
 
 ## Telas e os ativos que elas reutilizam
 
