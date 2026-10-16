@@ -2,9 +2,9 @@
 
 Prova de autoria em 16/10. Este roteiro cobre dois CRUDs com conexão ao banco: **Processo** e **Operações do log**. Os dois rodam no Core: React (Vercel) → Ktor (Fly.io) → Supabase Postgres.
 
-**Como ler.** Cada trecho de código traz repositório, arquivo, linhas e um link fixo no commit (`deviante-api@2e5dd67`, `deviante-web@5da97a2`). Abaixo de cada trecho vem o que falar.
+**Como ler.** Cada trecho de código traz repositório, arquivo, linhas e um link fixo no commit (`deviante-api@2e5dd67`, `deviante-web@5da97a2`). Abaixo de cada trecho, a explicação do que ele faz.
 
-**Percurso.** Já logado na **Alfa** como **Gestor**, no painel inicial (**Projetos**). O painel lista os processos (Read). Crio um processo novo (Create) e subo um log nele; o log gera as operações, que mapeio para as atividades do catálogo da Alfa. Abro o painel **Operações** do processo e faço o CRUD delas. Por fim renomeio (Update) e excluo (Delete) o processo novo.
+**Percurso.** O usuário está logado na **Alfa** como **Gestor**, no painel inicial (**Projetos**). O painel lista os processos (Read). Um processo novo é criado (Create) e recebe um log; o log gera as operações, mapeadas para as atividades do catálogo da Alfa. O painel **Operações** do processo faz o CRUD delas. Por fim o processo novo é renomeado (Update) e excluído (Delete).
 
 ## 1. CRUD de Processo (painel Projetos e canvas)
 
@@ -71,8 +71,7 @@ object ProcessesTable : Table(name = "processes") {
 }
 ```
 
-Fala: "Um processo pertence a uma empresa (`business_id`) e guarda quem o criou (`manager_id`). Apagar um processo apaga em cascata os logs, as operações e as análises."
-
+Um processo pertence a uma empresa (`business_id`) e guarda quem o criou (`manager_id`). Apagar um processo apaga em cascata os logs, as operações e as análises.
 ### 1.2 Read: a lista no painel
 
 📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 323–345 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/pages/DashboardPage.jsx#L323-L345)
@@ -139,8 +138,7 @@ Fala: "Um processo pertence a uma empresa (`business_id`) e guarda quem o criou 
     }
 ```
 
-Fala: "Ao abrir o painel, a tela busca os processos. O Core devolve só os da empresa em que entrei."
-
+Ao abrir o painel, a tela busca os processos. O Core devolve só os processos da empresa do usuário.
 ### 1.3 Create: "Novo processo"
 
 📍 `deviante-web/src/pages/DashboardPage.jsx` · linhas 347–357 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/pages/DashboardPage.jsx#L347-L357)
@@ -213,8 +211,7 @@ Fala: "Ao abrir o painel, a tela busca os processos. O Core devolve só os da em
     }
 ```
 
-Fala: "O botão cria o processo na hora, com nome 'Untitled', e a tela abre o canvas dele."
-
+O botão cria o processo na hora, com nome 'Untitled', e a tela abre o canvas dele.
 ### 1.4 Update: clicar no título
 
 📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 182–197 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/pages/ProcessCanvasPage.jsx#L182-L197)
@@ -341,8 +338,7 @@ private suspend fun ApplicationCall.requireProcess(
     }
 ```
 
-Fala: "Clicar no título vira um campo; Enter salva com `PATCH`. A rota usa `requireProcess`, que confere se o processo é da minha empresa (404 se não for), e valida o nome: em branco ou com mais de 100 caracteres dá 400."
-
+Clicar no título vira um campo; Enter salva com `PATCH`. A rota usa `requireProcess`, que confere se o processo é da empresa do usuário (404 se não for), e valida o nome: em branco ou com mais de 100 caracteres dá 400.
 ### 1.5 Delete: "Excluir processo" (só administrador e gestor)
 
 📍 `deviante-web/src/lib/permissions.js` · linhas 1–5 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/lib/permissions.js#L1-L5)
@@ -429,8 +425,7 @@ export const canDelete = (user) => DELETE_ROLES.has(user?.role)
     }
 ```
 
-Fala: "O menu de exclusão só aparece para administrador e gestor. A tela pede que eu digite o nome do processo. O Core checa papel (403), existência (404) e confirmação (400), e só então apaga. Resposta 204."
-
+O menu de exclusão só aparece para administrador e gestor. A tela pede que o usuário digite o nome do processo. O Core checa papel (403), existência (404) e confirmação (400), e só então apaga. Resposta 204.
 ## 2. CRUD de Operações do log (painel Operações do processo)
 
 Uma operação é um evento como o log o escreveu (por exemplo `Machine_Operating`), com quantas vezes ocorreu. Cada operação aponta para uma atividade do catálogo da empresa, e são as atividades que viram os nós do gráfico. O gestor mapeia só para atividades que já existem; criar atividade é do administrador.
@@ -504,8 +499,7 @@ object OperationsTable : Table(name = "operations") {
 }
 ```
 
-Fala: "Cada operação pertence a um log, e o log a um processo. `activity_id` é a ligação com o catálogo; nula, a operação está sem mapeamento."
-
+Cada operação pertence a um log, e o log a um processo. `activity_id` é a ligação com o catálogo; nula, a operação está sem mapeamento.
 ### 2.2 Create: carregar o log
 
 📍 `deviante-web/src/components/process-graph/EventLogUploadModal.jsx` · linhas 93–118 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/components/process-graph/EventLogUploadModal.jsx#L93-L118)
@@ -583,8 +577,7 @@ Fala: "Cada operação pertence a um log, e o log a um processo. `activity_id` �
         }
 ```
 
-Fala: "O Core aceita só `.xes` ou `.csv` (415 para outros). Quem lê o arquivo é o serviço de mineração, um microsserviço à parte; não entro nele aqui. Com os eventos lidos, o Core grava uma operação por evento, ainda sem atividade."
-
+O Core aceita só `.xes` ou `.csv` (415 para outros). Quem lê o arquivo é o serviço de mineração, um microsserviço à parte, fora do escopo deste CRUD. Com os eventos lidos, o Core grava uma operação por evento, ainda sem atividade.
 📍 `deviante-web/src/components/process-graph/EventLogUploadModal.jsx` · linhas 50–55 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/components/process-graph/EventLogUploadModal.jsx#L50-L55)
 
 ```jsx
@@ -609,8 +602,7 @@ Fala: "O Core aceita só `.xes` ou `.csv` (415 para outros). Quem lê o arquivo 
                     }
 ```
 
-Fala: "Cada operação chega com a atividade sugerida. Para o gestor, só vale um nome que já existe no catálogo da Alfa; um nome novo o Core recusa com 422. Confirmado, as operações ficam mapeadas e o gráfico aparece."
-
+Cada operação chega com a atividade sugerida. Para o gestor, só vale um nome que já existe no catálogo da Alfa; um nome novo o Core recusa com 422. Confirmado, as operações ficam mapeadas e o gráfico aparece.
 ### 2.3 Read: botão "Operações"
 
 📍 `deviante-web/src/pages/ProcessCanvasPage.jsx` · linhas 212–215 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/pages/ProcessCanvasPage.jsx#L212-L215)
@@ -681,8 +673,7 @@ Fala: "Cada operação chega com a atividade sugerida. Para o gestor, só vale u
     }
 ```
 
-Fala: "O painel pede as operações do processo e o catálogo da empresa. O Core usa `requireProcess` (404 se o processo for de outra empresa) e junta as operações de todos os logs do processo com o nome da atividade."
-
+O painel pede as operações do processo e o catálogo da empresa. O Core usa `requireProcess` (404 se o processo for de outra empresa) e junta as operações de todos os logs do processo com o nome da atividade.
 ### 2.4 Update: trocar a atividade na linha
 
 📍 `deviante-web/src/components/process-graph/ProcessOperationsModal.jsx` · linhas 87–94 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/components/process-graph/ProcessOperationsModal.jsx#L87-L94)
@@ -778,8 +769,7 @@ Fala: "O painel pede as operações do processo e o catálogo da empresa. O Core
     }
 ```
 
-Fala: "A lista só oferece as atividades do catálogo da Alfa. No Core, `processOperation` confere que o processo é da minha empresa e que a operação é de um log desse processo (404). A atividade tem que ser da mesma empresa do processo; se não for, 422. Ao fechar o painel, o gráfico é redesenhado."
-
+A lista só oferece as atividades do catálogo da Alfa. No Core, `processOperation` confere que o processo é da empresa do usuário e que a operação é de um log desse processo (404). A atividade tem que ser da mesma empresa do processo; se não for, 422. Ao fechar o painel, o gráfico é redesenhado.
 ### 2.5 Delete: "Desmapear"
 
 📍 `deviante-web/src/components/process-graph/ProcessOperationsModal.jsx` · linhas 50–53 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/5da97a2/src/components/process-graph/ProcessOperationsModal.jsx#L50-L53)
@@ -824,8 +814,7 @@ Fala: "A lista só oferece as atividades do catálogo da Alfa. No Core, `process
     }
 ```
 
-Fala: "Desmapear tira a ligação da operação com a atividade: `activity_id` volta a nulo e o status volta a 'unmapped'. A operação continua no log; ela só some de vez quando o processo é excluído."
-
+Desmapear tira a ligação da operação com a atividade: `activity_id` volta a nulo e o status volta a 'unmapped'. A operação continua no log; ela só some de vez quando o processo é excluído.
 ## 3. Demonstração
 
 1. **Processo, Read:** no painel, mostrar os processos da Alfa.

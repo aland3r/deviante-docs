@@ -1,6 +1,6 @@
 # Defesa Reuso 03: os três padrões de projeto
 
-O enunciado (item 01) pede 3 padrões focados em reuso. Seguimos a **Opção 02**: três padrões, dois exemplos codificados de cada, um padrão de cada família do GoF. As classes estão no banco **Classes** do Notion (coluna Padrão).
+O enunciado (item 01) pede 3 padrões focados em reuso. Cada seção começa explicando o padrão (o que é, o problema, a solução e a estrutura, no modelo do Refactoring Guru) e só depois mostra o código. Seguimos a **Opção 02**: três padrões, dois exemplos codificados de cada, um padrão de cada família do GoF. As classes estão no banco **Classes** do Notion (coluna Padrão).
 
 | Família | Padrão | Exemplo 1 | Exemplo 2 |
 |---|---|---|---|
@@ -55,6 +55,37 @@ sequenceDiagram
 
 **Por que serve ao reuso:** um único ponto de acesso a um recurso que precisa ser igual em toda a aplicação ou que é caro de criar. Quem precisa dele reaproveita a mesma instância.
 
+**O que é.** Singleton é um padrão criacional que garante que uma classe tenha **uma única instância** e oferece **um ponto de acesso global** a ela.
+
+**Problema que resolve.** Alguns objetos precisam ser os mesmos em todo o sistema: a configuração lida do `application.yaml` não pode existir em duas versões, e o motor de análise é caro de montar. Se cada parte do código criasse o seu, haveria cópias divergentes e trabalho repetido.
+
+**Solução.** O construtor fica fechado para quem está fora da classe, e um método estático (`getInstance`) cria a instância na primeira chamada e devolve sempre a mesma nas seguintes.
+
+**Estrutura** (modelo do Refactoring Guru, com as classes do Deviante em cada papel):
+
+```mermaid
+classDiagram
+    direction LR
+    class Client["Cliente · Routing.kt, main.py"] {
+        usa a instância única
+    }
+    class Singleton["Singleton · AppConfig / AnalysisEngine"] {
+        -instance$ : Singleton
+        -Singleton()
+        +getInstance()$ Singleton
+    }
+    Client --> Singleton : getInstance()
+    note for Singleton "AppConfig: object do Kotlin + init(config)\nAnalysisEngine: _instance + get_instance()"
+```
+
+| Papel no padrão | Exemplo 1 (Core, Kotlin) | Exemplo 2 (análise, Python) |
+|---|---|---|
+| Singleton | `AppConfig`: [`AppConfig.kt` linhas 14–28](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/AppConfig.kt#L14-L28) | `AnalysisEngine`: [`analysis_engine.py` linhas 11–23](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/analysis_engine.py#L11-L23) |
+| Instância guardada | o próprio `object` do Kotlin, com `loaded` contra recarga | atributo de classe `_instance` |
+| Construtor fechado | `object` não tem construtor público | `__init__` recusa uma segunda instância |
+| `getInstance()` | `AppConfig.init(config)` e depois `AppConfig.miningUrl` | `AnalysisEngine.get_instance()` |
+| Cliente | [`Database.kt` linhas 10–10](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/Database.kt#L10-L10), [`MiningClient.kt` linhas 260–261](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/MiningClient.kt#L260-L261) | [`main.py` linhas 140–140](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/main.py#L140-L140) |
+
 ### 1.1 `AppConfig` (Core, Kotlin)
 
 📍 `deviante-api/src/main/kotlin/AppConfig.kt` · linhas 1–43 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/AppConfig.kt#L1-L43)
@@ -105,8 +136,7 @@ object AppConfig {
 }
 ```
 
-Fala: "`object` em Kotlin é o Singleton da própria linguagem: uma instância só, criada no primeiro acesso de forma segura entre threads. O `init` é idempotente: a primeira chamada lê o `application.yaml` (que resolve as variáveis de ambiente do Fly.io) e as seguintes não fazem nada."
-
+`object` em Kotlin é o Singleton da própria linguagem: uma instância só, criada no primeiro acesso de forma segura entre threads. O `init` é idempotente: a primeira chamada lê o `application.yaml` (que resolve as variáveis de ambiente do Fly.io) e as seguintes não fazem nada.
 Os três módulos que antes liam a configuração cada um por conta própria agora reaproveitam a mesma instância:
 
 📍 `deviante-api/src/main/kotlin/Database.kt` · linhas 9–13 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/kotlin/Database.kt#L9-L13)
@@ -168,7 +198,7 @@ class AppConfigTest {
 }
 ```
 
-**Demonstrar:** em qualquer CRUD, abrir `Database.kt` e `SupabaseAuth.kt` e mostrar que os dois leem o mesmo `AppConfig`. Rodar `./gradlew test --tests com.deviante.AppConfigTest`. Fala: "a configuração é carregada uma vez e todo o Core reaproveita a mesma instância; a segunda chamada de `init` não muda nada, como o teste mostra".
+**Demonstrar:** em qualquer CRUD, abrir `Database.kt` e `SupabaseAuth.kt` e mostrar que os dois leem o mesmo `AppConfig`. Rodar `./gradlew test --tests com.deviante.AppConfigTest`. Conclusão: a configuração é carregada uma vez e todo o Core reaproveita a mesma instância; a segunda chamada de `init` não muda nada, como o teste mostra.
 
 ### 1.2 `AnalysisEngine` (análise de drift, Python)
 
@@ -203,8 +233,7 @@ class AnalysisEngine:
         return self.detector.detect(values, delta=delta, treatment=treatment)
 ```
 
-Fala: "Aqui o Singleton é escrito à mão, porque Python não tem `object`: o construtor recusa uma segunda instância e `get_instance()` cria na primeira chamada. Com o serviço quente, o motor e o detector não são recriados a cada requisição."
-
+Em Python o Singleton é escrito à mão, porque a linguagem não tem `object`: o construtor recusa uma segunda instância e `get_instance()` cria na primeira chamada. Com o serviço quente, o motor e o detector não são recriados a cada requisição.
 O endpoint `/detect` passa a chamar o motor, e não mais a função da pesquisa direto:
 
 📍 `deviante-api/mining/app/main.py` · linhas 129–157 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/mining/app/main.py#L129-L157)
@@ -271,6 +300,45 @@ def test_engine_talks_to_the_target_interface() -> None:
 ## 2. Adapter
 
 **Por que serve ao reuso:** o código da pesquisa (IPDD/ADWIN) e a biblioteca pm4py têm interfaces próprias. O adaptador traduz essas interfaces para a que o Deviante espera, sem copiar nem alterar o original ("envolver, não fazer fork"). Se o algoritmo ou a biblioteca mudarem, só o adaptador muda.
+
+**O que é.** Adapter é um padrão estrutural que permite que objetos com **interfaces incompatíveis** trabalhem juntos. O adaptador fica no meio: recebe a chamada no formato que o sistema conhece e a traduz para o formato do serviço.
+
+**Problema que resolve.** O detector IPDD/ADWIN da pesquisa e a biblioteca pm4py têm entradas e saídas próprias. O Deviante não deve depender desses formatos, nem copiar ou alterar o código original.
+
+**Solução.** O sistema define a interface que quer usar (`DriftDetector`, `GraphMiner`). Cada adaptador implementa essa interface, chama o serviço por dentro e converte o resultado. Trocar o algoritmo ou a biblioteca muda só o adaptador.
+
+**Estrutura** (modelo "adaptador de objeto" do Refactoring Guru, com as classes do Deviante em cada papel):
+
+```mermaid
+classDiagram
+    direction LR
+    class Client["Cliente · AnalysisEngine / endpoint /graph"]
+    class ClientInterface["Interface do cliente · DriftDetector / GraphMiner"] {
+        <<interface>>
+        +detect(values) DriftAnalysis
+        +mine(events) ProcessGraph
+    }
+    class Adapter["Adaptador · IpddAdwinAdapter / Pm4pyGraphAdapter"] {
+        -adaptee : Serviço
+        +detect(values) DriftAnalysis
+        +mine(events) ProcessGraph
+    }
+    class Service["Serviço · ipdd_adwin.py / pm4py"] {
+        +detect_performance_drifts(values)
+        +discover_dfg(events)
+    }
+    Client --> ClientInterface
+    Adapter ..|> ClientInterface
+    Adapter --> Service : chama e converte o resultado
+```
+
+| Papel no padrão | Exemplo 1 (drift) | Exemplo 2 (grafo) |
+|---|---|---|
+| Cliente | `AnalysisEngine.run`: [`analysis_engine.py` linhas 25–26](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/analysis_engine.py#L25-L26) | endpoint do grafo: [`main.py` linhas 237–238](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/main.py#L237-L238) |
+| Interface do cliente | `DriftDetector`: [`drift_detector.py` linhas 38–42](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/drift_detector.py#L38-L42) | `GraphMiner`: [`graph_miner.py` linhas 23–28](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/graph_miner.py#L23-L28) |
+| Adaptador | `IpddAdwinAdapter`: [`drift_detector.py` linhas 45–71](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/drift_detector.py#L45-L71) | `Pm4pyGraphAdapter`: [`graph_miner.py` linhas 31–55](https://github.com/aland3r/deviante-api/blob/d6ea6c9/mining/app/graph_miner.py#L31-L55) |
+| Serviço (adaptado) | `detect_performance_drifts` em `ipdd_adwin.py`, código da pesquisa sem alteração | `pm4py.discover_dfg`, biblioteca externa |
+| Conversão | `AdaptiveDetection` → `DriftAnalysis` com `DriftPoint` | dicionários do DFG → `ProcessGraph` |
 
 ### 2.1 `IpddAdwinAdapter` → `DriftDetector`
 
@@ -394,8 +462,7 @@ class IpddAdwinAdapter(DriftDetector):
         )
 ```
 
-Fala: "`DriftDetector` é a interface que o resto do sistema conhece. `IpddAdwinAdapter` implementa essa interface chamando `detect_performance_drifts` e convertendo `AdaptiveDetection`/`AdaptiveDrift` em `DriftAnalysis`/`DriftPoint`. O endpoint, que antes fazia essa conversão na mão, agora só repassa (`DriftPoint(**vars(drift))`, na linha 156 do `main.py`, acima)."
-
+`DriftDetector` é a interface que o resto do sistema conhece. `IpddAdwinAdapter` implementa essa interface chamando `detect_performance_drifts` e convertendo `AdaptiveDetection`/`AdaptiveDrift` em `DriftAnalysis`/`DriftPoint`. O endpoint, que antes fazia essa conversão na mão, agora só repassa (`DriftPoint(**vars(drift))`, na linha 156 do `main.py`, acima).
 📍 `deviante-api/mining/tests/test_drift_detector.py` · linhas 1–15 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/mining/tests/test_drift_detector.py#L1-L15)
 
 ```python
@@ -433,7 +500,7 @@ O Core chama esse endpoint quando o usuário roda uma análise de processo:
             }
 ```
 
-**Demonstrar:** abrir `drift_detector.py` e `ipdd_adwin.py` lado a lado e mostrar que `ipdd_adwin.py` não tem nenhuma linha do Deviante. Rodar `pytest mining/tests/test_drift_detector.py mining/tests/test_detector.py`. Fala: "o resto do sistema só conhece `DriftDetector`; trocar o algoritmo é escrever outro adaptador".
+**Demonstrar:** abrir `drift_detector.py` e `ipdd_adwin.py` lado a lado e mostrar que `ipdd_adwin.py` não tem nenhuma linha do Deviante. Rodar `pytest mining/tests/test_drift_detector.py mining/tests/test_detector.py`. Conclusão: o resto do sistema só conhece `DriftDetector`; trocar o algoritmo é escrever outro adaptador.
 
 ### 2.2 `Pm4pyGraphAdapter` → `GraphMiner`
 
@@ -497,8 +564,7 @@ class Pm4pyGraphAdapter(GraphMiner):
         )
 ```
 
-Fala: "O pm4py devolve o grafo de sequência direta como dicionários de pares (`dfg`, `starts`, `ends`). O adaptador converte isso em `ProcessGraph`, com nós e arestas com frequência. O import do pm4py é tardio, como no `parser.py`, porque a biblioteca é pesada."
-
+O pm4py devolve o grafo de sequência direta como dicionários de pares (`dfg`, `starts`, `ends`). O adaptador converte esses dicionários em `ProcessGraph`, com nós e arestas com frequência. O import do pm4py é tardio, como no `parser.py`, porque a biblioteca é pesada.
 Ele roda a cada log enviado, no endpoint `/parse`, logo depois do parser:
 
 📍 `deviante-api/mining/app/main.py` · linhas 237–238 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/mining/app/main.py#L237-L238)
@@ -587,13 +653,53 @@ def test_parse_endpoint_builds_the_graph_from_parsed_traces() -> None:
     assert sum(edge["frequency"] for edge in graph.edges) == transitions
 ```
 
-Fala: "O endpoint só conhece `GraphMiner`. As colunas `case_id`, `raw_label` e `occurred_at` são as que o parser já normaliza. Hoje o Core ainda monta o grafo do canvas a partir das traces que ele mesmo grava; o grafo do adaptador sai na resposta do `/parse`, pronto para substituir essa montagem."
-
+O endpoint só conhece `GraphMiner`. As colunas `case_id`, `raw_label` e `occurred_at` são as que o parser já normaliza. Hoje o Core ainda monta o grafo do canvas a partir das traces que ele mesmo grava; o grafo do adaptador sai na resposta do `/parse`, pronto para substituir essa montagem.
 **Demonstrar:** rodar `pytest mining/tests/test_graph_miner.py`; o último teste passa um log CSV pelo parser e confere que o grafo tem todas as atividades e todas as transições.
 
 ## 3. Observer
 
 **Por que serve ao reuso:** quando uma análise termina, várias partes da tela precisam reagir. Com o Observer, quem publica o evento não conhece quem escuta; um painel novo só precisa se inscrever, sem mexer no publicador.
+
+**O que é.** Observer é um padrão comportamental que define um **mecanismo de assinatura**: vários objetos são avisados de um evento que acontece no objeto que eles observam.
+
+**Problema que resolve.** Quando uma análise de drift termina, o painel de investigação, o contador do monitoramento e o HUD da análise precisam reagir. Se quem recebe o resultado chamasse cada um, ele teria de conhecer todos, e cada painel novo exigiria mexer nele.
+
+**Solução.** O publicador guarda uma lista de assinantes e oferece `subscribe` e `unsubscribe`. Quando o evento acontece, `notify` chama `update` em cada assinante. O publicador só conhece a interface do assinante, nunca as classes concretas.
+
+**Estrutura** (modelo do Refactoring Guru, com as classes do Deviante em cada papel):
+
+```mermaid
+classDiagram
+    direction LR
+    class Publisher["Publicador · Subject (subject.js)"] {
+        -observers : Set
+        +subscribe(observer) cancelar
+        +unsubscribe(observer)
+        +notify(event)
+    }
+    class ConcretePublisher["Sujeitos · driftSubject / maintenanceSubject"]
+    class Subscriber["Assinante · objeto com update(event)"] {
+        <<interface>>
+        +update(event)
+    }
+    class Concrete["Assinantes concretos · InvestigationPanel, AnalysisHud, MonitoringContext / lista da Agenda, PlannedMaintenanceBadge"] {
+        +update(event)
+    }
+    class Client["Cliente · ProcessAnalysisView / SchedulesPage"]
+    ConcretePublisher --|> Publisher
+    Publisher o--> Subscriber : avisa todos
+    Concrete ..|> Subscriber
+    Client --> ConcretePublisher : notify(event)
+    Concrete --> ConcretePublisher : subscribe(this)
+```
+
+| Papel no padrão | Exemplo 1 (análise de drift) | Exemplo 2 (agenda de manutenção) |
+|---|---|---|
+| Publicador (base) | `Subject`: [`subject.js` linhas 6–24](https://github.com/aland3r/deviante-web/blob/28f5a56/src/lib/subject.js#L6-L24) | o mesmo `Subject`, reutilizado |
+| Publicador concreto | `driftSubject`: [`driftSubject.js` linhas 10–13](https://github.com/aland3r/deviante-web/blob/28f5a56/src/lib/driftSubject.js#L10-L13) | `maintenanceSubject`: [`maintenanceSubject.js` linhas 11–13](https://github.com/aland3r/deviante-web/blob/28f5a56/src/lib/maintenanceSubject.js#L11-L13) |
+| Assinantes concretos | `InvestigationPanel`, `AnalysisHud`, `MonitoringContext` | lista da Agenda ([`SchedulesPage.jsx` linhas 28–28](https://github.com/aland3r/deviante-web/blob/28f5a56/src/pages/SchedulesPage.jsx#L28-L28)), `PlannedMaintenanceBadge` ([`PlannedMaintenanceBadge.jsx` linhas 11–11](https://github.com/aland3r/deviante-web/blob/28f5a56/src/components/layout/PlannedMaintenanceBadge.jsx#L11-L11)) |
+| Cliente que publica | `ProcessAnalysisView`: [`ProcessAnalysisView.jsx` linhas 478–478](https://github.com/aland3r/deviante-web/blob/28f5a56/src/components/process-analysis/ProcessAnalysisView.jsx#L478-L478) | formulário da Agenda: [`SchedulesPage.jsx` linhas 33–39](https://github.com/aland3r/deviante-web/blob/28f5a56/src/pages/SchedulesPage.jsx#L33-L39) |
+| Evento | `drift-detected` ou `analysis-completed` | `schedule-saved` ou `schedule-deleted` |
 
 São dois sujeitos independentes, que compartilham a mesma base `Subject`. Cada um tem seu publicador e seus observadores, e nenhum sabe do outro.
 
@@ -645,8 +751,7 @@ class DriftSubject extends Subject {}
 export const driftSubject = new DriftSubject()
 ```
 
-Fala: "A base guarda os observadores num `Set`. `subscribe` devolve a função que cancela a inscrição, que é exatamente o que o `useEffect` do React espera como limpeza. `notify` percorre a lista e chama `update` em cada um. O `DriftSubject` só herda da base; o reuso aqui é a própria base, usada pelos dois sujeitos."
-
+A base guarda os observadores num `Set`. `subscribe` devolve a função que cancela a inscrição, que é exatamente o que o `useEffect` do React espera como limpeza. `notify` percorre a lista e chama `update` em cada um. O `DriftSubject` só herda da base; o reuso aqui é a própria base, usada pelos dois sujeitos.
 ### 3.2 O publicador
 
 📍 `deviante-web/src/components/process-analysis/ProcessAnalysisView.jsx` · linhas 471–484 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/d1cba0d/src/components/process-analysis/ProcessAnalysisView.jsx#L471-L484)
@@ -668,8 +773,7 @@ Fala: "A base guarda os observadores num `Set`. `subscribe` devolve a função q
       setElapsed((performance.now() - started) / 1000)
 ```
 
-Fala: "Quando a análise volta da API, a tela publica um evento: `drift-detected` se houver drift, `analysis-completed` se não houver. Ela não sabe quem está ouvindo."
-
+Quando a análise volta da API, a tela publica um evento: `drift-detected` se houver drift, `analysis-completed` se não houver. Ela não sabe quem está ouvindo.
 ### 3.3 Os observadores
 
 Exemplo 1, `InvestigationPanel` (abre a investigação no drift mais recente) e `MonitoringContext` (guarda o estado de drift de cada processo para o app inteiro):
@@ -797,7 +901,7 @@ Onde eles estão montados na tela da análise:
       <InvestigationPanel processId={processId} onInvestigate={setSelectedDrift} />
 ```
 
-**Demonstrar:** rodar uma análise num processo com drift e mostrar os três reagindo: o selo no cabeçalho ("N drifts · drift detectado"), a faixa "Investigando drift" com o gráfico já no drift mais recente, e, ao voltar para o canvas do processo, o selo "Com drift". Abrir `driftSubject.js` e mostrar o `Set` e o laço do `notify`; depois o `useEffect` de um observador. Fala: "o código que chama a API não sabe quantos painéis existem; o selo do canvas foi adicionado sem tocar no publicador".
+**Demonstrar:** rodar uma análise num processo com drift e mostrar os três reagindo: o selo no cabeçalho ("N drifts · drift detectado"), a faixa "Investigando drift" com o gráfico já no drift mais recente, e, ao voltar para o canvas do processo, o selo "Com drift". Abrir `driftSubject.js` e mostrar o `Set` e o laço do `notify`; depois o `useEffect` de um observador. Conclusão: o código que chama a API não sabe quantos painéis existem; o selo do canvas foi adicionado sem tocar no publicador.
 
 ### 3.4 Exemplo 2: o sujeito da agenda de manutenção
 
@@ -875,7 +979,7 @@ export default function PlannedMaintenanceBadge() {
               {label}{to === '/schedules' && <PlannedMaintenanceBadge />}
 ```
 
-**Demonstrar:** entrar como gestor (Alfa), abrir `/schedules`, olhar o número ao lado de "Agendamentos" no menu, criar uma manutenção com situação "Planejada" e mostrar o número subir sem recarregar a página. Excluir a manutenção e mostrar o número descer. Fala: "o formulário só publica `schedule-saved`; quem atualiza o menu é o contador, que se inscreveu sozinho".
+**Demonstrar:** entrar como gestor (Alfa), abrir `/schedules`, olhar o número ao lado de "Agendamentos" no menu, criar uma manutenção com situação "Planejada" e mostrar o número subir sem recarregar a página. Excluir a manutenção e mostrar o número descer. O formulário só publica `schedule-saved`; quem atualiza o menu é o contador, que se inscreveu sozinho.
 
 ## 4. Perguntas prováveis
 

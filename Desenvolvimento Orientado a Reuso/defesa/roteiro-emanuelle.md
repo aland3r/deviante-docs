@@ -2,7 +2,7 @@
 
 Prova de autoria em 16/10. Este roteiro cobre dois CRUDs com conexão ao banco: **Equipamento** (máquina) e **Agenda de manutenção**. Os dois rodam só no Core: React (Vercel) → Ktor (Fly.io) → Supabase Postgres.
 
-**Como ler.** Cada trecho de código traz repositório, arquivo, linhas e um link fixo no commit (`deviante-api@d6ab141`, `deviante-web@f929aca`). Abaixo de cada trecho vem o que falar.
+**Como ler.** Cada trecho de código traz repositório, arquivo, linhas e um link fixo no commit (`deviante-api@d6ab141`, `deviante-web@f929aca`). Abaixo de cada trecho, a explicação do que ele faz.
 
 **Percurso.** Entrar pelo "Modo Protótipo" com a seta na **Alfa**, como **Gestor** (a Alfa tem o plano Manutenção; Beta e Delta não têm estas telas). Do painel inicial, ir pelo menu a **Equipamentos** e fazer o CRUD ali. Depois, pelo menu, ir a **Agendamentos** e fazer o CRUD ali. Em cada tela a ordem é Read, Create, Update e Delete.
 
@@ -20,8 +20,7 @@ Prova de autoria em 16/10. Este roteiro cobre dois CRUDs com conexão ao banco: 
           ].filter(([, , feature]) => !feature || (feature === 'catalog' ? canManageCatalog(user) : hasFeature(user, feature))).map(([to, label]) => (
 ```
 
-Fala: "Equipamentos e Agendamentos só aparecem no menu para empresas cujo plano inclui o módulo de manutenção."
-
+Equipamentos e Agendamentos só aparecem no menu para empresas cujo plano inclui o módulo de manutenção.
 📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 117–134 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/d6ab141/src/main/kotlin/Routing.kt#L117-L134)
 
 ```kotlin
@@ -45,8 +44,7 @@ private suspend fun ApplicationCall.requireSupabaseUser(authClient: SupabaseAuth
 }
 ```
 
-Fala: "Toda rota começa aqui: o front manda o token do Supabase no cabeçalho, o Core confere com o Supabase Auth e responde 401 se não houver token válido. Depois acha o Manager e a empresa em que ele entrou, que filtram e carimbam os registros."
-
+Toda rota começa por esta verificação: o front manda o token do Supabase no cabeçalho, o Core confere com o Supabase Auth e responde 401 se não houver token válido. Depois acha o Manager e a empresa escolhida no login, que filtram e carimbam os registros.
 ## 2. CRUD de Equipamento (tela Equipamentos)
 
 ```mermaid
@@ -120,8 +118,7 @@ object EquipmentTable : Table(name = "equipment") {
 }
 ```
 
-Fala: "Cada máquina pertence a uma empresa (`business_id`, obrigatório) e guarda quem a cadastrou (`manager_id`). Só o nome é obrigatório."
-
+Cada máquina pertence a uma empresa (`business_id`, obrigatório) e guarda quem a cadastrou (`manager_id`). Só o nome é obrigatório.
 ### 2.2 Read: a lista ao abrir a tela
 
 📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 29–30 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/EquipmentPage.jsx#L29-L30)
@@ -160,8 +157,7 @@ Fala: "Cada máquina pertence a uma empresa (`business_id`, obrigatório) e guar
         if (rows.isEmpty()) return@transaction emptyList()
 ```
 
-Fala: "A tela pede a lista ao abrir. O Core filtra pela empresa (`business_id`), então a Alfa só vê as máquinas dela; o administrador vê todas."
-
+A tela pede a lista ao abrir. O Core filtra pela empresa (`business_id`), então a Alfa só vê as máquinas dela; o administrador vê todas.
 ### 2.3 Create: botão "Novo equipamento"
 
 📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 110–123 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/EquipmentPage.jsx#L110-L123)
@@ -220,8 +216,7 @@ function CreateEquipmentModal({ initial = null, onClose, onCreate }) {
     }
 ```
 
-Fala: "O modal só habilita 'Cadastrar' com nome. A rota valida de novo (400) e o repositório gera o UUID, grava quem cadastrou e a empresa, e devolve a máquina criada (201)."
-
+O modal só habilita 'Cadastrar' com nome. A rota valida de novo (400) e o repositório gera o UUID, grava quem cadastrou e a empresa, e devolve a máquina criada (201).
 ### 2.4 Update: lápis na linha
 
 📍 `deviante-web/src/pages/EquipmentPage.jsx` · linhas 81–81 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/EquipmentPage.jsx#L81-L81)
@@ -266,8 +261,7 @@ Fala: "O modal só habilita 'Cadastrar' com nome. A rota valida de novo (400) e 
     }
 ```
 
-Fala: "O mesmo modal abre preenchido. O `PUT` grava os campos e devolve a máquina atualizada; 404 se ela não existir."
-
+O mesmo modal abre preenchido. O `PUT` grava os campos e devolve a máquina atualizada; 404 se ela não existir.
 ### 2.5 Delete: lixeira na linha (só administrador e gestor)
 
 📍 `deviante-web/src/lib/permissions.js` · linhas 1–5 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/lib/permissions.js#L1-L5)
@@ -319,8 +313,7 @@ export const canDelete = (user) => DELETE_ROLES.has(user?.role)
     fun deleteEquipment(id: UUID): Boolean = transaction { EquipmentTable.deleteWhere { EquipmentTable.id eq id } > 0 }
 ```
 
-Fala: "A lixeira só aparece para administrador e gestor. O Core repete a regra (`requireDeleter`, 403). Apagar a máquina apaga as agendas dela no banco (cascata). Resposta 204, e a linha sai da tabela."
-
+A lixeira só aparece para administrador e gestor. O Core repete a regra (`requireDeleter`, 403). Apagar a máquina apaga as agendas dela no banco (cascata). Resposta 204, e a linha sai da tabela.
 ### 2.6 Demonstração
 
 1. No painel inicial, clicar em **Equipamentos** no menu.
@@ -406,8 +399,7 @@ object MaintenanceSchedulesTable : Table(name = "maintenance_schedules") {
 }
 ```
 
-Fala: "Cada agenda pertence a uma máquina (`equipment_id`, obrigatório): é a FK entre os meus dois CRUDs. Pode apontar para um processo, que é o CRUD do Alander. Se a máquina for apagada, a agenda vai junto (cascata)."
-
+Cada agenda pertence a uma máquina (`equipment_id`, obrigatório): é a FK entre os dois CRUDs deste roteiro. Pode apontar para um processo, que é o CRUD de Processo. Se a máquina for apagada, a agenda vai junto (cascata).
 ### 3.2 Read: lista, kanban e calendário
 
 📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 22–25 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/SchedulesPage.jsx#L22-L25)
@@ -459,8 +451,7 @@ Fala: "Cada agenda pertence a uma máquina (`equipment_id`, obrigatório): é a 
     }
 ```
 
-Fala: "As três visões usam a mesma lista; só muda o agrupamento na tela. A própria lista se inscreve no `maintenanceSubject` para recarregar quando a agenda mudar (Observer)."
-
+As três visões usam a mesma lista; só muda o agrupamento na tela. A própria lista se inscreve no `maintenanceSubject` para recarregar quando a agenda mudar (Observer).
 ### 3.3 Create e Update: "Nova manutenção" ou clique no card
 
 📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 27–31 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/SchedulesPage.jsx#L27-L31)
@@ -541,8 +532,7 @@ Fala: "As três visões usam a mesma lista; só muda o agrupamento na tela. A pr
     }
 ```
 
-Fala: "O mesmo modal cria (`POST`) ou edita (`PUT`). O Core valida título e datas (400) e, na criação, confere se a máquina existe (422). Depois de salvar, a tela avisa o `maintenanceSubject`, e a lista e o contador do menu se atualizam."
-
+O mesmo modal cria (`POST`) ou edita (`PUT`). O Core valida título e datas (400) e, na criação, confere se a máquina existe (422). Depois de salvar, a tela avisa o `maintenanceSubject`, e a lista e o contador do menu se atualizam.
 ### 3.4 Delete: "Excluir" no modal (só administrador e gestor)
 
 📍 `deviante-web/src/pages/SchedulesPage.jsx` · linhas 32–37 · [abrir no GitHub](https://github.com/aland3r/deviante-web/blob/f929aca/src/pages/SchedulesPage.jsx#L32-L37)
@@ -580,8 +570,7 @@ Fala: "O mesmo modal cria (`POST`) ou edita (`PUT`). O Core valida título e dat
     fun deleteSchedule(id: UUID): Boolean = transaction { MaintenanceSchedulesTable.deleteWhere { MaintenanceSchedulesTable.id eq id } > 0 }
 ```
 
-Fala: "O botão só vai para o modal quando a agenda já existe e o papel pode excluir. O Core confere de novo (403) e responde 204."
-
+O botão só vai para o modal quando a agenda já existe e o papel pode excluir. O Core confere de novo (403) e responde 204.
 ### 3.5 Demonstração
 
 1. Como **Gestor** da Alfa, clicar em **Agendamentos** no menu.

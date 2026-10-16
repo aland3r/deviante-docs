@@ -87,8 +87,7 @@ data class ClientVariant(
 }
 ```
 
-Fala: "Toda funcionalidade é um ponto de variação. Todo plano contém as comuns; o plano Manutenção soma o módulo opcional; e a variante do cliente soma ao plano as funções exclusivas dele."
-
+Toda funcionalidade é um ponto de variação. Todo plano contém as comuns; o plano Manutenção soma o módulo opcional; e a variante do cliente soma ao plano as funções exclusivas dele.
 O que cada empresa contratou sai do `application.yaml`:
 
 📍 `deviante-api/src/main/resources/application.yaml` · linhas 28–49 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/main/resources/application.yaml#L28-L49)
@@ -515,8 +514,7 @@ No Core, os papéis são conjuntos, como os planos:
     }
 ```
 
-Fala: "Excluir é de administrador e gestor; criar e editar também. O operador entra no conjunto de quem anota traces. Operador e técnico são os papéis dos quais o gestor pode ocultar um objeto."
-
+Excluir é de administrador e gestor; criar e editar também. O operador entra no conjunto de quem anota traces. Operador e técnico são os papéis dos quais o gestor pode ocultar um objeto.
 Quem vê um processo: a empresa, a agenda (para o técnico) e a ocultação definida pelo gestor (para operador e técnico):
 
 📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 85–96 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/Routing.kt#L85-L96)
@@ -536,7 +534,7 @@ internal fun ApplicationCall.canSeeProcess(manager: ManagerRecord, process: Proc
     return true
 ```
 
-O técnico registra o andamento da manutenção, e só isso:
+O técnico registra só o andamento da manutenção (situação e observações):
 
 📍 `deviante-api/src/main/kotlin/Routing.kt` · linhas 1014–1037 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/d6ea6c9/src/main/kotlin/Routing.kt#L1014-L1037)
 
@@ -620,8 +618,7 @@ export const canSeeDashboard = (user) => !isTechnician(user)
 
 **Agendamentos (técnico).** Ao entrar, o técnico cai direto em Agendamentos. Clicar numa manutenção abre a situação e as observações, e o link "Ver análise de origem" abre a análise salva do processo, só para leitura, para ele validar se a recomendação se confirmou.
 
-Fala: "É o mesmo produto e a mesma empresa; o papel muda o menu, a tela inicial e o que cada um pode fazer. A regra está na tela e repetida no Core, que responde 403 a quem tenta pelo endereço."
-
+É o mesmo produto e a mesma empresa; o papel muda o menu, a tela inicial e o que cada um pode fazer. A regra está na tela e repetida no Core, que responde 403 a quem tenta pelo endereço.
 ## 6. Testes
 
 📍 `deviante-api/src/test/kotlin/ProductLineTest.kt` · linhas 25–44 · [abrir no GitHub](https://github.com/aland3r/deviante-api/blob/bdd868c/src/test/kotlin/ProductLineTest.kt#L25-L44)
@@ -664,7 +661,7 @@ Rodar: `./gradlew test --tests ProductLineTest` dentro de `deviante-api`.
 
 As colas abertas em cada tela servem de roteiro; feche cada uma depois de explicar.
 
-Fala de fechamento: "é um software só; o que muda de um cliente para outro é a configuração. Os recursos comuns são para todos, o módulo de manutenção depende do plano e o CSV foi feito para clientes específicos, que foi o que planejamos na entrega anterior."
+Em resumo: é um software só; o que muda de um cliente para outro é a configuração. Os recursos comuns são para todos, o módulo de manutenção depende do plano e o CSV foi feito para clientes específicos, que foi o que planejamos na entrega anterior."
 
 ## 8. Perguntas prováveis
 
