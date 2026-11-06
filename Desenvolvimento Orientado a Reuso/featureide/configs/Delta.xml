@@ -35,6 +35,9 @@
 	<feature manual="unselected" name="ModuloManutencao"/>
 	<feature manual="unselected" name="Equipamentos"/>
 	<feature manual="unselected" name="Agendamentos"/>
+	<feature manual="unselected" name="TipoIntervencao"/>
+	<feature manual="unselected" name="Manutencao"/>
+	<feature manual="unselected" name="Inspecao"/>
 	<feature manual="unselected" name="PredicaoRF"/>
 	<feature manual="unselected" name="ExportarAgendaCSV"/>
 </configuration>

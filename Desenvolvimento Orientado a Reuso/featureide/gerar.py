@@ -56,7 +56,12 @@ MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
     ]),
     F("ModuloManutencao", "Módulo de manutenção", abstrata=True, filhos=[
         F("Equipamentos", "Equipamentos", obrig=True),
-        F("Agendamentos", "Agendamentos", obrig=True),
+        F("Agendamentos", "Agendamentos", obrig=True, filhos=[
+            F("TipoIntervencao", "Tipo de intervenção", "or", abstrata=True, obrig=True, filhos=[
+                F("Manutencao", "Manutenção"),
+                F("Inspecao", "Inspeção"),
+            ]),
+        ]),
         F("PredicaoRF", "Predição RF"),
     ]),
     F("ExportarAgendaCSV", "Exportar agenda CSV"),
@@ -81,19 +86,20 @@ RESTRICOES = [
     (IMP(V("LoginDemo"), AND(V("Gestor"), V("Operador"))), "O login demo sempre oferece os cartões de gestor e operador."),
     (IMP(AND(V("LoginDemo"), V("PlanoManutencao")), V("Tecnico")), "No demo, empresa com manutenção oferece também o técnico."),
     (IMP(V("CatalogoAtividades"), OR(V("Administrador"), V("Gestor"))), "O catálogo precisa de quem o mantém (administrador) ou o usa no mapeamento (gestor)."),
+    (IMP(V("Inspecao"), V("Tecnico")), "A inspeção é feita em campo pelo técnico, que registra o resultado."),
 ]
 
 # Configurações (features concretas e de plano escolhidas; o resto é derivado)
 EMPRESAS = {
     "Deviante": ["LoginGoogle", "XES", "CSV", "SerieBruta", "SerieTratada", "HistoricoAnalises",
-                 "PlanoManutencao", "Equipamentos", "Agendamentos", "Monitoramento", "PredicaoRF", "ExportarAgendaCSV",
+                 "PlanoManutencao", "Equipamentos", "Agendamentos", "Manutencao", "Monitoramento", "PredicaoRF", "ExportarAgendaCSV",
                  "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
-    "Alfa": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos",
+    "Alfa": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos", "Manutencao",
              "Monitoramento", "ExportarAgendaCSV", "Administrador", "Gestor", "Visibilidade", "Operador",
              "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
     "Beta": ["LoginDemo", "CSV", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoEssencial",
              "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace"],
-    "Gama": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos",
+    "Gama": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos", "Manutencao",
              "Monitoramento", "PredicaoRF", "Administrador", "Gestor", "Visibilidade", "Operador",
              "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
     "Delta": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoEssencial",

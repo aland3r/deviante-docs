@@ -102,9 +102,18 @@
 				<feature mandatory="true" name="Equipamentos">
 					<description>Equipamentos</description>
 				</feature>
-				<feature mandatory="true" name="Agendamentos">
+				<and mandatory="true" name="Agendamentos">
 					<description>Agendamentos</description>
-				</feature>
+					<or abstract="true" mandatory="true" name="TipoIntervencao">
+						<description>Tipo de intervenção</description>
+						<feature name="Manutencao">
+							<description>Manutenção</description>
+						</feature>
+						<feature name="Inspecao">
+							<description>Inspeção</description>
+						</feature>
+					</or>
+				</and>
 				<feature name="PredicaoRF">
 					<description>Predição RF</description>
 				</feature>
@@ -204,6 +213,13 @@
 					<var>Administrador</var>
 					<var>Gestor</var>
 				</disj>
+			</imp>
+		</rule>
+		<rule>
+			<description>R12. A inspeção é feita em campo pelo técnico, que registra o resultado.</description>
+			<imp>
+				<var>Inspecao</var>
+				<var>Tecnico</var>
 			</imp>
 		</rule>
 	</constraints>
