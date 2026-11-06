@@ -62,7 +62,7 @@ A = out.append
 A(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="Inter, Segoe UI, Arial, sans-serif">')
 A(f'<rect width="{W}" height="{H}" fill="#ffffff"/>')
 A(f'<text x="40" y="46" font-size="{F_TIT}" font-weight="600" fill="{COR["texto"]}">Modelo de características do Deviante</text>')
-A(f'<text x="40" y="72" font-size="13.5" fill="{COR["fraco"]}">36 características · 11 restrições · notação FeatureIDE</text>')
+A(f'<text x="40" y="72" font-size="13.5" fill="{COR["fraco"]}">{len(list(nos(MODELO)))} características · {len(RESTRICOES)} restrições · notação FeatureIDE</text>')
 
 def grupo(px, py, pts, tipo, r):
     a = [math.atan2(y - py, x - px) for x, y in pts]

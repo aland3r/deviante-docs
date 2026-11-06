@@ -4,57 +4,90 @@
 	<struct>
 		<and abstract="true" mandatory="true" name="Deviante">
 			<description>Deviante</description>
-			<alt abstract="true" mandatory="true" name="Autenticacao">
+			<and abstract="true" mandatory="true" name="Autenticacao">
 				<description>Autenticação</description>
-				<feature name="LoginGoogle">
-					<description>Login Google</description>
-				</feature>
-				<feature name="LoginDemo">
-					<description>Login Demo</description>
-				</feature>
-			</alt>
-			<and mandatory="true" name="Processos">
-				<description>Processos</description>
-				<feature mandatory="true" name="UploadLog">
-					<description>Upload de log</description>
-				</feature>
-				<feature mandatory="true" name="MapeamentoOperacoes">
-					<description>Mapeamento de operações</description>
-				</feature>
-				<feature mandatory="true" name="GrafoProcesso">
-					<description>Grafo do processo</description>
-				</feature>
-				<or abstract="true" mandatory="true" name="FormatoLog">
-					<description>Formato do log</description>
-					<feature name="XES">
-						<description>XES</description>
+				<alt abstract="true" mandatory="true" name="MetodoLogin">
+					<description>Método de login</description>
+					<feature name="LoginGoogle">
+						<description>Login Google</description>
 					</feature>
-					<feature name="CSV">
-						<description>CSV</description>
+					<feature name="LoginDemo">
+						<description>Login Demo</description>
 					</feature>
+				</alt>
+				<or abstract="true" mandatory="true" name="Papeis">
+					<description>Papéis</description>
+					<feature name="Administrador">
+						<description>Administrador</description>
+					</feature>
+					<and name="Gestor">
+						<description>Gestor</description>
+						<feature name="Visibilidade">
+							<description>Visibilidade</description>
+						</feature>
+					</and>
+					<and name="Operador">
+						<description>Operador</description>
+						<feature name="NotasTrace">
+							<description>Notas de trace</description>
+						</feature>
+					</and>
+					<and name="Tecnico">
+						<description>Técnico</description>
+						<feature name="VerAnaliseOrigem">
+							<description>Ver análise de origem</description>
+						</feature>
+					</and>
 				</or>
+			</and>
+			<and abstract="true" mandatory="true" name="Workspace">
+				<description>Workspace</description>
+				<and mandatory="true" name="Processos">
+					<description>Processos</description>
+					<feature mandatory="true" name="UploadLog">
+						<description>Upload de log</description>
+					</feature>
+					<feature mandatory="true" name="MapeamentoOperacoes">
+						<description>Mapeamento de operações</description>
+					</feature>
+					<feature mandatory="true" name="GrafoProcesso">
+						<description>Grafo do processo</description>
+					</feature>
+					<or abstract="true" mandatory="true" name="FormatoLog">
+						<description>Formato do log</description>
+						<feature name="XES">
+							<description>XES</description>
+						</feature>
+						<feature name="CSV">
+							<description>CSV</description>
+						</feature>
+					</or>
+				</and>
+				<and abstract="true" mandatory="true" name="AnaliseDrift">
+					<description>Análise de drift</description>
+					<feature mandatory="true" name="DetectorADWIN">
+						<description>Detector IPDD/ADWIN</description>
+					</feature>
+					<or abstract="true" mandatory="true" name="TratamentoSerie">
+						<description>Tratamento da série</description>
+						<feature name="SerieBruta">
+							<description>Série bruta</description>
+						</feature>
+						<feature name="SerieTratada">
+							<description>Série tratada</description>
+						</feature>
+					</or>
+					<feature name="HistoricoAnalises">
+						<description>Histórico de análises</description>
+					</feature>
+				</and>
+				<feature name="Monitoramento">
+					<description>Monitoramento</description>
+				</feature>
 			</and>
 			<feature mandatory="true" name="CatalogoAtividades">
 				<description>Catálogo de atividades</description>
 			</feature>
-			<and abstract="true" mandatory="true" name="AnaliseDrift">
-				<description>Análise de drift</description>
-				<feature mandatory="true" name="DetectorADWIN">
-					<description>Detector IPDD/ADWIN</description>
-				</feature>
-				<or abstract="true" mandatory="true" name="TratamentoSerie">
-					<description>Tratamento da série</description>
-					<feature name="SerieBruta">
-						<description>Série bruta</description>
-					</feature>
-					<feature name="SerieTratada">
-						<description>Série tratada</description>
-					</feature>
-				</or>
-				<feature name="HistoricoAnalises">
-					<description>Histórico de análises</description>
-				</feature>
-			</and>
 			<alt abstract="true" mandatory="true" name="Plano">
 				<description>Plano</description>
 				<feature abstract="true" name="PlanoEssencial">
@@ -72,42 +105,12 @@
 				<feature mandatory="true" name="Agendamentos">
 					<description>Agendamentos</description>
 				</feature>
-				<feature name="Monitoramento">
-					<description>Monitoramento</description>
-				</feature>
 				<feature name="PredicaoRF">
 					<description>Predição RF</description>
 				</feature>
 			</and>
 			<feature name="ExportarAgendaCSV">
 				<description>Exportar agenda CSV</description>
-			</feature>
-			<or abstract="true" mandatory="true" name="Papeis">
-				<description>Papéis</description>
-				<feature name="Administrador">
-					<description>Administrador</description>
-				</feature>
-				<and name="Gestor">
-					<description>Gestor</description>
-					<feature name="Visibilidade">
-						<description>Visibilidade</description>
-					</feature>
-				</and>
-				<and name="Operador">
-					<description>Operador</description>
-					<feature name="NotasTrace">
-						<description>Notas de trace</description>
-					</feature>
-				</and>
-				<and name="Tecnico">
-					<description>Técnico</description>
-					<feature name="VerAnaliseOrigem">
-						<description>Ver análise de origem</description>
-					</feature>
-				</and>
-			</or>
-			<feature name="ColasVariabilidade">
-				<description>Colas de variabilidade</description>
 			</feature>
 		</and>
 	</struct>
@@ -167,10 +170,10 @@
 			</imp>
 		</rule>
 		<rule>
-			<description>R08. As colas explicam a variabilidade no Modo Protótipo.</description>
+			<description>R08. O monitoramento lê sensores das máquinas cadastradas.</description>
 			<imp>
-				<var>ColasVariabilidade</var>
-				<var>LoginDemo</var>
+				<var>Monitoramento</var>
+				<var>Equipamentos</var>
 			</imp>
 		</rule>
 		<rule>

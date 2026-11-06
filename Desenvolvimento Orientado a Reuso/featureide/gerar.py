@@ -17,28 +17,39 @@ def F(nome, rotulo, grupo="and", abstrata=False, obrig=False, filhos=()):
     return dict(nome=nome, rotulo=rotulo, grupo=grupo, abstrata=abstrata, obrig=obrig, filhos=list(filhos))
 
 MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
-    F("Autenticacao", "Autenticação", "alt", abstrata=True, obrig=True, filhos=[
-        F("LoginGoogle", "Login Google"),
-        F("LoginDemo", "Login Demo"),
-    ]),
-    F("Processos", "Processos", obrig=True, filhos=[
-        F("UploadLog", "Upload de log", obrig=True),
-        F("MapeamentoOperacoes", "Mapeamento de operações", obrig=True),
-        F("GrafoProcesso", "Grafo do processo", obrig=True),
-        F("FormatoLog", "Formato do log", "or", abstrata=True, obrig=True, filhos=[
-            F("XES", "XES"),
-            F("CSV", "CSV"),
+    F("Autenticacao", "Autenticação", abstrata=True, obrig=True, filhos=[
+        F("MetodoLogin", "Método de login", "alt", abstrata=True, obrig=True, filhos=[
+            F("LoginGoogle", "Login Google"),
+            F("LoginDemo", "Login Demo"),
         ]),
+        F("Papeis", "Papéis", "or", abstrata=True, obrig=True, filhos=[
+            F("Administrador", "Administrador"),
+            F("Gestor", "Gestor", filhos=[F("Visibilidade", "Visibilidade")]),
+            F("Operador", "Operador", filhos=[F("NotasTrace", "Notas de trace")]),
+            F("Tecnico", "Técnico", filhos=[F("VerAnaliseOrigem", "Ver análise de origem")]),
+        ]),
+    ]),
+    F("Workspace", "Workspace", abstrata=True, obrig=True, filhos=[
+        F("Processos", "Processos", obrig=True, filhos=[
+            F("UploadLog", "Upload de log", obrig=True),
+            F("MapeamentoOperacoes", "Mapeamento de operações", obrig=True),
+            F("GrafoProcesso", "Grafo do processo", obrig=True),
+            F("FormatoLog", "Formato do log", "or", abstrata=True, obrig=True, filhos=[
+                F("XES", "XES"),
+                F("CSV", "CSV"),
+            ]),
+        ]),
+        F("AnaliseDrift", "Análise de drift", abstrata=True, obrig=True, filhos=[
+            F("DetectorADWIN", "Detector IPDD/ADWIN", obrig=True),
+            F("TratamentoSerie", "Tratamento da série", "or", abstrata=True, obrig=True, filhos=[
+                F("SerieBruta", "Série bruta"),
+                F("SerieTratada", "Série tratada"),
+            ]),
+            F("HistoricoAnalises", "Histórico de análises"),
+        ]),
+        F("Monitoramento", "Monitoramento"),
     ]),
     F("CatalogoAtividades", "Catálogo de atividades", obrig=True),
-    F("AnaliseDrift", "Análise de drift", abstrata=True, obrig=True, filhos=[
-        F("DetectorADWIN", "Detector IPDD/ADWIN", obrig=True),
-        F("TratamentoSerie", "Tratamento da série", "or", abstrata=True, obrig=True, filhos=[
-            F("SerieBruta", "Série bruta"),
-            F("SerieTratada", "Série tratada"),
-        ]),
-        F("HistoricoAnalises", "Histórico de análises"),
-    ]),
     F("Plano", "Plano", "alt", abstrata=True, obrig=True, filhos=[
         F("PlanoEssencial", "Essencial", abstrata=True),
         F("PlanoManutencao", "Manutenção", abstrata=True),
@@ -46,17 +57,9 @@ MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
     F("ModuloManutencao", "Módulo de manutenção", abstrata=True, filhos=[
         F("Equipamentos", "Equipamentos", obrig=True),
         F("Agendamentos", "Agendamentos", obrig=True),
-        F("Monitoramento", "Monitoramento"),
         F("PredicaoRF", "Predição RF"),
     ]),
     F("ExportarAgendaCSV", "Exportar agenda CSV"),
-    F("Papeis", "Papéis", "or", abstrata=True, obrig=True, filhos=[
-        F("Administrador", "Administrador"),
-        F("Gestor", "Gestor", filhos=[F("Visibilidade", "Visibilidade")]),
-        F("Operador", "Operador", filhos=[F("NotasTrace", "Notas de trace")]),
-        F("Tecnico", "Técnico", filhos=[F("VerAnaliseOrigem", "Ver análise de origem")]),
-    ]),
-    F("ColasVariabilidade", "Colas de variabilidade"),
 ])
 
 # Restrições: árvore de ('imp'|'and'|'or'|'not'|'var', ...)
@@ -74,7 +77,7 @@ RESTRICOES = [
     (IMP(V("ExportarAgendaCSV"), V("Agendamentos")), "A exportação é da agenda de manutenção."),
     (IMP(V("Visibilidade"), OR(V("Operador"), V("Tecnico"))), "Ocultar objetos só faz sentido se existe operador ou técnico."),
     (IMP(V("VerAnaliseOrigem"), V("HistoricoAnalises")), "O técnico abre a análise salva que originou o agendamento."),
-    (IMP(V("ColasVariabilidade"), V("LoginDemo")), "As colas explicam a variabilidade no Modo Protótipo."),
+    (IMP(V("Monitoramento"), V("Equipamentos")), "O monitoramento lê sensores das máquinas cadastradas."),
     (IMP(V("LoginDemo"), AND(V("Gestor"), V("Operador"))), "O login demo sempre oferece os cartões de gestor e operador."),
     (IMP(AND(V("LoginDemo"), V("PlanoManutencao")), V("Tecnico")), "No demo, empresa com manutenção oferece também o técnico."),
     (IMP(V("CatalogoAtividades"), OR(V("Administrador"), V("Gestor"))), "O catálogo precisa de quem o mantém (administrador) ou o usa no mapeamento (gestor)."),
@@ -83,18 +86,18 @@ RESTRICOES = [
 # Configurações (features concretas e de plano escolhidas; o resto é derivado)
 EMPRESAS = {
     "Deviante": ["LoginGoogle", "XES", "CSV", "SerieBruta", "SerieTratada", "HistoricoAnalises",
-                 "PlanoManutencao", "Monitoramento", "PredicaoRF", "ExportarAgendaCSV",
+                 "PlanoManutencao", "Equipamentos", "Agendamentos", "Monitoramento", "PredicaoRF", "ExportarAgendaCSV",
                  "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
-    "Alfa": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao",
+    "Alfa": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos",
              "Monitoramento", "ExportarAgendaCSV", "Administrador", "Gestor", "Visibilidade", "Operador",
-             "NotasTrace", "Tecnico", "VerAnaliseOrigem", "ColasVariabilidade"],
+             "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
     "Beta": ["LoginDemo", "CSV", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoEssencial",
-             "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace", "ColasVariabilidade"],
-    "Gama": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao",
+             "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace"],
+    "Gama": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos",
              "Monitoramento", "PredicaoRF", "Administrador", "Gestor", "Visibilidade", "Operador",
-             "NotasTrace", "Tecnico", "VerAnaliseOrigem", "ColasVariabilidade"],
+             "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
     "Delta": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoEssencial",
-              "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace", "ColasVariabilidade"],
+              "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace"],
 }
 
 # ---------- utilidades ----------
