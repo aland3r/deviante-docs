@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<featureModel>
+	<properties/>
+	<struct>
+		<and abstract="true" mandatory="true" name="Deviante">
+			<description>Deviante</description>
+			<alt abstract="true" mandatory="true" name="Autenticacao">
+				<description>Autenticação</description>
+				<feature name="LoginGoogle">
+					<description>Login Google</description>
+				</feature>
+				<feature name="LoginDemo">
+					<description>Login Demo</description>
+				</feature>
+			</alt>
+			<and mandatory="true" name="Processos">
+				<description>Processos</description>
+				<feature mandatory="true" name="UploadLog">
+					<description>Upload de log</description>
+				</feature>
+				<feature mandatory="true" name="MapeamentoOperacoes">
+					<description>Mapeamento de operações</description>
+				</feature>
+				<feature mandatory="true" name="GrafoProcesso">
+					<description>Grafo do processo</description>
+				</feature>
+				<or abstract="true" mandatory="true" name="FormatoLog">
+					<description>Formato do log</description>
+					<feature name="XES">
+						<description>XES</description>
+					</feature>
+					<feature name="CSV">
+						<description>CSV</description>
+					</feature>
+				</or>
+			</and>
+			<feature mandatory="true" name="CatalogoAtividades">
+				<description>Catálogo de atividades</description>
+			</feature>
+			<and abstract="true" mandatory="true" name="AnaliseDrift">
+				<description>Análise de drift</description>
+				<feature mandatory="true" name="DetectorADWIN">
+					<description>Detector IPDD/ADWIN</description>
+				</feature>
+				<or abstract="true" mandatory="true" name="TratamentoSerie">
+					<description>Tratamento da série</description>
+					<feature name="SerieBruta">
+						<description>Série bruta</description>
+					</feature>
+					<feature name="SerieTratada">
+						<description>Série tratada</description>
+					</feature>
+				</or>
+				<feature name="HistoricoAnalises">
+					<description>Histórico de análises</description>
+				</feature>
+			</and>
+			<alt abstract="true" mandatory="true" name="Plano">
+				<description>Plano</description>
+				<feature abstract="true" name="PlanoEssencial">
+					<description>Essencial</description>
+				</feature>
+				<feature abstract="true" name="PlanoManutencao">
+					<description>Manutenção</description>
+				</feature>
+			</alt>
+			<and abstract="true" name="ModuloManutencao">
+				<description>Módulo de manutenção</description>
+				<feature mandatory="true" name="Equipamentos">
+					<description>Equipamentos</description>
+				</feature>
+				<feature mandatory="true" name="Agendamentos">
+					<description>Agendamentos</description>
+				</feature>
+				<feature name="Monitoramento">
+					<description>Monitoramento</description>
+				</feature>
+				<feature name="PredicaoRF">
+					<description>Predição RF</description>
+				</feature>
+			</and>
+			<feature name="ExportarAgendaCSV">
+				<description>Exportar agenda CSV</description>
+			</feature>
+			<or abstract="true" mandatory="true" name="Papeis">
+				<description>Papéis</description>
+				<feature name="Administrador">
+					<description>Administrador</description>
+				</feature>
+				<and name="Gestor">
+					<description>Gestor</description>
+					<feature name="Visibilidade">
+						<description>Visibilidade</description>
+					</feature>
+				</and>
+				<and name="Operador">
+					<description>Operador</description>
+					<feature name="NotasTrace">
+						<description>Notas de trace</description>
+					</feature>
+				</and>
+				<and name="Tecnico">
+					<description>Técnico</description>
+					<feature name="VerAnaliseOrigem">
+						<description>Ver análise de origem</description>
+					</feature>
+				</and>
+			</or>
+			<feature name="ColasVariabilidade">
+				<description>Colas de variabilidade</description>
+			</feature>
+		</and>
+	</struct>
+	<constraints>
+		<rule>
+			<description>R01. O plano Essencial não inclui o módulo de manutenção.</description>
+			<imp>
+				<var>PlanoEssencial</var>
+				<not>
+					<var>ModuloManutencao</var>
+				</not>
+			</imp>
+		</rule>
+		<rule>
+			<description>R02. O plano Manutenção sempre traz o módulo.</description>
+			<imp>
+				<var>PlanoManutencao</var>
+				<var>ModuloManutencao</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R03. O técnico só trabalha na agenda; sem Agendamentos ele não tem tela.</description>
+			<imp>
+				<var>Tecnico</var>
+				<var>Agendamentos</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R04. A predição RF usa as leituras de sensores do monitoramento.</description>
+			<imp>
+				<var>PredicaoRF</var>
+				<var>Monitoramento</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R05. A exportação é da agenda de manutenção.</description>
+			<imp>
+				<var>ExportarAgendaCSV</var>
+				<var>Agendamentos</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R06. Ocultar objetos só faz sentido se existe operador ou técnico.</description>
+			<imp>
+				<var>Visibilidade</var>
+				<disj>
+					<var>Operador</var>
+					<var>Tecnico</var>
+				</disj>
+			</imp>
+		</rule>
+		<rule>
+			<description>R07. O técnico abre a análise salva que originou o agendamento.</description>
+			<imp>
+				<var>VerAnaliseOrigem</var>
+				<var>HistoricoAnalises</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R08. As colas explicam a variabilidade no Modo Protótipo.</description>
+			<imp>
+				<var>ColasVariabilidade</var>
+				<var>LoginDemo</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R09. O login demo sempre oferece os cartões de gestor e operador.</description>
+			<imp>
+				<var>LoginDemo</var>
+				<conj>
+					<var>Gestor</var>
+					<var>Operador</var>
+				</conj>
+			</imp>
+		</rule>
+		<rule>
+			<description>R10. No demo, empresa com manutenção oferece também o técnico.</description>
+			<imp>
+				<conj>
+					<var>LoginDemo</var>
+					<var>PlanoManutencao</var>
+				</conj>
+				<var>Tecnico</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R11. O catálogo precisa de quem o mantém (administrador) ou o usa no mapeamento (gestor).</description>
+			<imp>
+				<var>CatalogoAtividades</var>
+				<disj>
+					<var>Administrador</var>
+					<var>Gestor</var>
+				</disj>
+			</imp>
+		</rule>
+	</constraints>
+</featureModel>
