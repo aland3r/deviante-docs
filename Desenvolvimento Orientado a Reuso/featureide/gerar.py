@@ -32,7 +32,7 @@ MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
     F("Workspace", "Workspace", "or", abstrata=True, obrig=True, filhos=[
         F("Monitoramento", "Monitoramento"),
         F("Processo", "Processo", filhos=[
-            F("FormatoLog", "Formato do log", "or", abstrata=True, obrig=True, filhos=[
+            F("LogEventos", "Log de eventos", "or", abstrata=True, obrig=True, filhos=[
                 F("XES", "XES"),
                 F("CSV", "CSV"),
             ]),

@@ -2,7 +2,9 @@
 
 ![Modelo de características do Deviante](modelo-de-caracteristicas.png)
 
-O modelo tem 40 características e 12 restrições. Ele descreve a linha de produto que já está no código: a empresa cliente escolhe um plano e funções exclusivas (`deviante-api/src/main/kotlin/variability/ProductLine.kt` e a seção `productLine` do `application.yaml`), e cada papel vê e faz coisas diferentes (`deviante-web/src/lib/permissions.js`).
+O modelo tem 32 características e 10 restrições. Ele descreve as variações do Deviante entre empresas clientes (Deviante, Alfa, Beta, Gama, Delta) e entre papéis de usuário (administrador, gestor, operador e técnico).
+
+A imagem acima é a versão em alta resolução, gerada do mesmo modelo. A imagem exportada do FeatureIDE (Eclipse) está em [`modelo-eclipse.png`](modelo-eclipse.png).
 
 ## Arquivos
 
@@ -10,54 +12,63 @@ O modelo tem 40 características e 12 restrições. Ele descreve a linha de prod
 |---|---|
 | `model.xml` | Modelo para abrir no FeatureIDE (Eclipse) |
 | `configs/*.xml` | Uma configuração por empresa: Deviante, Alfa, Beta, Gama, Delta |
-| `modelo-de-caracteristicas.png` / `.svg` | Diagrama renderizado em alta resolução |
+| `modelo-eclipse.png` | Diagrama exportado do FeatureIDE |
+| `modelo-de-caracteristicas.png` / `.svg` | Diagrama em alta resolução |
 | `gerar.py` | Fonte única: gera `model.xml` e as configurações e valida o modelo por SAT |
-| `renderizar.py` | Gera o diagrama a partir do mesmo modelo |
+| `renderizar.py` | Gera o diagrama em alta resolução a partir do mesmo modelo |
 
-**Abrir no Eclipse:** File → New → Other… → FeatureIDE → FeatureIDE Project (composer padrão). Substitua o `model.xml` do projeto por este e copie `configs/` para a pasta `configs` do projeto. Para a imagem oficial: no editor do modelo, botão direito → Export As → PNG.
+**Abrir no Eclipse:** File → New → Other… → FeatureIDE → FeatureIDE Project. Substitua o `model.xml` do projeto por este e copie `configs/` para a pasta `configs` do projeto.
 
-**Validação:** `python gerar.py` confere que o modelo é satisfazível, que não há características mortas nem falso-opcionais, que nenhuma restrição é redundante e que as 5 configurações são válidas. Ele conta 12.960 produtos possíveis.
+**Validação:** `python gerar.py` confere que o modelo é satisfazível, que não há características mortas nem falso-opcionais, que nenhuma restrição é redundante e que as 5 configurações são válidas. O modelo admite 14.342 produtos.
+
+## Estrutura
+
+- **Login**: como se entra (Autenticacao: login demo ou Google) e com qual papel (Papeis).
+- **Workspace**: os dois espaços de trabalho onde o usuário cria algo para analisar: Processo (log de eventos, mapeamento de atividades, grafo e filtros) e Monitoramento (máquinas acompanhadas).
+- **Equipamento**: cadastro de máquinas e de seus componentes, independente do monitoramento.
+- **Analise**: o que o Deviante calcula: desvio de processo (drift) e vida útil restante (RUL).
+- **Agendamento**: intervenções agendadas nas máquinas: inspeção e manutenção.
+
+Uma característica filha é parte da mãe e só existe com ela. Quem usa cada função não é hierarquia: aparece nas restrições com Papeis.
 
 ## Tipos de característica e justificativas
 
-| Tipo | Exemplos no modelo | Justificativa |
+| Tipo | Características | Justificativa |
 |---|---|---|
-| **Abstrata** | Deviante, Autenticacao, MetodoLogin, Papeis, Workspace, AnaliseDrift, FormatoLog, TratamentoSerie, TipoIntervencao, Plano, PlanoEssencial, PlanoManutencao, ModuloManutencao | Organizam a árvore e não correspondem a um trecho de código próprio. Workspace agrupa o que o usuário cria e analisa no painel (processo, análise e monitoramento, como no modelo de domínio); Autenticacao agrupa como se entra e com qual papel. Os planos são abstratos porque são só pacotes de funções: `Plan` em `ProductLine.kt` é um conjunto de `Feature`. |
-| **Concreta** | Processos, UploadLog, Equipamentos, Agendamentos, ExportarAgendaCSV, Gestor, NotasTrace… | Cada uma tem código que a implementa: uma rota no Core, uma tela no front, um valor de `Feature`. |
-| **Obrigatória** | Autenticacao, MetodoLogin, Papeis, Workspace, Processos, AnaliseDrift, DetectorADWIN, CatalogoAtividades, Plano; Equipamentos e Agendamentos dentro do módulo | É o núcleo comum: `COMMON_FEATURES` (processos, atividades, análise de drift) entra em todo produto. Se o módulo de manutenção entra, entram máquinas e agenda juntas. |
-| **Opcional** | ModuloManutencao, ExportarAgendaCSV, HistoricoAnalises, Monitoramento, PredicaoRF, Visibilidade, NotasTrace, VerAnaliseOrigem | Variam de cliente para cliente: o módulo depende do plano, o CSV é exclusivo da Alfa, a predição RF é experimental e só a Gama a tem. |
-| **Grupo Or** (ao menos um) | Papeis; FormatoLog (XES, CSV); TratamentoSerie (bruta, tratada); TipoIntervencao (manutenção, inspeção) | Uma variante pode ter qualquer combinação de papéis, formatos de log aceitos, tratamentos de série e tipos de intervenção agendável, mas precisa de ao menos um de cada. |
-| **Grupo Alternative** (exatamente um) | Plano (Essencial, Manutenção); MetodoLogin (Google, Demo) | Cada empresa contrata um único plano. A empresa Deviante entra só pelo Google; as empresas do protótipo, só pelo login demo. |
+| **Abstrata** | Deviante, Login, Autenticacao, Papeis, Workspace, LogEventos, Filtros, Equipamento, Analise | Só organizam a árvore e não têm um trecho de código próprio. Equipamento, por exemplo, agrupa Máquina e Componente, que são as telas de fato. |
+| **Concreta** | LoginDemo, LoginGoogle, os quatro papéis, Monitoramento, Processo, XES, CSV, MapeamentoAtividades, GrafoProcesso, NotasAtividade, os três filtros, Maquina, Componente, Desvio, RUL, Agendamento, Inspecao, Manutencao | Cada uma corresponde a uma tela, rota ou função do sistema. Agendamento é concreta porque a agenda é uma tela própria, além dos tipos de intervenção. |
+| **Obrigatória** | Login, Autenticacao, Papeis, Workspace, Analise; LogEventos, MapeamentoAtividades e GrafoProcesso dentro de Processo; Maquina dentro de Equipamento | Todo produto tem entrada, papéis, ao menos um workspace e ao menos uma análise. Um processo sempre vem de um log, precisa do mapeamento para gerar as atividades e sempre mostra o grafo. Não há cadastro de equipamento sem máquina. |
+| **Opcional** | Equipamento, Agendamento, Componente, NotasAtividade, Filtros | Variam de cliente para cliente. Empresas só com processos (Beta, Delta) não têm equipamentos nem agenda. Componente é uma variação prevista: ainda não está implementado. |
+| **Grupo Or** (ao menos um) | Papeis; Workspace (Monitoramento, Processo); LogEventos (XES, CSV); Filtros; Analise (Desvio, RUL); Agendamento (Inspecao, Manutencao) | Um produto pode combinar livremente papéis, workspaces, formatos de log, filtros, análises e tipos de intervenção, mas precisa de ao menos um de cada grupo que tiver. |
+| **Grupo Alternative** (exatamente um) | Autenticacao (LoginDemo, LoginGoogle) | Cada empresa entra por um único método: a Deviante só pelo Google, as empresas do protótipo só pelo login demo. |
 
 ## Restrições
 
-As 12 restrições usam os quatro operadores pedidos: Implies (⇒) em todas, And (∧) em R09 e R10, Or (∨) em R06 e R11 e Not (¬) em R01.
+As 10 restrições usam os quatro operadores pedidos: Implies (⇒) em todas, And (∧) em R08, Or (∨) em R06 e R10 e Not (¬) em R04.
 
 | # | Restrição | Justificativa |
 |---|---|---|
-| R01 | `PlanoEssencial ⇒ ¬ModuloManutencao` | O plano Essencial não inclui o módulo de manutenção. |
-| R02 | `PlanoManutencao ⇒ ModuloManutencao` | O plano Manutenção sempre traz o módulo. |
-| R03 | `Tecnico ⇒ Agendamentos` | O técnico só trabalha na agenda; sem Agendamentos ele não tem tela. |
-| R04 | `PredicaoRF ⇒ Monitoramento` | A predição RF usa as leituras de sensores do monitoramento. |
-| R05 | `ExportarAgendaCSV ⇒ Agendamentos` | A exportação é da agenda de manutenção. |
-| R06 | `Visibilidade ⇒ (Operador ∨ Tecnico)` | Ocultar objetos só faz sentido se existe operador ou técnico. |
-| R07 | `VerAnaliseOrigem ⇒ HistoricoAnalises` | O técnico abre a análise salva que originou o agendamento. |
-| R08 | `Monitoramento ⇒ Equipamentos` | O monitoramento lê sensores das máquinas cadastradas. |
-| R09 | `LoginDemo ⇒ (Gestor ∧ Operador)` | O login demo sempre oferece os cartões de gestor e operador. |
-| R10 | `(LoginDemo ∧ PlanoManutencao) ⇒ Tecnico` | No demo, empresa com manutenção oferece também o técnico. |
-| R11 | `CatalogoAtividades ⇒ (Administrador ∨ Gestor)` | O catálogo precisa de quem o mantém (administrador) ou o usa no mapeamento (gestor). |
-| R12 | `Inspecao ⇒ Tecnico` | A inspeção é feita em campo pelo técnico, que registra o resultado. |
+| R01 | `Tecnico ⇒ Agendamento` | O técnico só trabalha na agenda; sem Agendamento ele não tem tela. |
+| R02 | `Desvio ⇒ Processo` | O drift é detectado no log de eventos de um processo. |
+| R03 | `RUL ⇒ Monitoramento` | O RUL usa as leituras de sensores das máquinas monitoradas. |
+| R04 | `¬Maquina ⇒ ¬Agendamento` | Todo agendamento é de uma máquina: sem cadastro de máquinas não há agenda. |
+| R05 | `Monitoramento ⇒ Maquina` | O monitoramento acompanha máquinas já cadastradas. |
+| R06 | `Inspecao ⇒ (Operador ∨ Tecnico)` | A inspeção é feita pelo operador ou pelo técnico. |
+| R07 | `RUL ⇒ Manutencao` | A previsão de vida útil só faz sentido se a falha prevista puder virar manutenção agendada. |
+| R08 | `(LoginDemo ∧ Agendamento) ⇒ Tecnico` | No demo, empresa com agenda oferece também o técnico. |
+| R09 | `NotasAtividade ⇒ Operador` | Só o operador anota detalhes de uma atividade do processo. |
+| R10 | `Processo ⇒ (Administrador ∨ Gestor)` | Alguém precisa criar processos: o administrador ou o gestor. |
 
 ## Configurações por empresa
 
-| Empresa | LoginGoogle | LoginDemo | XES | CSV | PlanoEssencial | PlanoManutencao | Monitoramento | PredicaoRF | ExportarAgendaCSV | Tecnico |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Deviante | ✓ |  | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Alfa |  | ✓ | ✓ |  |  | ✓ | ✓ |  | ✓ | ✓ |
-| Beta |  | ✓ |  | ✓ | ✓ |  |  |  |  |  |
-| Gama |  | ✓ | ✓ |  |  | ✓ | ✓ | ✓ |  | ✓ |
-| Delta |  | ✓ | ✓ |  | ✓ |  |  |  |  |  |
+| Empresa | LoginGoogle | LoginDemo | XES | CSV | Maquina | Monitoramento | RUL | Manutencao | Tecnico |
+|---|---|---|---|---|---|---|---|---|---|
+| Deviante | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Alfa |  | ✓ | ✓ |  | ✓ | ✓ |  | ✓ | ✓ |
+| Beta |  | ✓ |  | ✓ |  |  |  |  |  |
+| Gama |  | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Delta |  | ✓ | ✓ |  |  |  |  |  |  |
 
-Todas as empresas com o módulo de manutenção agendam manutenção. A inspeção está no modelo de domínio (arc42 §5.3: Intervenção = Manutenção ou Inspeção), mas ainda não está implementada, então nenhuma configuração atual a seleciona: é uma variação prevista. Todas as empresas também têm as duas séries (bruta e tratada), o histórico de análises e os papéis Administrador, Gestor e Operador com as funções opcionais deles.
+Todas as empresas têm Processo com mapeamento, grafo, notas de atividade, os três filtros, a análise de desvio e os papéis Administrador, Gestor e Operador. Inspeção e Componente estão no modelo, mas ainda não estão implementados, então nenhuma configuração atual os seleciona: são variações previstas.
 
-R10 registra uma correção que o modelo apontou. Antes, Beta e Delta (plano Essencial) aceitavam login de técnico, mas o técnico só trabalha na agenda, que essas empresas não têm. Pela R03, essas configurações seriam inválidas. Agora o cartão de técnico só aparece nas empresas com o módulo de manutenção.
+R08 registra uma correção que o modelo apontou. Antes, Beta e Delta aceitavam login de técnico, mas o técnico só trabalha na agenda, que essas empresas não têm. Pela R01, essas configurações seriam inválidas. Agora o cartão de técnico só aparece nas empresas com agenda.

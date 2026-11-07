@@ -47,8 +47,8 @@
 				</feature>
 				<and name="Processo">
 					<description>Processo</description>
-					<or abstract="true" mandatory="true" name="FormatoLog">
-						<description>Formato do log</description>
+					<or abstract="true" mandatory="true" name="LogEventos">
+						<description>Log de eventos</description>
 						<feature name="XES">
 							<description>XES</description>
 						</feature>
