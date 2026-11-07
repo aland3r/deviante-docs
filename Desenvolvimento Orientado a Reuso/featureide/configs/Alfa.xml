@@ -1,43 +1,35 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <configuration>
 	<feature manual="selected" name="Deviante"/>
+	<feature manual="selected" name="Login"/>
 	<feature manual="selected" name="Autenticacao"/>
-	<feature manual="selected" name="MetodoLogin"/>
-	<feature manual="unselected" name="LoginGoogle"/>
 	<feature manual="selected" name="LoginDemo"/>
+	<feature manual="unselected" name="LoginGoogle"/>
 	<feature manual="selected" name="Papeis"/>
 	<feature manual="selected" name="Administrador"/>
-	<feature manual="selected" name="Gestor"/>
-	<feature manual="selected" name="Visibilidade"/>
 	<feature manual="selected" name="Operador"/>
-	<feature manual="selected" name="NotasTrace"/>
+	<feature manual="selected" name="Gestor"/>
 	<feature manual="selected" name="Tecnico"/>
-	<feature manual="selected" name="VerAnaliseOrigem"/>
 	<feature manual="selected" name="Workspace"/>
-	<feature manual="selected" name="Processos"/>
-	<feature manual="selected" name="UploadLog"/>
-	<feature manual="selected" name="MapeamentoOperacoes"/>
-	<feature manual="selected" name="GrafoProcesso"/>
+	<feature manual="selected" name="Monitoramento"/>
+	<feature manual="selected" name="Processo"/>
 	<feature manual="selected" name="FormatoLog"/>
 	<feature manual="selected" name="XES"/>
 	<feature manual="unselected" name="CSV"/>
-	<feature manual="selected" name="AnaliseDrift"/>
-	<feature manual="selected" name="DetectorADWIN"/>
-	<feature manual="selected" name="TratamentoSerie"/>
-	<feature manual="selected" name="SerieBruta"/>
-	<feature manual="selected" name="SerieTratada"/>
-	<feature manual="selected" name="HistoricoAnalises"/>
-	<feature manual="selected" name="Monitoramento"/>
-	<feature manual="selected" name="CatalogoAtividades"/>
-	<feature manual="selected" name="Plano"/>
-	<feature manual="unselected" name="PlanoEssencial"/>
-	<feature manual="selected" name="PlanoManutencao"/>
-	<feature manual="selected" name="ModuloManutencao"/>
-	<feature manual="selected" name="Equipamentos"/>
-	<feature manual="selected" name="Agendamentos"/>
-	<feature manual="selected" name="TipoIntervencao"/>
-	<feature manual="selected" name="Manutencao"/>
+	<feature manual="selected" name="MapeamentoAtividades"/>
+	<feature manual="selected" name="GrafoProcesso"/>
+	<feature manual="selected" name="NotasAtividade"/>
+	<feature manual="selected" name="Filtros"/>
+	<feature manual="selected" name="FiltrarTraces"/>
+	<feature manual="selected" name="FiltrarVariantes"/>
+	<feature manual="selected" name="DesconsiderarAtividades"/>
+	<feature manual="selected" name="Equipamento"/>
+	<feature manual="selected" name="Maquina"/>
+	<feature manual="unselected" name="Componente"/>
+	<feature manual="selected" name="Analise"/>
+	<feature manual="selected" name="DesvioProcesso"/>
+	<feature manual="unselected" name="RUL"/>
+	<feature manual="selected" name="Agendamento"/>
 	<feature manual="unselected" name="Inspecao"/>
-	<feature manual="unselected" name="PredicaoRF"/>
-	<feature manual="selected" name="ExportarAgendaCSV"/>
+	<feature manual="selected" name="Manutencao"/>
 </configuration>

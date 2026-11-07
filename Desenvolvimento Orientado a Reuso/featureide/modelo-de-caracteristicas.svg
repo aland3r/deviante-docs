@@ -1,205 +1,165 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1383" viewBox="0 0 1180 1383" font-family="Inter, Segoe UI, Arial, sans-serif">
-<rect width="1180" height="1383" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1192" viewBox="0 0 1180 1192" font-family="Inter, Segoe UI, Arial, sans-serif">
+<rect width="1180" height="1192" fill="#ffffff"/>
 <text x="40" y="46" font-size="20" font-weight="600" fill="#1b2230">Modelo de características do Deviante</text>
-<text x="40" y="72" font-size="13.5" fill="#5b6577">40 características · 12 restrições · notação FeatureIDE</text>
-<line x1="130.9" y1="604.5" x2="194.9" y2="195.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="130.9" y1="604.5" x2="194.9" y2="545.1" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="130.9" y1="604.5" x2="194.9" y2="724.2" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="130.9" y1="604.5" x2="194.9" y2="790.8" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="130.9" y1="604.5" x2="194.9" y2="911.4" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="130.9" y1="604.5" x2="194.9" y2="1014.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="315.6" y1="195.0" x2="428.5" y2="141.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="315.6" y1="195.0" x2="428.5" y2="249.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="548.7" y1="141.0" x2="645.3" y2="123.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="548.7" y1="141.0" x2="645.3" y2="159.0" stroke="#3d4656" stroke-width="1.3"/>
-<path d="M593.9 132.6 A46 46 0 0 1 593.9 149.4" fill="none" stroke="#3d4656" stroke-width="1.8"/>
-<line x1="505.3" y1="249.0" x2="645.3" y2="195.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="505.3" y1="249.0" x2="645.3" y2="231.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="505.3" y1="249.0" x2="645.3" y2="267.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="505.3" y1="249.0" x2="645.3" y2="303.0" stroke="#3d4656" stroke-width="1.3"/>
-<path d="M505.3 249.0 L548.2 232.4 A46 46 0 0 1 548.2 265.6 Z" fill="#3d4656"/>
-<line x1="722.0" y1="231.0" x2="902.4" y2="231.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="740.7" y1="267.0" x2="902.4" y2="267.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="730.1" y1="303.0" x2="902.4" y2="303.0" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="302.7" y1="545.1" x2="428.5" y2="414.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="302.7" y1="545.1" x2="428.5" y2="585.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="302.7" y1="545.1" x2="428.5" y2="675.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="530.5" y1="414.6" x2="645.3" y2="351.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="530.5" y1="414.6" x2="645.3" y2="387.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="530.5" y1="414.6" x2="645.3" y2="423.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="530.5" y1="414.6" x2="645.3" y2="477.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="757.6" y1="477.6" x2="902.4" y2="459.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="757.6" y1="477.6" x2="902.4" y2="495.6" stroke="#3d4656" stroke-width="1.3"/>
-<path d="M757.6 477.6 L803.3 471.9 A46 46 0 0 1 803.3 483.3 Z" fill="#3d4656"/>
-<line x1="538.4" y1="585.6" x2="645.3" y2="531.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="538.4" y1="585.6" x2="645.3" y2="585.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="538.4" y1="585.6" x2="645.3" y2="639.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="788.5" y1="585.6" x2="902.4" y2="567.6" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="788.5" y1="585.6" x2="902.4" y2="603.6" stroke="#3d4656" stroke-width="1.3"/>
-<path d="M788.5 585.6 L833.9 578.4 A46 46 0 0 1 833.9 592.8 Z" fill="#3d4656"/>
-<line x1="264.2" y1="790.8" x2="428.5" y2="772.8" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="264.2" y1="790.8" x2="428.5" y2="808.8" stroke="#3d4656" stroke-width="1.3"/>
-<path d="M309.9 785.8 A46 46 0 0 1 309.9 795.8" fill="none" stroke="#3d4656" stroke-width="1.8"/>
-<line x1="360.6" y1="911.4" x2="428.5" y2="857.4" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="360.6" y1="911.4" x2="428.5" y2="911.4" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="360.6" y1="911.4" x2="428.5" y2="965.4" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="561.9" y1="911.4" x2="645.3" y2="911.4" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="786.8" y1="911.4" x2="902.4" y2="893.4" stroke="#3d4656" stroke-width="1.3"/>
-<line x1="786.8" y1="911.4" x2="902.4" y2="929.4" stroke="#3d4656" stroke-width="1.3"/>
-<path d="M786.8 911.4 L832.3 904.3 A46 46 0 0 1 832.3 918.5 Z" fill="#3d4656"/>
-<rect x="40.0" y="591.5" width="90.9" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="85.4" y="609.5" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Deviante</text>
-<rect x="194.9" y="182.0" width="120.7" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="255.2" y="200.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Autenticacao</text>
-<rect x="428.5" y="128.0" width="120.2" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="488.6" y="146.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">MetodoLogin</text>
-<rect x="645.3" y="110.0" width="116.8" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="703.7" y="128.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">LoginGoogle</text>
-<rect x="645.3" y="146.0" width="108.2" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="699.4" y="164.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">LoginDemo</text>
-<rect x="428.5" y="236.0" width="76.8" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="466.9" y="254.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Papeis</text>
-<rect x="645.3" y="182.0" width="126.5" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="708.5" y="200.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Administrador</text>
-<rect x="645.3" y="218.0" width="76.7" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="683.7" y="236.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Gestor</text>
-<rect x="902.4" y="218.0" width="109.2" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="957.0" y="236.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Visibilidade</text>
-<rect x="645.3" y="254.0" width="95.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="693.0" y="272.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Operador</text>
-<rect x="902.4" y="254.0" width="108.3" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="956.5" y="272.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">NotasTrace</text>
-<rect x="645.3" y="290.0" width="84.8" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="687.7" y="308.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Tecnico</text>
-<rect x="902.4" y="290.0" width="152.6" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="978.6" y="308.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">VerAnaliseOrigem</text>
-<rect x="194.9" y="532.1" width="107.8" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="248.8" y="550.1" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Workspace</text>
-<rect x="428.5" y="401.6" width="102.0" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="479.5" y="419.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Processos</text>
-<rect x="645.3" y="338.6" width="104.8" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="697.7" y="356.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">UploadLog</text>
-<rect x="645.3" y="374.6" width="193.1" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="741.8" y="392.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">MapeamentoOperacoes</text>
-<rect x="645.3" y="410.6" width="131.6" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="711.1" y="428.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">GrafoProcesso</text>
-<rect x="645.3" y="464.6" width="112.3" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="701.4" y="482.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">FormatoLog</text>
-<rect x="902.4" y="446.6" width="59.3" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="932.0" y="464.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">XES</text>
-<rect x="902.4" y="482.6" width="61.2" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="933.0" y="500.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">CSV</text>
-<rect x="428.5" y="572.6" width="109.9" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="483.4" y="590.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">AnaliseDrift</text>
-<rect x="645.3" y="518.6" width="137.6" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="714.1" y="536.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">DetectorADWIN</text>
-<rect x="645.3" y="572.6" width="143.2" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="716.9" y="590.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">TratamentoSerie</text>
-<rect x="902.4" y="554.6" width="102.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="953.6" y="572.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">SerieBruta</text>
-<rect x="902.4" y="590.6" width="116.5" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="960.6" y="608.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">SerieTratada</text>
-<rect x="645.3" y="626.6" width="148.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="719.5" y="644.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">HistoricoAnalises</text>
-<rect x="428.5" y="662.6" width="133.7" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="495.4" y="680.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Monitoramento</text>
-<rect x="194.9" y="711.2" width="162.1" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="275.9" y="729.2" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">CatalogoAtividades</text>
-<rect x="194.9" y="777.8" width="69.3" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="229.5" y="795.8" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Plano</text>
-<rect x="428.5" y="759.8" width="132.6" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="494.8" y="777.8" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">PlanoEssencial</text>
-<rect x="428.5" y="795.8" width="152.8" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="504.9" y="813.8" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">PlanoManutencao</text>
-<rect x="194.9" y="898.4" width="165.8" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="277.7" y="916.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">ModuloManutencao</text>
-<rect x="428.5" y="844.4" width="127.5" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="492.2" y="862.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Equipamentos</text>
-<rect x="428.5" y="898.4" width="133.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="495.2" y="916.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Agendamentos</text>
-<rect x="645.3" y="898.4" width="141.5" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
-<text x="716.1" y="916.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">TipoIntervencao</text>
-<rect x="902.4" y="880.4" width="115.5" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="960.1" y="898.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Manutencao</text>
-<rect x="902.4" y="916.4" width="93.3" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="949.0" y="934.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Inspecao</text>
-<rect x="428.5" y="952.4" width="108.5" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="482.7" y="970.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">PredicaoRF</text>
-<rect x="194.9" y="1001.0" width="169.6" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
-<text x="279.7" y="1019.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">ExportarAgendaCSV</text>
+<text x="40" y="72" font-size="13.5" fill="#5b6577">32 características · 10 restrições · notação FeatureIDE</text>
+<line x1="130.9" y1="517.2" x2="194.9" y2="195.0" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="130.9" y1="517.2" x2="194.9" y2="419.1" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="130.9" y1="517.2" x2="194.9" y2="670.2" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="130.9" y1="517.2" x2="194.9" y2="754.8" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="130.9" y1="517.2" x2="194.9" y2="839.4" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="263.9" y1="195.0" x2="384.8" y2="141.0" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="263.9" y1="195.0" x2="384.8" y2="249.0" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="505.5" y1="141.0" x2="589.1" y2="123.0" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="505.5" y1="141.0" x2="589.1" y2="159.0" stroke="#3d4656" stroke-width="1.3"/>
+<path d="M550.4 131.3 A46 46 0 0 1 550.4 150.7" fill="none" stroke="#3d4656" stroke-width="1.8"/>
+<line x1="461.6" y1="249.0" x2="589.1" y2="195.0" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="461.6" y1="249.0" x2="589.1" y2="231.0" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="461.6" y1="249.0" x2="589.1" y2="267.0" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="461.6" y1="249.0" x2="589.1" y2="303.0" stroke="#3d4656" stroke-width="1.3"/>
+<path d="M461.6 249.0 L503.9 231.1 A46 46 0 0 1 503.9 266.9 Z" fill="#3d4656"/>
+<line x1="302.7" y1="419.1" x2="384.8" y2="351.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="302.7" y1="419.1" x2="384.8" y2="486.6" stroke="#3d4656" stroke-width="1.3"/>
+<path d="M302.7 419.1 L338.2 389.9 A46 46 0 0 1 338.2 448.3 Z" fill="#3d4656"/>
+<line x1="479.2" y1="486.6" x2="589.1" y2="405.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="479.2" y1="486.6" x2="589.1" y2="459.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="479.2" y1="486.6" x2="589.1" y2="495.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="479.2" y1="486.6" x2="589.1" y2="567.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="701.4" y1="405.6" x2="843.0" y2="387.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="701.4" y1="405.6" x2="843.0" y2="423.6" stroke="#3d4656" stroke-width="1.3"/>
+<path d="M701.4 405.6 L747.0 399.8 A46 46 0 0 1 747.0 411.4 Z" fill="#3d4656"/>
+<line x1="720.7" y1="495.6" x2="843.0" y2="495.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="662.5" y1="567.6" x2="843.0" y2="531.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="662.5" y1="567.6" x2="843.0" y2="567.6" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="662.5" y1="567.6" x2="843.0" y2="603.6" stroke="#3d4656" stroke-width="1.3"/>
+<path d="M662.5 567.6 L707.6 558.6 A46 46 0 0 1 707.6 576.6 Z" fill="#3d4656"/>
+<line x1="314.8" y1="670.2" x2="384.8" y2="652.2" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="314.8" y1="670.2" x2="384.8" y2="688.2" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="276.0" y1="754.8" x2="384.8" y2="736.8" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="276.0" y1="754.8" x2="384.8" y2="772.8" stroke="#3d4656" stroke-width="1.3"/>
+<path d="M276.0 754.8 L321.4 747.3 A46 46 0 0 1 321.4 762.3 Z" fill="#3d4656"/>
+<line x1="320.8" y1="839.4" x2="384.8" y2="821.4" stroke="#3d4656" stroke-width="1.3"/>
+<line x1="320.8" y1="839.4" x2="384.8" y2="857.4" stroke="#3d4656" stroke-width="1.3"/>
+<path d="M320.8 839.4 L365.0 826.9 A46 46 0 0 1 365.0 851.9 Z" fill="#3d4656"/>
+<rect x="40.0" y="504.2" width="90.9" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="85.4" y="522.2" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Deviante</text>
+<rect x="194.9" y="182.0" width="69.0" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="229.4" y="200.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Login</text>
+<rect x="384.8" y="128.0" width="120.7" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="445.1" y="146.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Autenticacao</text>
+<rect x="589.1" y="110.0" width="108.2" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="643.2" y="128.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">LoginDemo</text>
+<rect x="589.1" y="146.0" width="116.8" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="647.5" y="164.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">LoginGoogle</text>
+<rect x="384.8" y="236.0" width="76.8" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="423.2" y="254.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Papeis</text>
+<rect x="589.1" y="182.0" width="126.5" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="652.3" y="200.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Administrador</text>
+<rect x="589.1" y="218.0" width="95.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="636.8" y="236.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Operador</text>
+<rect x="589.1" y="254.0" width="76.7" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="627.5" y="272.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Gestor</text>
+<rect x="589.1" y="290.0" width="84.8" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="631.5" y="308.0" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Tecnico</text>
+<rect x="194.9" y="406.1" width="107.8" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="248.8" y="424.1" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Workspace</text>
+<rect x="384.8" y="338.6" width="133.7" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="451.6" y="356.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Monitoramento</text>
+<rect x="384.8" y="473.6" width="94.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="432.0" y="491.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Processo</text>
+<rect x="589.1" y="392.6" width="112.3" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="645.2" y="410.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">FormatoLog</text>
+<rect x="843.0" y="374.6" width="59.3" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="872.6" y="392.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">XES</text>
+<rect x="843.0" y="410.6" width="61.2" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="873.6" y="428.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">CSV</text>
+<rect x="589.1" y="446.6" width="189.9" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="684.0" y="464.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">MapeamentoAtividades</text>
+<rect x="589.1" y="482.6" width="131.6" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="654.9" y="500.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">GrafoProcesso</text>
+<rect x="843.0" y="482.6" width="134.3" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="910.1" y="500.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">NotasAtividade</text>
+<rect x="589.1" y="554.6" width="73.4" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="625.8" y="572.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Filtros</text>
+<rect x="843.0" y="518.6" width="115.7" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="900.8" y="536.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">FiltrarTraces</text>
+<rect x="843.0" y="554.6" width="134.0" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="910.0" y="572.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">FiltrarVariantes</text>
+<rect x="843.0" y="590.6" width="199.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="942.7" y="608.6" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">DesconsiderarAtividades</text>
+<rect x="194.9" y="657.2" width="120.0" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="254.8" y="675.2" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Equipamento</text>
+<rect x="384.8" y="639.2" width="89.7" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="429.6" y="657.2" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Maquina</text>
+<rect x="384.8" y="675.2" width="118.2" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="443.9" y="693.2" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Componente</text>
+<rect x="194.9" y="741.8" width="81.1" height="26" rx="5" fill="#f1f3f6" stroke="#8a94a6" stroke-width="1.3"/>
+<text x="235.4" y="759.8" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230" font-style="italic">Analise</text>
+<rect x="384.8" y="723.8" width="140.3" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="454.9" y="741.8" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">DesvioProcesso</text>
+<rect x="384.8" y="759.8" width="59.4" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="414.4" y="777.8" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">RUL</text>
+<rect x="194.9" y="826.4" width="125.9" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="257.8" y="844.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Agendamento</text>
+<rect x="384.8" y="808.4" width="93.3" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="431.4" y="826.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Inspecao</text>
+<rect x="384.8" y="844.4" width="115.5" height="26" rx="5" fill="#dce8fb" stroke="#2f5fa8" stroke-width="1.3"/>
+<text x="442.5" y="862.4" font-size="14" font-weight="500" text-anchor="middle" fill="#1b2230">Manutencao</text>
 <circle cx="188.9" cy="195.0" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="188.9" cy="545.1" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="188.9" cy="724.2" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="188.9" cy="790.8" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="188.9" cy="911.4" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="188.9" cy="1014.0" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="141.0" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="249.0" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="896.4" cy="231.0" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="896.4" cy="267.0" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="896.4" cy="303.0" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="414.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="585.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="675.6" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="351.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="387.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="423.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="477.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="531.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="585.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="639.6" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="857.4" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="911.4" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="422.5" cy="965.4" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
-<circle cx="639.3" cy="911.4" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
-<line x1="40" y1="1063.0000000000002" x2="1140" y2="1063.0000000000002" stroke="#d7dbe2"/>
-<text x="40" y="1097.0000000000002" font-size="15" font-weight="600" fill="#1b2230">Restrições entre ramos</text>
-<rect x="40.0" y="1115.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="52.0" y="1133.0" font-size="13.5" fill="#5b6577">R01</text>
-<text x="90.0" y="1133.0" font-size="13.5" fill="#1b2230">PlanoEssencial ⇒ ¬ModuloManutencao</text>
-<rect x="40.0" y="1149.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="52.0" y="1167.0" font-size="13.5" fill="#5b6577">R02</text>
-<text x="90.0" y="1167.0" font-size="13.5" fill="#1b2230">PlanoManutencao ⇒ ModuloManutencao</text>
-<rect x="40.0" y="1183.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="52.0" y="1201.0" font-size="13.5" fill="#5b6577">R03</text>
-<text x="90.0" y="1201.0" font-size="13.5" fill="#1b2230">Tecnico ⇒ Agendamentos</text>
-<rect x="40.0" y="1217.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="52.0" y="1235.0" font-size="13.5" fill="#5b6577">R04</text>
-<text x="90.0" y="1235.0" font-size="13.5" fill="#1b2230">PredicaoRF ⇒ Monitoramento</text>
-<rect x="40.0" y="1251.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="52.0" y="1269.0" font-size="13.5" fill="#5b6577">R05</text>
-<text x="90.0" y="1269.0" font-size="13.5" fill="#1b2230">ExportarAgendaCSV ⇒ Agendamentos</text>
-<rect x="40.0" y="1285.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="52.0" y="1303.0" font-size="13.5" fill="#5b6577">R06</text>
-<text x="90.0" y="1303.0" font-size="13.5" fill="#1b2230">Visibilidade ⇒ (Operador ∨ Tecnico)</text>
-<rect x="602.0" y="1115.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="614.0" y="1133.0" font-size="13.5" fill="#5b6577">R07</text>
-<text x="652.0" y="1133.0" font-size="13.5" fill="#1b2230">VerAnaliseOrigem ⇒ HistoricoAnalises</text>
-<rect x="602.0" y="1149.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="614.0" y="1167.0" font-size="13.5" fill="#5b6577">R08</text>
-<text x="652.0" y="1167.0" font-size="13.5" fill="#1b2230">Monitoramento ⇒ Equipamentos</text>
-<rect x="602.0" y="1183.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="614.0" y="1201.0" font-size="13.5" fill="#5b6577">R09</text>
-<text x="652.0" y="1201.0" font-size="13.5" fill="#1b2230">LoginDemo ⇒ (Gestor ∧ Operador)</text>
-<rect x="602.0" y="1217.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="614.0" y="1235.0" font-size="13.5" fill="#5b6577">R10</text>
-<text x="652.0" y="1235.0" font-size="13.5" fill="#1b2230">(LoginDemo ∧ PlanoManutencao) ⇒ Tecnico</text>
-<rect x="602.0" y="1251.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="614.0" y="1269.0" font-size="13.5" fill="#5b6577">R11</text>
-<text x="652.0" y="1269.0" font-size="13.5" fill="#1b2230">CatalogoAtividades ⇒ (Administrador ∨ Gestor)</text>
-<rect x="602.0" y="1285.0" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
-<text x="614.0" y="1303.0" font-size="13.5" fill="#5b6577">R12</text>
-<text x="652.0" y="1303.0" font-size="13.5" fill="#1b2230">Inspecao ⇒ Tecnico</text>
-<circle cx="50" cy="1351" r="5" fill="#3d4656"/>
-<text x="70" y="1356" font-size="13" fill="#5b6577">Obrigatória</text>
-<circle cx="170" cy="1351" r="5" fill="#fff" stroke="#3d4656" stroke-width="1.4"/>
-<text x="190" y="1356" font-size="13" fill="#5b6577">Opcional</text>
-<path d="M265 1351 L289 1342 M265 1351 L289 1360" stroke="#3d4656" stroke-width="1.3"/><path d="M265.0 1351.0 L280.0 1345.4 A16 16 0 0 1 280.0 1356.6 Z" fill="#3d4656"/>
-<text x="295" y="1356" font-size="13" fill="#5b6577">Grupo Or</text>
-<path d="M385 1351 L409 1342 M385 1351 L409 1360" stroke="#3d4656" stroke-width="1.3"/><path d="M400.0 1345.4 A16 16 0 0 1 400.0 1356.6" fill="none" stroke="#3d4656" stroke-width="1.8"/>
-<text x="415" y="1356" font-size="13" fill="#5b6577">Grupo Alternative</text>
-<rect x="565" y="1342" width="22" height="18" rx="4" fill="#dce8fb" stroke="#2f5fa8"/>
-<text x="595" y="1356" font-size="13" fill="#5b6577">Concreta</text>
-<rect x="675" y="1342" width="22" height="18" rx="4" fill="#f1f3f6" stroke="#8a94a6"/>
-<text x="705" y="1356" font-size="13" fill="#5b6577">Abstrata</text>
+<circle cx="188.9" cy="419.1" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="188.9" cy="670.2" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="188.9" cy="754.8" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="188.9" cy="839.4" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="378.8" cy="141.0" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="378.8" cy="249.0" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="583.1" cy="405.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="583.1" cy="459.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="583.1" cy="495.6" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="583.1" cy="567.6" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="837.0" cy="495.6" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="378.8" cy="652.2" r="5.5" fill="#3d4656" stroke="#3d4656" stroke-width="1.5"/>
+<circle cx="378.8" cy="688.2" r="5.5" fill="#ffffff" stroke="#3d4656" stroke-width="1.5"/>
+<line x1="40" y1="906.4000000000001" x2="1140" y2="906.4000000000001" stroke="#d7dbe2"/>
+<text x="40" y="940.4000000000001" font-size="15" font-weight="600" fill="#1b2230">Restrições entre ramos</text>
+<rect x="40.0" y="958.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="52.0" y="976.4" font-size="13.5" fill="#5b6577">R01</text>
+<text x="90.0" y="976.4" font-size="13.5" fill="#1b2230">Tecnico ⇒ Agendamento</text>
+<rect x="40.0" y="992.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="52.0" y="1010.4" font-size="13.5" fill="#5b6577">R02</text>
+<text x="90.0" y="1010.4" font-size="13.5" fill="#1b2230">DesvioProcesso ⇒ Processo</text>
+<rect x="40.0" y="1026.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="52.0" y="1044.4" font-size="13.5" fill="#5b6577">R03</text>
+<text x="90.0" y="1044.4" font-size="13.5" fill="#1b2230">RUL ⇒ Monitoramento</text>
+<rect x="40.0" y="1060.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="52.0" y="1078.4" font-size="13.5" fill="#5b6577">R04</text>
+<text x="90.0" y="1078.4" font-size="13.5" fill="#1b2230">¬Maquina ⇒ ¬Agendamento</text>
+<rect x="40.0" y="1094.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="52.0" y="1112.4" font-size="13.5" fill="#5b6577">R05</text>
+<text x="90.0" y="1112.4" font-size="13.5" fill="#1b2230">Monitoramento ⇒ Maquina</text>
+<rect x="602.0" y="958.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="614.0" y="976.4" font-size="13.5" fill="#5b6577">R06</text>
+<text x="652.0" y="976.4" font-size="13.5" fill="#1b2230">Inspecao ⇒ (Operador ∨ Tecnico)</text>
+<rect x="602.0" y="992.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="614.0" y="1010.4" font-size="13.5" fill="#5b6577">R07</text>
+<text x="652.0" y="1010.4" font-size="13.5" fill="#1b2230">RUL ⇒ Manutencao</text>
+<rect x="602.0" y="1026.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="614.0" y="1044.4" font-size="13.5" fill="#5b6577">R08</text>
+<text x="652.0" y="1044.4" font-size="13.5" fill="#1b2230">(LoginDemo ∧ Agendamento) ⇒ Tecnico</text>
+<rect x="602.0" y="1060.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="614.0" y="1078.4" font-size="13.5" fill="#5b6577">R09</text>
+<text x="652.0" y="1078.4" font-size="13.5" fill="#1b2230">NotasAtividade ⇒ Operador</text>
+<rect x="602.0" y="1094.4" width="538.0" height="26" rx="5" fill="#f7f8fa" stroke="#d7dbe2"/>
+<text x="614.0" y="1112.4" font-size="13.5" fill="#5b6577">R10</text>
+<text x="652.0" y="1112.4" font-size="13.5" fill="#1b2230">Processo ⇒ (Administrador ∨ Gestor)</text>
+<circle cx="50" cy="1160" r="5" fill="#3d4656"/>
+<text x="70" y="1165" font-size="13" fill="#5b6577">Obrigatória</text>
+<circle cx="170" cy="1160" r="5" fill="#fff" stroke="#3d4656" stroke-width="1.4"/>
+<text x="190" y="1165" font-size="13" fill="#5b6577">Opcional</text>
+<path d="M265 1160 L289 1151 M265 1160 L289 1169" stroke="#3d4656" stroke-width="1.3"/><path d="M265.0 1160.0 L280.0 1154.4 A16 16 0 0 1 280.0 1165.6 Z" fill="#3d4656"/>
+<text x="295" y="1165" font-size="13" fill="#5b6577">Grupo Or</text>
+<path d="M385 1160 L409 1151 M385 1160 L409 1169" stroke="#3d4656" stroke-width="1.3"/><path d="M400.0 1154.4 A16 16 0 0 1 400.0 1165.6" fill="none" stroke="#3d4656" stroke-width="1.8"/>
+<text x="415" y="1165" font-size="13" fill="#5b6577">Grupo Alternative</text>
+<rect x="565" y="1151" width="22" height="18" rx="4" fill="#dce8fb" stroke="#2f5fa8"/>
+<text x="595" y="1165" font-size="13" fill="#5b6577">Concreta</text>
+<rect x="675" y="1151" width="22" height="18" rx="4" fill="#f1f3f6" stroke="#8a94a6"/>
+<text x="705" y="1165" font-size="13" fill="#5b6577">Abstrata</text>
 </svg>

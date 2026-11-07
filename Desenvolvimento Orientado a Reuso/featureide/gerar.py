@@ -17,54 +17,48 @@ def F(nome, rotulo, grupo="and", abstrata=False, obrig=False, filhos=()):
     return dict(nome=nome, rotulo=rotulo, grupo=grupo, abstrata=abstrata, obrig=obrig, filhos=list(filhos))
 
 MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
-    F("Autenticacao", "Autenticação", abstrata=True, obrig=True, filhos=[
-        F("MetodoLogin", "Método de login", "alt", abstrata=True, obrig=True, filhos=[
+    F("Login", "Login", abstrata=True, obrig=True, filhos=[
+        F("Autenticacao", "Autenticação", "alt", abstrata=True, obrig=True, filhos=[
+            F("LoginDemo", "Login demo"),
             F("LoginGoogle", "Login Google"),
-            F("LoginDemo", "Login Demo"),
         ]),
         F("Papeis", "Papéis", "or", abstrata=True, obrig=True, filhos=[
             F("Administrador", "Administrador"),
-            F("Gestor", "Gestor", filhos=[F("Visibilidade", "Visibilidade")]),
-            F("Operador", "Operador", filhos=[F("NotasTrace", "Notas de trace")]),
-            F("Tecnico", "Técnico", filhos=[F("VerAnaliseOrigem", "Ver análise de origem")]),
+            F("Operador", "Operador"),
+            F("Gestor", "Gestor"),
+            F("Tecnico", "Técnico"),
         ]),
     ]),
-    F("Workspace", "Workspace", abstrata=True, obrig=True, filhos=[
-        F("Processos", "Processos", obrig=True, filhos=[
-            F("UploadLog", "Upload de log", obrig=True),
-            F("MapeamentoOperacoes", "Mapeamento de operações", obrig=True),
-            F("GrafoProcesso", "Grafo do processo", obrig=True),
+    F("Workspace", "Workspace", "or", abstrata=True, obrig=True, filhos=[
+        F("Monitoramento", "Monitoramento"),
+        F("Processo", "Processo", filhos=[
             F("FormatoLog", "Formato do log", "or", abstrata=True, obrig=True, filhos=[
                 F("XES", "XES"),
                 F("CSV", "CSV"),
             ]),
-        ]),
-        F("AnaliseDrift", "Análise de drift", abstrata=True, obrig=True, filhos=[
-            F("DetectorADWIN", "Detector IPDD/ADWIN", obrig=True),
-            F("TratamentoSerie", "Tratamento da série", "or", abstrata=True, obrig=True, filhos=[
-                F("SerieBruta", "Série bruta"),
-                F("SerieTratada", "Série tratada"),
+            F("MapeamentoAtividades", "Mapeamento de atividades", obrig=True),
+            F("GrafoProcesso", "Grafo do processo", obrig=True, filhos=[
+                F("NotasAtividade", "Notas da atividade"),
             ]),
-            F("HistoricoAnalises", "Histórico de análises"),
-        ]),
-        F("Monitoramento", "Monitoramento"),
-    ]),
-    F("CatalogoAtividades", "Catálogo de atividades", obrig=True),
-    F("Plano", "Plano", "alt", abstrata=True, obrig=True, filhos=[
-        F("PlanoEssencial", "Essencial", abstrata=True),
-        F("PlanoManutencao", "Manutenção", abstrata=True),
-    ]),
-    F("ModuloManutencao", "Módulo de manutenção", abstrata=True, filhos=[
-        F("Equipamentos", "Equipamentos", obrig=True),
-        F("Agendamentos", "Agendamentos", obrig=True, filhos=[
-            F("TipoIntervencao", "Tipo de intervenção", "or", abstrata=True, obrig=True, filhos=[
-                F("Manutencao", "Manutenção"),
-                F("Inspecao", "Inspeção"),
+            F("Filtros", "Filtros", "or", abstrata=True, filhos=[
+                F("FiltrarTraces", "Filtrar traces"),
+                F("FiltrarVariantes", "Filtrar variantes"),
+                F("DesconsiderarAtividades", "Desconsiderar atividades"),
             ]),
         ]),
-        F("PredicaoRF", "Predição RF"),
     ]),
-    F("ExportarAgendaCSV", "Exportar agenda CSV"),
+    F("Equipamento", "Equipamento", abstrata=True, filhos=[
+        F("Maquina", "Máquina", obrig=True),
+        F("Componente", "Componente"),
+    ]),
+    F("Analise", "Análise", "or", abstrata=True, obrig=True, filhos=[
+        F("DesvioProcesso", "Desvio de processo (drift)"),
+        F("RUL", "Vida útil restante (RUL)"),
+    ]),
+    F("Agendamento", "Agendamento", "or", filhos=[
+        F("Inspecao", "Inspeção"),
+        F("Manutencao", "Manutenção"),
+    ]),
 ])
 
 # Restrições: árvore de ('imp'|'and'|'or'|'not'|'var', ...)
@@ -75,35 +69,25 @@ def OR(*a): return ("or",) + a
 def NOT(a): return ("not", a)
 
 RESTRICOES = [
-    (IMP(V("PlanoEssencial"), NOT(V("ModuloManutencao"))), "O plano Essencial não inclui o módulo de manutenção."),
-    (IMP(V("PlanoManutencao"), V("ModuloManutencao")), "O plano Manutenção sempre traz o módulo."),
-    (IMP(V("Tecnico"), V("Agendamentos")), "O técnico só trabalha na agenda; sem Agendamentos ele não tem tela."),
-    (IMP(V("PredicaoRF"), V("Monitoramento")), "A predição RF usa as leituras de sensores do monitoramento."),
-    (IMP(V("ExportarAgendaCSV"), V("Agendamentos")), "A exportação é da agenda de manutenção."),
-    (IMP(V("Visibilidade"), OR(V("Operador"), V("Tecnico"))), "Ocultar objetos só faz sentido se existe operador ou técnico."),
-    (IMP(V("VerAnaliseOrigem"), V("HistoricoAnalises")), "O técnico abre a análise salva que originou o agendamento."),
-    (IMP(V("Monitoramento"), V("Equipamentos")), "O monitoramento lê sensores das máquinas cadastradas."),
-    (IMP(V("LoginDemo"), AND(V("Gestor"), V("Operador"))), "O login demo sempre oferece os cartões de gestor e operador."),
-    (IMP(AND(V("LoginDemo"), V("PlanoManutencao")), V("Tecnico")), "No demo, empresa com manutenção oferece também o técnico."),
-    (IMP(V("CatalogoAtividades"), OR(V("Administrador"), V("Gestor"))), "O catálogo precisa de quem o mantém (administrador) ou o usa no mapeamento (gestor)."),
-    (IMP(V("Inspecao"), V("Tecnico")), "A inspeção é feita em campo pelo técnico, que registra o resultado."),
+    (IMP(V("Tecnico"), V("Agendamento")), "O técnico só trabalha na agenda; sem Agendamento ele não tem tela."),
+    (IMP(V("DesvioProcesso"), V("Processo")), "O drift é detectado no log de eventos de um processo."),
+    (IMP(V("RUL"), V("Monitoramento")), "O RUL usa as leituras de sensores das máquinas monitoradas."),
+    (IMP(NOT(V("Maquina")), NOT(V("Agendamento"))), "Todo agendamento é de uma máquina: sem cadastro de máquinas não há agenda."),
+    (IMP(V("Monitoramento"), V("Maquina")), "O monitoramento acompanha máquinas já cadastradas."),
+    (IMP(V("Inspecao"), OR(V("Operador"), V("Tecnico"))), "A inspeção é feita pelo operador ou pelo técnico."),
+    (IMP(V("RUL"), V("Manutencao")), "A previsão de vida útil só faz sentido se a falha prevista puder virar manutenção agendada."),
+    (IMP(AND(V("LoginDemo"), V("Agendamento")), V("Tecnico")), "No demo, empresa com agenda oferece também o técnico."),
+    (IMP(V("NotasAtividade"), V("Operador")), "Só o operador anota detalhes de uma atividade do processo."),
+    (IMP(V("Processo"), OR(V("Administrador"), V("Gestor"))), "Alguém precisa criar processos: o administrador ou o gestor."),
 ]
 
 # Configurações (features concretas e de plano escolhidas; o resto é derivado)
 EMPRESAS = {
-    "Deviante": ["LoginGoogle", "XES", "CSV", "SerieBruta", "SerieTratada", "HistoricoAnalises",
-                 "PlanoManutencao", "Equipamentos", "Agendamentos", "Manutencao", "Monitoramento", "PredicaoRF", "ExportarAgendaCSV",
-                 "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
-    "Alfa": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos", "Manutencao",
-             "Monitoramento", "ExportarAgendaCSV", "Administrador", "Gestor", "Visibilidade", "Operador",
-             "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
-    "Beta": ["LoginDemo", "CSV", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoEssencial",
-             "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace"],
-    "Gama": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoManutencao", "Equipamentos", "Agendamentos", "Manutencao",
-             "Monitoramento", "PredicaoRF", "Administrador", "Gestor", "Visibilidade", "Operador",
-             "NotasTrace", "Tecnico", "VerAnaliseOrigem"],
-    "Delta": ["LoginDemo", "XES", "SerieBruta", "SerieTratada", "HistoricoAnalises", "PlanoEssencial",
-              "Administrador", "Gestor", "Visibilidade", "Operador", "NotasTrace"],
+    "Deviante": ["LoginGoogle", "XES", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
+    "Alfa": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "Manutencao", "Tecnico"],
+    "Beta": ["LoginDemo", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador"],
+    "Gama": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
+    "Delta": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador"],
 }
 
 # ---------- utilidades ----------

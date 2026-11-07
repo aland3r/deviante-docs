@@ -4,15 +4,15 @@
 	<struct>
 		<and abstract="true" mandatory="true" name="Deviante">
 			<description>Deviante</description>
-			<and abstract="true" mandatory="true" name="Autenticacao">
-				<description>Autenticação</description>
-				<alt abstract="true" mandatory="true" name="MetodoLogin">
-					<description>Método de login</description>
+			<and abstract="true" mandatory="true" name="Login">
+				<description>Login</description>
+				<alt abstract="true" mandatory="true" name="Autenticacao">
+					<description>Autenticação</description>
+					<feature name="LoginDemo">
+						<description>Login demo</description>
+					</feature>
 					<feature name="LoginGoogle">
 						<description>Login Google</description>
-					</feature>
-					<feature name="LoginDemo">
-						<description>Login Demo</description>
 					</feature>
 				</alt>
 				<or abstract="true" mandatory="true" name="Papeis">
@@ -20,39 +20,24 @@
 					<feature name="Administrador">
 						<description>Administrador</description>
 					</feature>
-					<and name="Gestor">
-						<description>Gestor</description>
-						<feature name="Visibilidade">
-							<description>Visibilidade</description>
-						</feature>
-					</and>
-					<and name="Operador">
+					<feature name="Operador">
 						<description>Operador</description>
-						<feature name="NotasTrace">
-							<description>Notas de trace</description>
-						</feature>
-					</and>
-					<and name="Tecnico">
+					</feature>
+					<feature name="Gestor">
+						<description>Gestor</description>
+					</feature>
+					<feature name="Tecnico">
 						<description>Técnico</description>
-						<feature name="VerAnaliseOrigem">
-							<description>Ver análise de origem</description>
-						</feature>
-					</and>
+					</feature>
 				</or>
 			</and>
-			<and abstract="true" mandatory="true" name="Workspace">
+			<or abstract="true" mandatory="true" name="Workspace">
 				<description>Workspace</description>
-				<and mandatory="true" name="Processos">
-					<description>Processos</description>
-					<feature mandatory="true" name="UploadLog">
-						<description>Upload de log</description>
-					</feature>
-					<feature mandatory="true" name="MapeamentoOperacoes">
-						<description>Mapeamento de operações</description>
-					</feature>
-					<feature mandatory="true" name="GrafoProcesso">
-						<description>Grafo do processo</description>
-					</feature>
+				<feature name="Monitoramento">
+					<description>Monitoramento</description>
+				</feature>
+				<and name="Processo">
+					<description>Processo</description>
 					<or abstract="true" mandatory="true" name="FormatoLog">
 						<description>Formato do log</description>
 						<feature name="XES">
@@ -62,109 +47,102 @@
 							<description>CSV</description>
 						</feature>
 					</or>
-				</and>
-				<and abstract="true" mandatory="true" name="AnaliseDrift">
-					<description>Análise de drift</description>
-					<feature mandatory="true" name="DetectorADWIN">
-						<description>Detector IPDD/ADWIN</description>
+					<feature mandatory="true" name="MapeamentoAtividades">
+						<description>Mapeamento de atividades</description>
 					</feature>
-					<or abstract="true" mandatory="true" name="TratamentoSerie">
-						<description>Tratamento da série</description>
-						<feature name="SerieBruta">
-							<description>Série bruta</description>
+					<and mandatory="true" name="GrafoProcesso">
+						<description>Grafo do processo</description>
+						<feature name="NotasAtividade">
+							<description>Notas da atividade</description>
 						</feature>
-						<feature name="SerieTratada">
-							<description>Série tratada</description>
+					</and>
+					<or abstract="true" name="Filtros">
+						<description>Filtros</description>
+						<feature name="FiltrarTraces">
+							<description>Filtrar traces</description>
+						</feature>
+						<feature name="FiltrarVariantes">
+							<description>Filtrar variantes</description>
+						</feature>
+						<feature name="DesconsiderarAtividades">
+							<description>Desconsiderar atividades</description>
 						</feature>
 					</or>
-					<feature name="HistoricoAnalises">
-						<description>Histórico de análises</description>
-					</feature>
 				</and>
-				<feature name="Monitoramento">
-					<description>Monitoramento</description>
+			</or>
+			<and abstract="true" name="Equipamento">
+				<description>Equipamento</description>
+				<feature mandatory="true" name="Maquina">
+					<description>Máquina</description>
+				</feature>
+				<feature name="Componente">
+					<description>Componente</description>
 				</feature>
 			</and>
-			<feature mandatory="true" name="CatalogoAtividades">
-				<description>Catálogo de atividades</description>
-			</feature>
-			<alt abstract="true" mandatory="true" name="Plano">
-				<description>Plano</description>
-				<feature abstract="true" name="PlanoEssencial">
-					<description>Essencial</description>
+			<or abstract="true" mandatory="true" name="Analise">
+				<description>Análise</description>
+				<feature name="DesvioProcesso">
+					<description>Desvio de processo (drift)</description>
 				</feature>
-				<feature abstract="true" name="PlanoManutencao">
+				<feature name="RUL">
+					<description>Vida útil restante (RUL)</description>
+				</feature>
+			</or>
+			<or name="Agendamento">
+				<description>Agendamento</description>
+				<feature name="Inspecao">
+					<description>Inspeção</description>
+				</feature>
+				<feature name="Manutencao">
 					<description>Manutenção</description>
 				</feature>
-			</alt>
-			<and abstract="true" name="ModuloManutencao">
-				<description>Módulo de manutenção</description>
-				<feature mandatory="true" name="Equipamentos">
-					<description>Equipamentos</description>
-				</feature>
-				<and mandatory="true" name="Agendamentos">
-					<description>Agendamentos</description>
-					<or abstract="true" mandatory="true" name="TipoIntervencao">
-						<description>Tipo de intervenção</description>
-						<feature name="Manutencao">
-							<description>Manutenção</description>
-						</feature>
-						<feature name="Inspecao">
-							<description>Inspeção</description>
-						</feature>
-					</or>
-				</and>
-				<feature name="PredicaoRF">
-					<description>Predição RF</description>
-				</feature>
-			</and>
-			<feature name="ExportarAgendaCSV">
-				<description>Exportar agenda CSV</description>
-			</feature>
+			</or>
 		</and>
 	</struct>
 	<constraints>
 		<rule>
-			<description>R01. O plano Essencial não inclui o módulo de manutenção.</description>
-			<imp>
-				<var>PlanoEssencial</var>
-				<not>
-					<var>ModuloManutencao</var>
-				</not>
-			</imp>
-		</rule>
-		<rule>
-			<description>R02. O plano Manutenção sempre traz o módulo.</description>
-			<imp>
-				<var>PlanoManutencao</var>
-				<var>ModuloManutencao</var>
-			</imp>
-		</rule>
-		<rule>
-			<description>R03. O técnico só trabalha na agenda; sem Agendamentos ele não tem tela.</description>
+			<description>R01. O técnico só trabalha na agenda; sem Agendamento ele não tem tela.</description>
 			<imp>
 				<var>Tecnico</var>
-				<var>Agendamentos</var>
+				<var>Agendamento</var>
 			</imp>
 		</rule>
 		<rule>
-			<description>R04. A predição RF usa as leituras de sensores do monitoramento.</description>
+			<description>R02. O drift é detectado no log de eventos de um processo.</description>
 			<imp>
-				<var>PredicaoRF</var>
+				<var>DesvioProcesso</var>
+				<var>Processo</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R03. O RUL usa as leituras de sensores das máquinas monitoradas.</description>
+			<imp>
+				<var>RUL</var>
 				<var>Monitoramento</var>
 			</imp>
 		</rule>
 		<rule>
-			<description>R05. A exportação é da agenda de manutenção.</description>
+			<description>R04. Todo agendamento é de uma máquina: sem cadastro de máquinas não há agenda.</description>
 			<imp>
-				<var>ExportarAgendaCSV</var>
-				<var>Agendamentos</var>
+				<not>
+					<var>Maquina</var>
+				</not>
+				<not>
+					<var>Agendamento</var>
+				</not>
 			</imp>
 		</rule>
 		<rule>
-			<description>R06. Ocultar objetos só faz sentido se existe operador ou técnico.</description>
+			<description>R05. O monitoramento acompanha máquinas já cadastradas.</description>
 			<imp>
-				<var>Visibilidade</var>
+				<var>Monitoramento</var>
+				<var>Maquina</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R06. A inspeção é feita pelo operador ou pelo técnico.</description>
+			<imp>
+				<var>Inspecao</var>
 				<disj>
 					<var>Operador</var>
 					<var>Tecnico</var>
@@ -172,54 +150,37 @@
 			</imp>
 		</rule>
 		<rule>
-			<description>R07. O técnico abre a análise salva que originou o agendamento.</description>
+			<description>R07. A previsão de vida útil só faz sentido se a falha prevista puder virar manutenção agendada.</description>
 			<imp>
-				<var>VerAnaliseOrigem</var>
-				<var>HistoricoAnalises</var>
+				<var>RUL</var>
+				<var>Manutencao</var>
 			</imp>
 		</rule>
 		<rule>
-			<description>R08. O monitoramento lê sensores das máquinas cadastradas.</description>
-			<imp>
-				<var>Monitoramento</var>
-				<var>Equipamentos</var>
-			</imp>
-		</rule>
-		<rule>
-			<description>R09. O login demo sempre oferece os cartões de gestor e operador.</description>
-			<imp>
-				<var>LoginDemo</var>
-				<conj>
-					<var>Gestor</var>
-					<var>Operador</var>
-				</conj>
-			</imp>
-		</rule>
-		<rule>
-			<description>R10. No demo, empresa com manutenção oferece também o técnico.</description>
+			<description>R08. No demo, empresa com agenda oferece também o técnico.</description>
 			<imp>
 				<conj>
 					<var>LoginDemo</var>
-					<var>PlanoManutencao</var>
+					<var>Agendamento</var>
 				</conj>
 				<var>Tecnico</var>
 			</imp>
 		</rule>
 		<rule>
-			<description>R11. O catálogo precisa de quem o mantém (administrador) ou o usa no mapeamento (gestor).</description>
+			<description>R09. Só o operador anota detalhes de uma atividade do processo.</description>
 			<imp>
-				<var>CatalogoAtividades</var>
+				<var>NotasAtividade</var>
+				<var>Operador</var>
+			</imp>
+		</rule>
+		<rule>
+			<description>R10. Alguém precisa criar processos: o administrador ou o gestor.</description>
+			<imp>
+				<var>Processo</var>
 				<disj>
 					<var>Administrador</var>
 					<var>Gestor</var>
 				</disj>
-			</imp>
-		</rule>
-		<rule>
-			<description>R12. A inspeção é feita em campo pelo técnico, que registra o resultado.</description>
-			<imp>
-				<var>Inspecao</var>
-				<var>Tecnico</var>
 			</imp>
 		</rule>
 	</constraints>
