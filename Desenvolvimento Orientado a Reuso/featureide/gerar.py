@@ -43,7 +43,7 @@ MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
             F("Filtros", "Filtros", "or", abstrata=True, filhos=[
                 F("FiltrarTraces", "Filtrar traces"),
                 F("FiltrarVariantes", "Filtrar variantes"),
-                F("DesconsiderarAtividades", "Desconsiderar atividades"),
+                F("FiltrarAtividades", "Filtrar atividades"),
             ]),
         ]),
     ]),
@@ -52,7 +52,7 @@ MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
         F("Componente", "Componente"),
     ]),
     F("Analise", "Análise", "or", abstrata=True, obrig=True, filhos=[
-        F("DesvioProcesso", "Desvio de processo (drift)"),
+        F("Desvio", "Desvio de processo (drift)"),
         F("RUL", "Vida útil restante (RUL)"),
     ]),
     F("Agendamento", "Agendamento", "or", filhos=[
@@ -70,7 +70,7 @@ def NOT(a): return ("not", a)
 
 RESTRICOES = [
     (IMP(V("Tecnico"), V("Agendamento")), "O técnico só trabalha na agenda; sem Agendamento ele não tem tela."),
-    (IMP(V("DesvioProcesso"), V("Processo")), "O drift é detectado no log de eventos de um processo."),
+    (IMP(V("Desvio"), V("Processo")), "O drift é detectado no log de eventos de um processo."),
     (IMP(V("RUL"), V("Monitoramento")), "O RUL usa as leituras de sensores das máquinas monitoradas."),
     (IMP(NOT(V("Maquina")), NOT(V("Agendamento"))), "Todo agendamento é de uma máquina: sem cadastro de máquinas não há agenda."),
     (IMP(V("Monitoramento"), V("Maquina")), "O monitoramento acompanha máquinas já cadastradas."),
@@ -83,11 +83,11 @@ RESTRICOES = [
 
 # Configurações (features concretas e de plano escolhidas; o resto é derivado)
 EMPRESAS = {
-    "Deviante": ["LoginGoogle", "XES", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
-    "Alfa": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "Manutencao", "Tecnico"],
-    "Beta": ["LoginDemo", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador"],
-    "Gama": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
-    "Delta": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "DesconsiderarAtividades", "DesvioProcesso", "Administrador", "Gestor", "Operador"],
+    "Deviante": ["LoginGoogle", "XES", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
+    "Alfa": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "Manutencao", "Tecnico"],
+    "Beta": ["LoginDemo", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador"],
+    "Gama": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
+    "Delta": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador"],
 }
 
 # ---------- utilidades ----------
@@ -121,7 +121,7 @@ def xml_expr(e, ind):
     return f"{pad}<{tag}>\n" + "".join(xml_expr(x, ind + 1) for x in e[1:]) + f"{pad}</{tag}>\n"
 
 def gerar_model_xml():
-    s = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<featureModel>\n\t<properties/>\n\t<struct>\n'
+    s = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<featureModel>\n\t<properties>\n\t\t<graphics key="showconstraints" value="true"/>\n\t\t<graphics key="showshortnames" value="false"/>\n\t\t<graphics key="layout" value="horizontal"/>\n\t\t<graphics key="showcollapsedconstraints" value="true"/>\n\t\t<graphics key="legendhidden" value="false"/>\n\t\t<graphics key="legendautolayout" value="true"/>\n\t\t<graphics key="autolayoutconstraints" value="true"/>\n\t\t<graphics key="layoutalgorithm" value="1"/>\n\t</properties>\n\t<struct>\n'
     s += xml_no(MODELO, 2)
     s += "\t</struct>\n\t<constraints>\n"
     for i, (e, just) in enumerate(RESTRICOES, 1):

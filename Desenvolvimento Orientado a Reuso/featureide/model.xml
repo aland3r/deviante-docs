@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <featureModel>
-	<properties/>
+	<properties>
+		<graphics key="showconstraints" value="true"/>
+		<graphics key="showshortnames" value="false"/>
+		<graphics key="layout" value="horizontal"/>
+		<graphics key="showcollapsedconstraints" value="true"/>
+		<graphics key="legendhidden" value="false"/>
+		<graphics key="legendautolayout" value="true"/>
+		<graphics key="autolayoutconstraints" value="true"/>
+		<graphics key="layoutalgorithm" value="1"/>
+	</properties>
 	<struct>
 		<and abstract="true" mandatory="true" name="Deviante">
 			<description>Deviante</description>
@@ -64,8 +73,8 @@
 						<feature name="FiltrarVariantes">
 							<description>Filtrar variantes</description>
 						</feature>
-						<feature name="DesconsiderarAtividades">
-							<description>Desconsiderar atividades</description>
+						<feature name="FiltrarAtividades">
+							<description>Filtrar atividades</description>
 						</feature>
 					</or>
 				</and>
@@ -81,7 +90,7 @@
 			</and>
 			<or abstract="true" mandatory="true" name="Analise">
 				<description>Análise</description>
-				<feature name="DesvioProcesso">
+				<feature name="Desvio">
 					<description>Desvio de processo (drift)</description>
 				</feature>
 				<feature name="RUL">
@@ -110,7 +119,7 @@
 		<rule>
 			<description>R02. O drift é detectado no log de eventos de um processo.</description>
 			<imp>
-				<var>DesvioProcesso</var>
+				<var>Desvio</var>
 				<var>Processo</var>
 			</imp>
 		</rule>

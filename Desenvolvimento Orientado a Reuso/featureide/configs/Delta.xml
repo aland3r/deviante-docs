@@ -22,12 +22,12 @@
 	<feature manual="selected" name="Filtros"/>
 	<feature manual="selected" name="FiltrarTraces"/>
 	<feature manual="selected" name="FiltrarVariantes"/>
-	<feature manual="selected" name="DesconsiderarAtividades"/>
+	<feature manual="selected" name="FiltrarAtividades"/>
 	<feature manual="unselected" name="Equipamento"/>
 	<feature manual="unselected" name="Maquina"/>
 	<feature manual="unselected" name="Componente"/>
 	<feature manual="selected" name="Analise"/>
-	<feature manual="selected" name="DesvioProcesso"/>
+	<feature manual="selected" name="Desvio"/>
 	<feature manual="unselected" name="RUL"/>
 	<feature manual="unselected" name="Agendamento"/>
 	<feature manual="unselected" name="Inspecao"/>
