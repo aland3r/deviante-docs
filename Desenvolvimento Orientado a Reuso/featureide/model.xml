@@ -11,8 +11,8 @@
 		<graphics key="layoutalgorithm" value="1"/>
 	</properties>
 	<struct>
-		<and abstract="true" mandatory="true" name="Deviante">
-			<description>Deviante</description>
+		<and abstract="true" mandatory="true" name="Driftor">
+			<description>Driftor</description>
 			<and abstract="true" mandatory="true" name="Login">
 				<description>Login</description>
 				<alt abstract="true" mandatory="true" name="Autenticacao">

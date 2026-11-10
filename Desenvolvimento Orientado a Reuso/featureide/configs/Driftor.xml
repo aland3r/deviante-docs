@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <configuration>
-	<feature manual="selected" name="Deviante"/>
+	<feature manual="selected" name="Driftor"/>
 	<feature manual="selected" name="Login"/>
 	<feature manual="selected" name="Autenticacao"/>
 	<feature manual="unselected" name="LoginDemo"/>

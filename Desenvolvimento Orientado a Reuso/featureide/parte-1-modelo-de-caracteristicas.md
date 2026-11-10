@@ -1,16 +1,16 @@
-# Parte I: Modelo de características do Deviante
+# Parte I: Modelo de características do Driftor
 
 ## 1. Apresentação
 
-O Deviante é uma plataforma de mineração de processos e manutenção industrial. Ela detecta desvios de processo (concept drift) em logs de eventos e prevê a vida útil restante (RUL) das máquinas. O produto atende várias empresas clientes (Deviante, Alfa, Beta, Gama e Delta), e cada uma usa um conjunto diferente de funções. Dentro de cada empresa, quatro papéis de usuário (administrador, gestor, operador e técnico) veem e fazem coisas diferentes.
+O Driftor é uma plataforma de mineração de processos e manutenção industrial. Ela detecta desvios de processo (concept drift) em logs de eventos e prevê a vida útil restante (RUL) das máquinas. O produto atende várias empresas clientes (Driftor, Alfa, Beta, Gama e Delta), e cada uma usa um conjunto diferente de funções. Dentro de cada empresa, quatro papéis de usuário (administrador, gestor, operador e técnico) veem e fazem coisas diferentes.
 
 O modelo de características abaixo descreve essa variabilidade. Ele foi elaborado no FeatureIDE (Eclipse), em um diagrama de características na notação FODA estendida. O modelo tem 32 características e 10 restrições.
 
-[Figura 1: Modelo de características do Deviante, exportado do FeatureIDE]
+[Figura 1: Modelo de características do Driftor, exportado do FeatureIDE]
 
 ## 2. Estrutura do modelo
 
-A raiz, Deviante, tem cinco ramos:
+A raiz, Driftor, tem cinco ramos:
 
 - **Login**: como se entra no sistema (Autenticação, por login demo ou Google) e com qual papel (Papéis).
 - **Workspace**: os dois espaços de trabalho onde o usuário cria algo para analisar. O Processo traz o log de eventos, o mapeamento de atividades, o grafo e os filtros. O Monitoramento acompanha as máquinas.
@@ -24,7 +24,7 @@ Critério adotado: uma característica filha é parte da mãe e só existe com e
 
 ### 3.1 Abstract (abstrata)
 
-**Características:** Deviante, Login, Autenticação, Papéis, Workspace, LogEventos, Filtros, Equipamento, Análise.
+**Características:** Driftor, Login, Autenticação, Papéis, Workspace, LogEventos, Filtros, Equipamento, Análise.
 
 **Justificativa:** essas características só organizam a árvore e não correspondem a um trecho de código próprio. Equipamento, por exemplo, apenas agrupa Máquina e Componente, que são as telas de fato. LogEventos agrupa os formatos aceitos, e Filtros agrupa os três tipos de filtro.
 
@@ -56,7 +56,7 @@ Critério adotado: uma característica filha é parte da mãe e só existe com e
 
 **Grupo:** Autenticação (LoginDemo, LoginGoogle).
 
-**Justificativa:** cada empresa entra por um único método. A empresa Deviante entra só pelo Google, e as empresas do protótipo entram só pelo login demo. Os dois métodos nunca convivem na mesma configuração.
+**Justificativa:** cada empresa entra por um único método. A empresa Driftor entra só pelo Google, e as empresas do protótipo entram só pelo login demo. Os dois métodos nunca convivem na mesma configuração.
 
 ## 4. Restrições (constraints)
 
@@ -83,7 +83,7 @@ Cada empresa cliente é uma configuração válida do modelo.
 
 | Empresa | Login | Log | Máquina | Monitoramento | RUL | Manutenção | Técnico |
 |---|---|---|---|---|---|---|---|
-| Deviante | Google | XES e CSV | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Driftor | Google | XES e CSV | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Alfa | Demo | XES | ✓ | ✓ | | ✓ | ✓ |
 | Beta | Demo | CSV | | | | | |
 | Gama | Demo | XES | ✓ | ✓ | ✓ | ✓ | ✓ |

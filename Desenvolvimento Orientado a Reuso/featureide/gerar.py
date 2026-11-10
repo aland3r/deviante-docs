@@ -1,4 +1,4 @@
-"""Fonte única do modelo de características do Deviante.
+"""Fonte única do modelo de características do Driftor.
 
 Gera model.xml (FeatureIDE), um arquivo de configuração por empresa,
 valida o modelo com SAT (features mortas, falso-opcionais, restrições
@@ -16,7 +16,7 @@ AQUI = Path(__file__).parent
 def F(nome, rotulo, grupo="and", abstrata=False, obrig=False, filhos=()):
     return dict(nome=nome, rotulo=rotulo, grupo=grupo, abstrata=abstrata, obrig=obrig, filhos=list(filhos))
 
-MODELO = F("Deviante", "Deviante", abstrata=True, obrig=True, filhos=[
+MODELO = F("Driftor", "Driftor", abstrata=True, obrig=True, filhos=[
     F("Login", "Login", abstrata=True, obrig=True, filhos=[
         F("Autenticacao", "Autenticação", "alt", abstrata=True, obrig=True, filhos=[
             F("LoginDemo", "Login demo"),
@@ -83,7 +83,7 @@ RESTRICOES = [
 
 # Configurações (features concretas e de plano escolhidas; o resto é derivado)
 EMPRESAS = {
-    "Deviante": ["LoginGoogle", "XES", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
+    "Driftor": ["LoginGoogle", "XES", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
     "Alfa": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "Manutencao", "Tecnico"],
     "Beta": ["LoginDemo", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador"],
     "Gama": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
@@ -158,7 +158,7 @@ def gerar_configs():
 IDS = {nome: i for i, nome in zip(count(1), NOS)}
 
 def cnf_arvore():
-    cl = [[IDS["Deviante"]]]
+    cl = [[IDS["Driftor"]]]
     for n, p in todos():
         x = IDS[n["nome"]]
         if p:
