@@ -564,7 +564,7 @@ flowchart LR
 | Item | Endereço |
 |---|---|
 | Aplicação | https://driftor-asc-mfe.vercel.app |
-| API Gateway | https://driftor-asc-apim.azure-api.net |
+| API Gateway | https://driftor-asc-apim.azure-api.net/api |
 | BFF (Swagger) | https://driftor-asc-bff.fly.dev/docs |
 | pmining (Swagger) | https://driftor-asc-pmining.fly.dev/docs |
 | ipdd (Swagger e AsyncAPI) | https://driftor-asc-ipdd.fly.dev/docs e https://driftor-asc-ipdd.fly.dev/events |
