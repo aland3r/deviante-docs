@@ -103,7 +103,10 @@ C4Context
     System_Ext(mes, "Sistema de origem (MES/ERP)", "Exporta o event log do processo em XES ou CSV.")
 
     Rel(analista, driftor, "Usa pelo navegador")
-    Rel(mes, driftor, "Event log, enviado por upload")
+    Rel(mes, driftor, "Event log")
+
+    UpdateRelStyle(mes, driftor, $offsetX="-20", $offsetY="-22")
+    UpdateRelStyle(analista, driftor, $offsetX="-30", $offsetY="-22")
 
     UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
