@@ -2,7 +2,7 @@
 
 ![Modelo de características do Driftor](modelo-de-caracteristicas.png)
 
-O modelo tem 32 características e 10 restrições. Ele descreve as variações do Driftor entre empresas clientes (Driftor, Alfa, Beta, Gama, Delta) e entre papéis de usuário (administrador, gestor, operador e técnico).
+O modelo tem 32 características e 10 restrições. Ele descreve as variações do Driftor entre as empresas clientes (Alfa, Beta, Gama e Delta) e entre papéis de usuário (administrador, gestor, operador e técnico).
 
 A imagem acima é a versão em alta resolução, gerada do mesmo modelo. A imagem exportada do FeatureIDE (Eclipse) está em [`modelo-eclipse.png`](modelo-eclipse.png).
 
@@ -11,7 +11,7 @@ A imagem acima é a versão em alta resolução, gerada do mesmo modelo. A image
 | Arquivo | O que é |
 |---|---|
 | `model.xml` | Modelo para abrir no FeatureIDE (Eclipse) |
-| `configs/*.xml` | Uma configuração por empresa: Driftor, Alfa, Beta, Gama, Delta |
+| `configs/*.xml` | Uma configuração por empresa cliente: Alfa, Beta, Gama, Delta |
 | `modelo-eclipse.png` | Diagrama exportado do FeatureIDE |
 | `modelo-de-caracteristicas.png` / `.svg` | Diagrama em alta resolução |
 | `gerar.py` | Fonte única: gera `model.xml` e as configurações e valida o modelo por SAT |
@@ -19,7 +19,7 @@ A imagem acima é a versão em alta resolução, gerada do mesmo modelo. A image
 
 **Abrir no Eclipse:** File → New → Other… → FeatureIDE → FeatureIDE Project. Substitua o `model.xml` do projeto por este e copie `configs/` para a pasta `configs` do projeto.
 
-**Validação:** `python gerar.py` confere que o modelo é satisfazível, que não há características mortas nem falso-opcionais, que nenhuma restrição é redundante e que as 5 configurações são válidas. O modelo admite 14.342 produtos.
+**Validação:** `python gerar.py` confere que o modelo é satisfazível, que não há características mortas nem falso-opcionais, que nenhuma restrição é redundante e que as 4 configurações são válidas. O modelo admite 14.342 produtos.
 
 ## Estrutura
 
@@ -40,7 +40,7 @@ Uma característica filha é parte da mãe e só existe com ela. Quem usa cada f
 | **Obrigatória** | Login, Autenticacao, Papeis, Workspace, Analise; LogEventos, MapeamentoAtividades e GrafoProcesso dentro de Processo; Maquina dentro de Equipamento | Todo produto tem entrada, papéis, ao menos um workspace e ao menos uma análise. Um processo sempre vem de um log, precisa do mapeamento para gerar as atividades e sempre mostra o grafo. Não há cadastro de equipamento sem máquina. |
 | **Opcional** | Equipamento, Agendamento, Componente, NotasAtividade, Filtros | Variam de cliente para cliente. Empresas só com processos (Beta, Delta) não têm equipamentos nem agenda. Componente é uma variação prevista: ainda não está implementado. |
 | **Grupo Or** (ao menos um) | Papeis; Workspace (Monitoramento, Processo); LogEventos (XES, CSV); Filtros; Analise (Desvio, RUL); Agendamento (Inspecao, Manutencao) | Um produto pode combinar livremente papéis, workspaces, formatos de log, filtros, análises e tipos de intervenção, mas precisa de ao menos um de cada grupo que tiver. |
-| **Grupo Alternative** (exatamente um) | Autenticacao (LoginDemo, LoginGoogle) | Cada empresa entra por um único método: a Driftor só pelo Google, as empresas do protótipo só pelo login demo. |
+| **Grupo Alternative** (exatamente um) | Autenticacao (LoginDemo, LoginGoogle) | Cada empresa cliente entra por um único método. As quatro empresas atuais usam o login demo; o login Google fica para clientes em produção. |
 
 ## Restrições
 
@@ -63,7 +63,6 @@ As 10 restrições usam os quatro operadores pedidos: Implies (⇒) em todas, An
 
 | Empresa | LoginGoogle | LoginDemo | XES | CSV | Maquina | Monitoramento | RUL | Manutencao | Tecnico |
 |---|---|---|---|---|---|---|---|---|---|
-| Driftor | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Alfa |  | ✓ | ✓ |  | ✓ | ✓ |  | ✓ | ✓ |
 | Beta |  | ✓ |  | ✓ |  |  |  |  |  |
 | Gama |  | ✓ | ✓ |  | ✓ | ✓ | ✓ | ✓ | ✓ |

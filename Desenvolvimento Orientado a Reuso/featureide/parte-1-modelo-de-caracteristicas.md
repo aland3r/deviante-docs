@@ -2,7 +2,7 @@
 
 ## 1. Apresentação
 
-O Driftor é uma plataforma de mineração de processos e manutenção industrial. Ela detecta desvios de processo (concept drift) em logs de eventos e prevê a vida útil restante (RUL) das máquinas. O produto atende várias empresas clientes (Driftor, Alfa, Beta, Gama e Delta), e cada uma usa um conjunto diferente de funções. Dentro de cada empresa, quatro papéis de usuário (administrador, gestor, operador e técnico) veem e fazem coisas diferentes.
+O Driftor é uma plataforma de mineração de processos e manutenção industrial. Ela detecta desvios de processo (concept drift) em logs de eventos e prevê a vida útil restante (RUL) das máquinas. O produto atende quatro empresas clientes (Alfa, Beta, Gama e Delta), e cada uma usa um conjunto diferente de funções. Dentro de cada empresa, quatro papéis de usuário (administrador, gestor, operador e técnico) veem e fazem coisas diferentes.
 
 O modelo de características abaixo descreve essa variabilidade. Ele foi elaborado no FeatureIDE (Eclipse), em um diagrama de características na notação FODA estendida. O modelo tem 32 características e 10 restrições.
 
@@ -56,7 +56,7 @@ Critério adotado: uma característica filha é parte da mãe e só existe com e
 
 **Grupo:** Autenticação (LoginDemo, LoginGoogle).
 
-**Justificativa:** cada empresa entra por um único método. A empresa Driftor entra só pelo Google, e as empresas do protótipo entram só pelo login demo. Os dois métodos nunca convivem na mesma configuração.
+**Justificativa:** cada empresa cliente entra por um único método: o login Google, com as contas da própria empresa, ou o login demo, com contas de demonstração por papel. As quatro empresas atuais usam o login demo, e o login Google fica como variação para clientes em produção. Os dois métodos nunca convivem na mesma configuração.
 
 ## 4. Restrições (constraints)
 
@@ -83,7 +83,6 @@ Cada empresa cliente é uma configuração válida do modelo.
 
 | Empresa | Login | Log | Máquina | Monitoramento | RUL | Manutenção | Técnico |
 |---|---|---|---|---|---|---|---|
-| Driftor | Google | XES e CSV | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Alfa | Demo | XES | ✓ | ✓ | | ✓ | ✓ |
 | Beta | Demo | CSV | | | | | |
 | Gama | Demo | XES | ✓ | ✓ | ✓ | ✓ | ✓ |

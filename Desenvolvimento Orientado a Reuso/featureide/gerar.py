@@ -83,7 +83,6 @@ RESTRICOES = [
 
 # Configurações (features concretas e de plano escolhidas; o resto é derivado)
 EMPRESAS = {
-    "Driftor": ["LoginGoogle", "XES", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
     "Alfa": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "Manutencao", "Tecnico"],
     "Beta": ["LoginDemo", "CSV", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador"],
     "Gama": ["LoginDemo", "XES", "Processo", "MapeamentoAtividades", "GrafoProcesso", "NotasAtividade", "FiltrarTraces", "FiltrarVariantes", "FiltrarAtividades", "Desvio", "Administrador", "Gestor", "Operador", "Maquina", "Monitoramento", "RUL", "Manutencao", "Tecnico"],
@@ -233,5 +232,5 @@ if __name__ == "__main__":
     gerar_model_xml(); gerar_configs()
     erros = validar()
     print("features:", len(NOS), "restrições:", len(RESTRICOES))
-    print("\n".join(erros) or "modelo válido: sem features mortas, falso-opcionais ou restrições redundantes; 5 configurações válidas")
+    print("\n".join(erros) or "modelo válido: sem features mortas, falso-opcionais ou restrições redundantes; " + f"{len(EMPRESAS)} configurações válidas")
     print("produtos possíveis:", contar_produtos())
