@@ -1,6 +1,6 @@
 # Arquitetura do Driftor — arc42
 
-**Grupo:** Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange.
+**Grupo:** Alander Menezes Arantes de Ávila, Emanuelle Skolut Jose.
 
 ---
 
@@ -44,7 +44,7 @@ As quatro metas abaixo, em ordem de prioridade, são as qualidades que mais pesa
 | Analista de processo (usuário) | Usuário do sistema | Enviar o log, conferir o processo e descobrir quando e quanto o ritmo mudou. |
 | Denise M. V. Sato, autora do framework IPDD | [denise.vecino@pucpr.br](mailto:denise.vecino@pucpr.br) | Ver o método aplicado com resultados iguais aos publicados. |
 | Manoel Valerio da Silveira Neto, professor de Arquitetura e Soluções Cloud | [manoel.valerio@pucpr.br](mailto:manoel.valerio@pucpr.br) | Avaliar os estilos arquiteturais e a implantação em nuvem. |
-| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Bernardo Creplive Vieira, Emanuelle Skolut Jose, Murilo Regnier Stange | [menezes.alander@pucpr.edu.br](mailto:menezes.alander@pucpr.edu.br), [bernardo.creplive@pucpr.edu.br](mailto:bernardo.creplive@pucpr.edu.br), [emanuelle.skolut@pucpr.edu.br](mailto:emanuelle.skolut@pucpr.edu.br), [murilo.stange@pucpr.edu.br](mailto:murilo.stange@pucpr.edu.br) | Uma arquitetura que caiba no prazo e nos planos gratuitos. |
+| Grupo de desenvolvimento: Alander Menezes Arantes de Ávila, Emanuelle Skolut Jose | [menezes.alander@pucpr.edu.br](mailto:menezes.alander@pucpr.edu.br), [emanuelle.skolut@pucpr.edu.br](mailto:emanuelle.skolut@pucpr.edu.br) | Uma arquitetura que caiba no prazo e nos planos gratuitos. |
 
 ---
 
@@ -69,7 +69,7 @@ As restrições vêm de duas fontes: a disciplina de Arquitetura e Soluções Cl
 
 | ID | Restrição | Motivo |
 |---|---|---|
-| RO1 | Equipe de quatro alunos e entrega em 12/11/2026 | Calendário acadêmico; o escopo cabe em dois objetos (Processo e Análise). |
+| RO1 | Equipe de dois alunos e entrega em 12/11/2026 | Calendário acadêmico; o escopo cabe em dois objetos (Processo e Análise). |
 | RO2 | Um repositório público por serviço, com README, arquitetura e instruções para rodar | A avaliação é feita sobre os repositórios. |
 | RO3 | Cada serviço publicado como imagem no Docker Hub, com build, testes e deploy automáticos | Critério de avaliação. |
 | RO4 | Apresentação em vídeo com o sistema rodando na nuvem e a participação de todos | Forma de avaliação. |
