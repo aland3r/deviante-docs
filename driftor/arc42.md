@@ -154,7 +154,7 @@ Na arquitetura: microsserviços com Database per Service, Backend for Frontend, 
 | API Gateway | Azure API Management (Consumption) | Azure, Brazil South |
 | BFF e ipdd | Node.js 22, NestJS | Fly.io, São Paulo (`gru`) |
 | pmining | Python 3.12, FastAPI, PM4Py | Fly.io, São Paulo (`gru`) |
-| fn-adwin | Azure Functions Python v2, `river` | Azure, Brazil South |
+| fn-adwin | Azure Functions Python v2 no plano Flex Consumption, `river` | Azure, Brazil South |
 | Mensageria | Azure Service Bus, tier Basic | Azure, Brazil South |
 | Bancos | MongoDB Atlas M0 (pmining) e Azure SQL na oferta gratuita (ipdd) | Atlas na AWS `us-east-1`; Azure SQL em Brazil South |
 
@@ -553,7 +553,7 @@ flowchart LR
 | Microfrontend | Vercel | Deploy a cada push na `main` |
 | API Gateway | Azure API Management, plano Consumption | Produto com chave de assinatura, limite de requisições e CORS; uma API apontando para o BFF |
 | BFF, pmining, ipdd | Fly.io, uma app por serviço em `gru` | GitHub Actions: testes, imagem `aland3r/driftor-asc-<serviço>` no Docker Hub, deploy da imagem |
-| fn-adwin | Azure Function App, Python, plano Consumption | GitHub Actions: testes e publicação do pacote |
+| fn-adwin | Azure Function App, Python, plano Flex Consumption | GitHub Actions: testes e publicação do pacote |
 | Service Bus | Namespace `driftor-asc-bus`, tier Basic | Filas `analysis-requested`, `analysis-completed` e `process-deleted` |
 | Bancos | MongoDB Atlas M0 `pjbl` (banco `pmining`); Azure SQL `driftor-asc-sql` (banco `ipdd`, serverless com pausa automática) | Serviços gerenciados; uma credencial por serviço, guardada nos secrets do repositório |
 
@@ -568,7 +568,7 @@ flowchart LR
 | BFF (Swagger) | https://driftor-asc-bff.fly.dev/docs |
 | pmining (Swagger) | https://driftor-asc-pmining.fly.dev/docs |
 | ipdd (Swagger e AsyncAPI) | https://driftor-asc-ipdd.fly.dev/docs e https://driftor-asc-ipdd.fly.dev/events |
-| fn-adwin | https://driftor-asc-fn-adwin.azurewebsites.net/api/health |
+| fn-adwin | https://driftor-asc-fn-adwin-dsa6htarh3avfag4.brazilsouth-01.azurewebsites.net/api/health |
 | Repositórios | https://github.com/aland3r/driftor-asc-mfe, -bff, -pmining, -ipdd e -fn-adwin |
 | Imagens | https://hub.docker.com/u/aland3r |
 
