@@ -275,10 +275,10 @@ flowchart TB
     class bff,pm container
     class api,create,crud,complete,purge,domain,pmg,repo,sb component
     class sql,bus ext
-    style ipdd fill:transparent,stroke:#888,stroke-dasharray:5 5
-    style app fill:transparent,stroke:#aaa
-    style infra fill:transparent,stroke:#aaa
-    style deps fill:transparent,stroke:transparent
+    style ipdd fill:none,stroke:#888,stroke-dasharray:5 5
+    style app fill:none,stroke:#aaa
+    style infra fill:none,stroke:#aaa
+    style deps fill:none,stroke:none
 ```
 
 Os casos de uso dependem só do domínio (`Analysis`, `Drift`, `Segment`) e das portas (`AnalysisRepository`, `ProcessGateway`, `EventPublisher`); os adaptadores de infraestrutura implementam as portas e são ligados na inicialização. Nenhuma fatia importa outra.
