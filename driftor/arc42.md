@@ -12,12 +12,12 @@ Esta documentação descreve a arquitetura da versão em nuvem do Driftor: um mi
 
 ### 1.1 Visão geral de requisitos
 
-O usuário trabalha com dois objetos: o **Processo**, criado a partir do upload de um event log, e a **Análise de desvios**, gerada sobre um processo. Cada um tem o seu CRUD completo.
+O usuário trabalha com dois objetos: o **Processo**, criado só com o nome e alimentado pelo event log que o analista carrega nele, e a **Análise de desvios**, gerada sobre um processo. Cada um tem o seu CRUD completo.
 
 | ID | Requisito funcional | Serviço |
 |---|---|---|
-| RF-01 | Criar um processo enviando um event log (XES ou CSV). | pmining |
-| RF-02 | Mapear as operações do log para atividades do catálogo, com sugestão automática, criação de atividade nova e opção de continuar depois. | pmining |
+| RF-01 | Criar um processo pelo nome e carregar nele um event log (XES ou CSV); um novo log substitui o anterior. | pmining |
+| RF-02 | Mapear as operações do log para atividades do catálogo, com sugestão automática, descrição opcional da atividade, criação de atividade nova e opção de continuar depois. | pmining |
 | RF-03 | Ver o processo: grafo de atividades com controle de densidade, variantes, traces e, para cada atividade, frequência e desempenho. | pmining |
 | RF-04 | Renomear e excluir um processo; a exclusão apaga também as análises dele. | pmining, ipdd |
 | RF-05 | Gerar uma análise de desvios escolhendo o processo, a série (duração total do trace ou tempo numa atividade), a sensibilidade δ e o tratamento (bruto ou tratado). | ipdd, fn-adwin |
@@ -221,7 +221,7 @@ C4Container
 | Microfrontend | Landing, painel, processo, análise e documentação. Fala só com o BFF. | — |
 | API Gateway | Exige a chave de assinatura, limita requisições e repassa ao BFF. | HTTPS |
 | BFF | Repassa os CRUDs de processo e análise; compõe `GET /aggregated-data` (análise, processo e série tratada) e `GET /overview` (painel); serve esta documentação. | REST, Swagger em `/docs` |
-| pmining | `POST /processes` (upload), `GET`, `PATCH`, `DELETE`, `PUT /processes/{id}/operations`, traces, série e catálogo de atividades. | REST, Swagger em `/docs` |
+| pmining | `POST /processes` (só o nome), `POST /processes/{id}/log` (upload do log), `GET`, `PATCH`, `DELETE`, `PUT /processes/{id}/operations`, traces, série e catálogo de atividades. | REST, Swagger em `/docs` |
 | ipdd | `POST /analyses`, `GET`, `PATCH`, `DELETE`; consome `analysis-completed` e `process-deleted`. | REST, Swagger em `/docs`; AsyncAPI em `/events` |
 | fn-adwin | Consome `analysis-requested` e responde em `analysis-completed`; `POST /api/adwin` para o BFF. | Fila e HTTP |
 
@@ -285,7 +285,7 @@ Os casos de uso dependem só do domínio (`Analysis`, `Drift`, `Segment`) e das 
 
 | Serviço | Fatias (uma pasta por caso de uso) |
 |---|---|
-| pmining | `upload_process`, `map_operations`, `get_process`, `list_processes`, `list_traces`, `get_series`, `rename_process`, `delete_process`, `activities` |
+| pmining | `create_process`, `upload_log`, `map_operations`, `get_process`, `list_processes`, `list_traces`, `get_series`, `rename_process`, `delete_process`, `activities` |
 | ipdd | `create-analysis`, `complete-analysis`, `get-analysis`, `list-analyses`, `rename-analysis`, `delete-analysis`, `purge-process-analyses` |
 | fn-adwin | `detect_drifts` |
 | BFF | `get-aggregated-data`, `get-overview`, `get-documentation` e o repasse dos CRUDs |
@@ -301,7 +301,7 @@ classDiagram
     class Process {
         id
         name
-        status: mapeando | pronto
+        status: vazio | mapeando | pronto
         traceCount
         eventCount
     }
@@ -324,6 +324,7 @@ classDiagram
     class Activity {
         id
         name
+        description
     }
     class Variant {
         sequence
@@ -376,9 +377,9 @@ classDiagram
 
 | Classe | Serviço | Papel |
 |---|---|---|
-| Process | pmining | O log enviado, com o seu estado de mapeamento. |
+| Process | pmining | O processo nomeado, o log carregado nele e o seu estado (vazio, mapeando, pronto). |
 | Trace, Event | pmining | Um caso do log e os eventos dele, na ordem. |
-| Operation, Activity | pmining | O rótulo bruto do log e a atividade do catálogo a que foi ligado. |
+| Operation, Activity | pmining | O rótulo bruto do log e a atividade do catálogo, com descrição opcional, a que foi ligado. |
 | Variant, ProcessGraph | pmining | Sequências distintas de atividades e o grafo de sucessão com métricas por atividade. |
 | Analysis | ipdd | Parâmetros, estado e resumo de uma análise. |
 | SeriesPoint | ipdd | Um valor da série por trace (duração total ou tempo numa atividade). |
@@ -391,9 +392,9 @@ classDiagram
 
 Os quatro cenários abaixo cobrem os dois CRUDs, o caminho assíncrono do cálculo e a composição do BFF. Em todos, o microfrontend chama o API Gateway, que repassa ao BFF; o gateway foi omitido dos diagramas para deixá-los legíveis.
 
-### 6.1 Criar um processo e mapear as operações
+### 6.1 Criar um processo, carregar o log e mapear as operações
 
-O upload é o Create do Processo. O pmining lê o log, sugere uma atividade do catálogo para cada operação e grava o processo como "mapeando". Quando o analista valida o mapeamento, o pmining monta o grafo e as variantes e o processo passa a "pronto". O analista pode fechar o modal e continuar o mapeamento depois.
+O Create do Processo pede só o nome e grava o processo como "vazio". Na página do processo, o analista carrega o log: o pmining lê o arquivo, sugere uma atividade do catálogo para cada operação e passa o processo a "mapeando". O analista valida cada atividade, podendo renomeá-la e dar uma descrição; ao concluir, o pmining monta o grafo e as variantes e o processo passa a "pronto". O analista pode fechar o modal e continuar o mapeamento depois.
 
 ```mermaid
 sequenceDiagram
@@ -403,17 +404,21 @@ sequenceDiagram
     participant P as pmining
     participant M as MongoDB
 
-    A->>W: Novo processo e escolhe o arquivo XES ou CSV
-    W->>B: POST /processes (multipart)
+    A->>W: Novo processo com o nome
+    W->>B: POST /processes
     B->>P: POST /processes
+    P->>M: grava o processo (vazio)
+    A->>W: Carregar log de eventos (XES ou CSV)
+    W->>B: POST /processes/{id}/log (multipart)
+    B->>P: POST /processes/{id}/log
     P->>P: lê o log e sugere uma atividade por operação
-    P->>M: grava processo (mapeando) e traces
+    P->>M: grava traces e operações (mapeando)
     P-->>W: processo com as operações sugeridas
-    A->>W: valida ou ajusta as atividades
+    A->>W: valida cada atividade, com nome e descrição
     W->>B: PUT /processes/{id}/operations
     B->>P: PUT /processes/{id}/operations
     P->>P: aplica o mapeamento, monta grafo e variantes
-    P->>M: atualiza o processo (pronto)
+    P->>M: atualiza processo e catálogo (pronto)
     P-->>W: processo com grafo e variantes
 ```
 
@@ -604,7 +609,7 @@ Todos os serviços usam as mesmas quatro camadas, com dependências apontando pa
 | `infrastructure` | Adaptadores: MongoDB, `mssql`, Service Bus, PM4Py, clientes HTTP | `application`, `domain` |
 | `api` | Rotas REST, Swagger, gatilhos da Function e composição das dependências | Todas |
 
-Cada caso de uso é uma fatia vertical: para mudar o upload, por exemplo, só a pasta `upload_process` e o adaptador que ela usa mudam.
+Cada caso de uso é uma fatia vertical: para mudar o upload, por exemplo, só a pasta `upload_log` e o adaptador que ela usa mudam.
 
 ### 8.4 Testes
 
@@ -700,7 +705,7 @@ Cenários verificáveis para as metas da seção 1.2 e para outras qualidades qu
 | IPDD | Interactive Process Drift Detection: método da pesquisa da PUCPR que usa o ADWIN para encontrar desvios em processos. |
 | Operação | Rótulo bruto de um evento no log, antes de ser ligado a uma atividade. |
 | Outlier | Valor isolado muito fora da vizinhança na série; o tratamento o substitui antes do ADWIN. |
-| Processo | Event log enviado e o que se minera dele: traces, variantes e grafo. |
+| Processo | Objeto criado pelo nome que recebe um event log e guarda o que se minera dele: traces, variantes e grafo. |
 | Segmento | Trecho da série entre dois desvios consecutivos. |
 | Série | Um valor por trace, na ordem: a duração total ou o tempo gasto numa atividade. |
 | Service Bus | Serviço de filas de mensagens da Azure que leva os eventos entre os serviços. |
