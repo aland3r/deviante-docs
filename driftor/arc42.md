@@ -232,56 +232,41 @@ O ipdd é o serviço que mais conversa com os outros: recebe REST, chama o pmini
 **C4 nível 3 · Componentes do ipdd**
 
 ```mermaid
-flowchart TB
-    bff["BFF<br/><small>[Container: NestJS]</small>"]
+%%{init: {"wrap": true, "c4": {"width": 200, "wrap": true}}}%%
+C4Component
 
-    subgraph ipdd["ipdd [Container: NestJS]"]
-        direction TB
-        api["AnalysesController<br/><small>[api] rotas REST e Swagger</small>"]
-        subgraph app["application · uma pasta por caso de uso"]
-            create["create-analysis<br/><small>valida, busca a série, grava em andamento e publica o pedido</small>"]
-            crud["list · get · rename · delete<br/><small>demais casos de uso do CRUD</small>"]
-            complete["complete-analysis<br/><small>grava desvios e outliers, idempotente</small>"]
-            purge["purge-process-analyses<br/><small>apaga as análises de um processo excluído</small>"]
-        end
-        domain["Analysis · Drift · Segment<br/><small>[domain] entidades e regras puras</small>"]
-        subgraph infra["infrastructure · adaptadores das portas"]
-            pmg["HttpProcessGateway"]
-            repo["SqlAnalysisRepository"]
-            sb["ServiceBusPublisher e consumidores"]
-        end
-    end
+    Container(bff, "BFF", "Node.js + NestJS", "Repassa o CRUD da análise.")
+    Container(pm, "pmining", "Python + FastAPI", "Entrega a série do processo.")
+    ContainerQueue(bus, "Service Bus", "Azure, tier Basic", "Filas analysis-requested, analysis-completed e process-deleted.")
+    ContainerDb(sql, "Azure SQL", "Oferta gratuita", "Análises, desvios e pontos da série.")
 
-    subgraph deps[" "]
-        direction LR
-        pm["pmining<br/><small>[Container: FastAPI]</small>"]
-        sql[("Azure SQL<br/><small>banco ipdd</small>")]
-        bus{{"Service Bus"}}
-    end
+    Container_Boundary(ipdd, "ipdd") {
+        Component(api, "api", "Controller NestJS", "Rotas REST, Swagger e AsyncAPI.")
+        Component(app, "application", "Slices", "create, complete, get, list, rename, delete e purge da análise.")
+        Component(infra, "infrastructure", "mssql + Service Bus", "Repositório SQL, gateway HTTP do pmining, publicador e consumidores.")
+        Component(s1, " ", " ")
+        Component(s2, " ", " ")
+        Component(domain, "domain", "TypeScript puro", "Analysis, Drift e Segment com as regras.")
+    }
 
-    bff -->|REST| api
-    api --> create & crud
-    app --> domain
-    app -.->|usa as portas| infra
-    complete ---|analysis-completed| sb
-    purge ---|process-deleted| sb
-    pmg -->|HTTP| pm
-    repo -->|SQL| sql
-    sb <-->|AMQP| bus
+    Rel(bff, api, "REST")
+    Rel(api, app, "Chama")
+    Rel(app, domain, "Usa")
+    Rel(infra, app, "Implementa portas")
+    Rel(infra, sql, "SQL")
+    Rel(infra, pm, "Série do processo", "HTTP")
+    Rel(infra, bus, "Publica e consome")
 
-    classDef container fill:#438dd5,stroke:#3c7fc0,color:#fff
-    classDef component fill:#85bbf0,stroke:#78a8d8,color:#000
-    classDef ext fill:#999999,stroke:#8a8a8a,color:#fff
-    class bff,pm container
-    class api,create,crud,complete,purge,domain,pmg,repo,sb component
-    class sql,bus ext
-    style ipdd fill:none,stroke:#888,stroke-dasharray:5 5
-    style app fill:none,stroke:#aaa
-    style infra fill:none,stroke:#aaa
-    style deps fill:none,stroke:none
+    UpdateRelStyle(infra, app, $offsetX="-68", $offsetY="-12")
+    UpdateRelStyle(infra, pm, $offsetX="-60", $offsetY="-10")
+
+    UpdateElementStyle(s1, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+    UpdateElementStyle(s2, $bgColor="transparent", $borderColor="transparent", $fontColor="transparent")
+
+    UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
 ```
 
-Os casos de uso dependem só do domínio (`Analysis`, `Drift`, `Segment`) e das portas (`AnalysisRepository`, `ProcessGateway`, `EventPublisher`); os adaptadores de infraestrutura implementam as portas e são ligados na inicialização. Nenhuma fatia importa outra.
+Os casos de uso dependem só do domínio (`Analysis`, `Drift`, `Segment`) e das portas (`AnalysisRepository`, `ProcessGateway`, `EventPublisher`); a infraestrutura implementa as portas com `SqlAnalysisRepository`, `HttpProcessGateway` e o publicador e os consumidores do Service Bus, ligados na inicialização. Nenhuma fatia importa outra.
 
 | Serviço | Fatias (uma pasta por caso de uso) |
 |---|---|
@@ -299,80 +284,113 @@ classDiagram
     direction LR
 
     class Process {
-        id
-        name
-        status: vazio | mapeando | pronto
-        traceCount
-        eventCount
+      +String id
+      +String name
+      +String fileName
+      +String format
+      +ProcessStatus status
+      +Int traceCount
+      +Int eventCount
+      +Instant createdAt
+      +Instant updatedAt
     }
     class Trace {
-        caseId
-        index
-        durationSeconds
+      +String caseId
+      +Int index
+      +Instant startedAt
+      +Instant endedAt
+      +Double durationSeconds
+      +String variantId
     }
     class Event {
-        rawLabel
-        occurredAt
-        activity
+      +String rawLabel
+      +Instant occurredAt
+      +Double durationSeconds
+      +String activity
     }
     class Operation {
-        rawLabel
-        occurrenceCount
-        suggestedActivity
-        activity
+      +String rawLabel
+      +Int occurrenceCount
+      +Int caseCount
+      +Double meanDurationSeconds
+      +String suggestedActivity
+      +String activity
     }
     class Activity {
-        id
-        name
-        description
+      +String id
+      +String name
+      +String description
     }
     class Variant {
-        sequence
-        traceCount
-        share
+      +String id
+      +String label
+      +List~String~ sequence
+      +Int traceCount
+      +Double share
     }
     class ProcessGraph {
-        nodes
-        edges
+      +List~GraphNode~ nodes
+      +List~GraphEdge~ edges
     }
     class SeriesPoint {
-        index
-        caseId
-        value
+      +Int index
+      +String caseId
+      +Double value
     }
     class Analysis {
-        id
-        processId
-        delta
-        treatment: raw | treated
-        status: em_andamento | concluida | falhou
+      +String id
+      +String processId
+      +String name
+      +Double delta
+      +Treatment treatment
+      +String activity
+      +AnalysisStatus status
+      +Int observationCount
+      +Int driftCount
+      +Instant createdAt
+      +Instant updatedAt
+      +Instant completedAt
     }
     class Drift {
-        position
-        index
-        anomalyStartIndex
-        meanBefore
-        meanAfter
-        changePercent
+      +Int position
+      +Int index
+      +Int anomalyStartIndex
+      +Double meanBefore
+      +Double meanAfter
+      +Double changePercent
     }
     class Segment {
-        startIndex
-        endIndex
-        mean
-        outlierCount
+      +String id
+      +Int startIndex
+      +Int endIndex
+      +Int traceCount
+      +Double mean
+      +Int outlierCount
     }
 
-    Process "1" *-- "*" Trace
-    Trace "1" *-- "*" Event
-    Process "1" *-- "*" Operation
-    Operation "*" --> "0..1" Activity
-    Process "1" *-- "*" Variant
-    Variant "1" o-- "*" Trace
-    Process "1" *-- "1" ProcessGraph
-    Analysis "*" ..> "1" Process : processId
-    Analysis "1" *-- "*" SeriesPoint
-    Analysis "1" *-- "*" Drift
-    Analysis "1" ..> "*" Segment : calcula
+    Process "1" *-- "0..*" Trace : contains
+    Trace "1" *-- "1..*" Event : contains
+    Process "1" *-- "0..*" Operation : maps
+    Operation "0..*" --> "0..1" Activity : mapped to
+    Process "1" *-- "0..*" Variant : groups
+    Variant "1" o-- "1..*" Trace : covers
+    Process "1" *-- "0..1" ProcessGraph : mines
+    Analysis "0..*" ..> "1" Process : processId
+    Analysis "1" *-- "0..*" SeriesPoint : analyzes
+    Analysis "1" *-- "0..*" Drift : detects
+    Analysis "1" ..> "1..*" Segment : derives
+
+    style Process fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Operation fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Variant fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style ProcessGraph fill:#f3dc9b,stroke:#a16207,stroke-width:2px,color:#111827
+    style Trace fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Event fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Activity fill:#f6c9a4,stroke:#c2410c,stroke-width:2px,color:#111827
+    style Analysis fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Drift fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style SeriesPoint fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
+    style Segment fill:#d3cbf3,stroke:#6d28d9,stroke-width:2px,color:#111827
 ```
 
 | Classe | Serviço | Papel |
